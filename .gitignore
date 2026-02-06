@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+backend/target/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.iml
+.classpath
+.project
+.settings/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backend Uploads (keep folder, ignore content)
+backend/uploads/*
+!backend/uploads/.gitkeep

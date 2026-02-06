@@ -1,0 +1,381 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    background-color: #f5f5f5;
+}
+/* Global Enhancements for HomeFix UI */
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #3b82f6, #06b6d4);
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #2563eb, #0891b2);
+}
+
+/* Ant Design Customizations */
+.ant-btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  border: none;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ant-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
+}
+
+.ant-card {
+  border-radius: 1.5rem;
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.ant-card:hover {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.ant-input,
+.ant-input-number,
+.ant-picker {
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+  transition: all 0.3s;
+}
+
+.ant-input:hover,
+.ant-input-number:hover,
+.ant-picker:hover {
+  border-color: #60a5fa;
+}
+
+.ant-input:focus,
+.ant-input-number:focus,
+.ant-picker:focus,
+.ant-input-focused,
+.ant-input-number-focused,
+.ant-picker-focused {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Form Labels */
+.ant-form-item-label > label {
+  font-weight: 600;
+  color: #334155;
+}
+
+/* Tabs */
+.ant-tabs-tab {
+  font-weight: 600;
+  padding: 12px 8px;
+  transition: all 0.3s;
+}
+
+.ant-tabs-tab:hover {
+  color: #3b82f6 !important;
+}
+
+.ant-tabs-tab-active {
+  color: #2563eb !important;
+}
+
+.ant-tabs-ink-bar {
+  background: linear-gradient(to right, #3b82f6, #06b6d4);
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+
+/* Tables */
+.ant-table {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+  font-weight: 700;
+  color: #1e293b;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: #f8fafc;
+}
+
+/* Modals */
+.ant-modal-content {
+  border-radius: 1.5rem;
+  overflow: hidden;
+}
+
+.ant-modal-header {
+  background: linear-gradient(to right, #f8fafc, #ffffff);
+  border-bottom: 2px solid #e2e8f0;
+}
+
+/* Select Dropdown */
+.ant-select-dropdown {
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.ant-select-item-option-selected {
+  background: linear-gradient(to right, #dbeafe, #e0f2fe) !important;
+  font-weight: 600;
+}
+
+/* Tags */
+.ant-tag {
+  border-radius: 0.5rem;
+  padding: 4px 12px;
+  font-weight: 600;
+  border: none;
+}
+
+/* Alerts */
+.ant-alert {
+  border-radius: 1rem;
+}
+
+/* Steps */
+.ant-steps-item-process .ant-steps-item-icon {
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+}
+
+.ant-steps-item-finish .ant-steps-item-icon {
+  background: #10b981;
+  border-color: #10b981;
+}
+
+.ant-steps-item-finish .ant-steps-item-icon .ant-steps-icon {
+  color: white;
+}
+
+/* Rate Stars */
+.ant-rate-star {
+  transition: all 0.3s;
+}
+
+.ant-rate-star:hover {
+  transform: scale(1.1);
+}
+
+/* Message & Notification */
+.ant-message-notice-content,
+.ant-notification-notice {
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.6s ease-out;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.6s ease-out;
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass Morphism */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Card Hover Effects */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Loading Skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s ease-in-out infinite;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Typography Enhancements */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Link Styles */
+a {
+  transition: all 0.3s;
+}
+
+a:hover {
+  text-decoration: none;
+}
+
+/* Focus Styles */
+*:focus-visible {
+  outline: 3px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+/* Pulse Animation for Notifications */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Improved Button Variants */
+.btn-gradient-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  border: none;
+  color: white;
+  font-weight: 700;
+  transition: all 0.3s;
+}
+
+.btn-gradient-primary:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #0891b2 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
+}
+
+.btn-gradient-secondary {
+  background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  border: none;
+  color: white;
+  font-weight: 700;
+  transition: all 0.3s;
+}
+
+.btn-gradient-secondary:hover {
+  background: linear-gradient(135deg, #9333ea 0%, #db2777 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(168, 85, 247, 0.4);
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem;
+  }
+  h2 {
+    font-size: 1.5rem;
+  }
+  h3 {
+    font-size: 1.25rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
