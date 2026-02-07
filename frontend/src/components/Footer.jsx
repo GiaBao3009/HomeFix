@@ -1,10 +1,14 @@
 import { Layout, Row, Col, Typography, Space, Input, Button, Divider } from 'antd';
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Send } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const { Footer: AntFooter } = Layout;
 const { Title, Text, Link } = Typography;
 
 const Footer = () => {
+    const { user } = useAuth();
+    const isAdminOrTech = user?.role === 'ADMIN' || user?.role === 'TECHNICIAN';
+
     return (
         <AntFooter className="bg-slate-900 text-slate-300 p-16 font-sans">
             <div className="max-w-7xl mx-auto">
@@ -17,8 +21,10 @@ const Footer = () => {
                             </span>
                         </div>
                         <Text className="text-slate-400 block mb-6 text-base leading-relaxed">
-                            Đối tác tin cậy cho mọi nhu cầu sửa chữa và chăm sóc ngôi nhà của bạn. 
-                            Kết nối với đội ngũ chuyên gia tận tâm, chuyên nghiệp chỉ với vài cú click.
+                            {isAdminOrTech 
+                                ? "Hệ thống quản lý dịch vụ và điều phối kỹ thuật chuyên nghiệp."
+                                : "Đối tác tin cậy cho mọi nhu cầu sửa chữa và chăm sóc ngôi nhà của bạn. Kết nối với đội ngũ chuyên gia tận tâm, chuyên nghiệp chỉ với vài cú click."
+                            }
                         </Text>
                         <Space size="large">
                             <div className="bg-slate-800 p-3 rounded-full hover:bg-blue-600 hover:text-white transition-all cursor-pointer">
@@ -33,19 +39,25 @@ const Footer = () => {
                         </Space>
                     </Col>
                     
-                    {/* Quick Links */}
+                    {/* Quick Links - Hidden/Modified for Admin/Tech */}
+                    {!isAdminOrTech && (
                     <Col xs={24} sm={12} md={5}>
                         <Title level={4} style={{ color: 'white', marginBottom: '1.5rem' }}>Khám phá</Title>
                         <div className="flex flex-col gap-3">
                             <Link href="/services" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Dịch vụ</Link>
                             <Link href="/about" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Về chúng tôi</Link>
                             <Link href="/contact" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Liên hệ</Link>
-                            <Link href="/login" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng nhập</Link>
-                            <Link href="/register" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng ký</Link>
+                            {!user && (
+                                <>
+                                    <Link href="/login" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng nhập</Link>
+                                    <Link href="/register" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng ký</Link>
+                                </>
+                            )}
                         </div>
                     </Col>
+                    )}
 
-                    {/* Contact Info */}
+                    {/* Contact Info - Always visible but maybe simplified for Admin */}
                     <Col xs={24} sm={12} md={5}>
                         <Title level={4} style={{ color: 'white', marginBottom: '1.5rem' }}>Liên hệ</Title>
                         <div className="flex flex-col gap-4">

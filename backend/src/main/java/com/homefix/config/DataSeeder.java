@@ -495,10 +495,10 @@ public class DataSeeder implements CommandLineRunner {
                         coupons.add(welcome);
 
                         Coupon summer = new Coupon();
-                        summer.setCode("SUMMER2024");
+                        summer.setCode("SUMMER2026");
                         summer.setDiscountPercent(15.0);
                         summer.setMaxDiscountAmount(new BigDecimal("100000"));
-                        summer.setValidUntil(LocalDateTime.of(2024, 9, 30, 23, 59, 59));
+                        summer.setValidUntil(LocalDateTime.now().plusMonths(6));
                         summer.setUsageLimit(500);
                         summer.setStatus("ACTIVE");
                         coupons.add(summer);

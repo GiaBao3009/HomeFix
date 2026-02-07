@@ -61,7 +61,7 @@ const Login = () => {
                         <div className="space-y-6">
                             <h2 className="mb-8 text-3xl font-bold">Chào mừng trở lại!</h2>
                             <p className="text-lg leading-relaxed text-cyan-100">
-                                Đăng nhập để quản lý lịch đặt, theo dõi tiến độ sửa chữa và nhận nhiều ưu đãi hấp dẫn.
+                                Đăng nhập để truy cập hệ thống HomeFix, quản lý công việc và dịch vụ tiện ích.
                             </p>
                             
                             <div className="pt-8 space-y-4">
@@ -72,8 +72,8 @@ const Login = () => {
                                         </svg>
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold">Quản lý dễ dàng</h3>
-                                        <p className="text-sm text-cyan-200">Theo dõi tất cả đơn hàng của bạn</p>
+                                        <h3 className="text-lg font-bold">Quản lý hiệu quả</h3>
+                                        <p className="text-sm text-cyan-200">Theo dõi tiến độ và trạng thái công việc</p>
                                     </div>
                                 </div>
                                 
@@ -84,8 +84,8 @@ const Login = () => {
                                         </svg>
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold">Ưu đãi độc quyền</h3>
-                                        <p className="text-sm text-cyan-200">Nhận voucher và khuyến mãi đặc biệt</p>
+                                        <h3 className="text-lg font-bold">Kết nối nhanh chóng</h3>
+                                        <p className="text-sm text-cyan-200">Hệ thống phản hồi tức thì</p>
                                     </div>
                                 </div>
                                 

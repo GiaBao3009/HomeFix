@@ -1,14 +1,17 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button, Rate, Tag, Skeleton } from 'antd';
-import { Wrench, Zap, Droplets, CheckCircle, Clock, Shield, ArrowRight, Star, Users, Award, TrendingUp, Heart } from 'lucide-react';
+import { Wrench, Zap, Droplets, CheckCircle, Clock, Shield, ArrowRight, Star, Users, Award, TrendingUp, Heart, LayoutDashboard } from 'lucide-react';
 import useContent from '../hooks/useContent';
 import { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 const Home = () => {
     const { content: pageContent, loading: contentLoading } = useContent('HOME');
     const [services, setServices] = useState([]);
     const [servicesLoading, setServicesLoading] = useState(true);
+    const { user } = useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchServices = async () => {
@@ -37,6 +40,38 @@ const Home = () => {
 
         fetchServices();
     }, []);
+
+    const isAdminOrTech = user?.role === 'ADMIN' || user?.role === 'TECHNICIAN';
+
+    if (isAdminOrTech) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <div className="text-center space-y-8 p-12 bg-white rounded-3xl shadow-xl max-w-2xl">
+                    <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto text-blue-600">
+                        <LayoutDashboard size={48} />
+                    </div>
+                    <div>
+                        <h1 className="text-4xl font-black text-slate-900 mb-4">
+                            Xin chào, {user.fullName || user.username}
+                        </h1>
+                        <p className="text-xl text-slate-600">
+                            Bạn đang đăng nhập với quyền <span className="font-bold text-blue-600">{user.role}</span>.
+                            <br/>
+                            Vui lòng truy cập trang quản lý để thực hiện công việc.
+                        </p>
+                    </div>
+                    <Button 
+                        type="primary" 
+                        size="large"
+                        className="h-14 px-8 text-lg font-bold rounded-xl bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-blue-500/30"
+                        onClick={() => navigate(user.role === 'ADMIN' ? '/admin/dispatch' : '/technician/dashboard')}
+                    >
+                        Đến trang quản lý
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="overflow-hidden pb-20 space-y-32">

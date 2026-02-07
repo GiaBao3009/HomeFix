@@ -114,8 +114,11 @@ const Navbar = () => {
                                 <NotificationBell />
                                 <Dropdown menu={{ items }} placement="bottomRight" trigger={['click']}>
                                 <div className="flex gap-3 items-center px-3 py-2 rounded-full border border-transparent transition-colors cursor-pointer hover:bg-gray-50 hover:border-gray-200">
-                                    <Avatar className="font-bold uppercase bg-gradient-to-r from-blue-500 to-blue-600">
-                                        {user.fullName?.charAt(0)}
+                                    <Avatar 
+                                        src={user.avatarUrl}
+                                        className="font-bold uppercase bg-gradient-to-r from-blue-500 to-blue-600"
+                                    >
+                                        {!user.avatarUrl && user.fullName?.charAt(0)}
                                     </Avatar>
                                     <div className="hidden text-left sm:block">
                                         <div className="text-sm font-semibold text-gray-700">{user.fullName}</div>
