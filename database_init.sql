@@ -210,3 +210,4 @@ INSERT INTO website_content (section, content_key, title, content, image_url, di
 ('SERVICE_LIST', 'promo_code_2', 'Mã 2', '#HOMEFIXVIP', NULL, 5),
 ('SERVICE_LIST', 'promo_code_3', 'Mã 3', '#FLASHSALE', NULL, 6),
 ('SERVICE_LIST', 'promo_button', 'Nút ưu đãi', 'Xem tất cả ưu đãi', NULL, 7);
+homefix

@@ -22,6 +22,15 @@ const ProfilePage = () => {
             setProfile(response.data);
             setAvatarUrl(response.data.avatarUrl);
             form.setFieldsValue(response.data);
+            
+            // Sync context with latest profile data
+            updateUser({
+                fullName: response.data.fullName,
+                avatarUrl: response.data.avatarUrl,
+                role: response.data.role,
+                email: response.data.email,
+                id: response.data.id
+            });
         } catch (error) {
             console.error(error);
         }

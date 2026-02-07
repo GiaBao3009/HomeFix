@@ -53,7 +53,7 @@ public class AuthService {
         userRepository.save(user);
 
         var token = jwtUtils.generateToken(user);
-        return new AuthResponse(token, user.getRole().name(), user.getFullName());
+        return new AuthResponse(token, user.getRole().name(), user.getFullName(), user.getId(), user.getAvatarUrl());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -68,7 +68,7 @@ public class AuthService {
                 .orElseThrow();
         
         var token = jwtUtils.generateToken(user);
-        return new AuthResponse(token, user.getRole().name(), user.getFullName());
+        return new AuthResponse(token, user.getRole().name(), user.getFullName(), user.getId(), user.getAvatarUrl());
     }
 }
 
