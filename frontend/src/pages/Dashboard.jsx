@@ -3,37 +3,18 @@ import { Tabs, message, Card, Button } from 'antd';
 import { useAuth } from '../context/AuthContext';
 import AdminServiceManager from './AdminServiceManager';
 import AdminDispatch from './AdminDispatch';
+import AdminCategoryManager from './AdminCategoryManager';
 import AdminUserManager from './AdminUserManager';
 import AdminCouponManager from './AdminCouponManager';
 import TechnicianDashboard from './TechnicianDashboard';
 import OrderHistory from './OrderHistory';
 import AdminCharts from '../components/admin/AdminCharts';
-import { LayoutDashboard, Users, Calendar, Settings, Briefcase, Award, PieChart, Tag as TagIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Settings, Briefcase, Award, PieChart, Tag as TagIcon, Layers } from 'lucide-react';
 import api from '../services/api';
 
 const Dashboard = () => {
     const { user } = useAuth();
-    const [adminBookings, setAdminBookings] = useState([]);
 
-    useEffect(() => {
-        if (user?.role === 'ADMIN') {
-            fetchAdminStats();
-        }
-    }, [user]);
-
-    const fetchAdminStats = async () => {
-        try {
-            // Fetch all bookings for charts (using existing endpoint or creating a new one)
-            // Assuming /bookings/all or similar exists, or reuse /admin/dispatch data if it returns all
-            // For now, let's use the dispatch endpoint which likely returns all or a list
-            const response = await api.get('/bookings/my-bookings'); 
-            setAdminBookings(response.data);
-        } catch (error) {
-            console.error("Failed to fetch admin stats", error);
-            // Fallback or silent fail
-        }
-    };
-    
     // Check role to determine default tab
     const getDefaultTab = () => {
         if (user?.role === 'ADMIN') return 'overview';
@@ -54,7 +35,7 @@ const Dashboard = () => {
             children: (
                 <div>
                      <h2 className="mb-4 text-xl font-bold text-slate-800">Tổng quan hệ thống</h2>
-                     <AdminCharts bookings={adminBookings} />
+                     <AdminCharts />
                 </div>
             )
         },
@@ -67,6 +48,16 @@ const Dashboard = () => {
                 </div>
             ),
             children: <AdminDispatch />
+        },
+        {
+            key: 'categories',
+            label: (
+                <div className="flex gap-2 items-center px-2">
+                    <Layers size={18}/>
+                    <span className="font-semibold">Danh mục</span>
+                </div>
+            ),
+            children: <AdminCategoryManager />
         },
         {
             key: 'services',

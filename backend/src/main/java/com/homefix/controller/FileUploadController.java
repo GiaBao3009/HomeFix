@@ -47,8 +47,15 @@ public class FileUploadController {
         try {
             resource = new UrlResource(filePath.toUri());
             if(resource.exists()) {
+                String contentType = "application/octet-stream";
+                try {
+                     contentType = java.nio.file.Files.probeContentType(filePath);
+                } catch (Exception ex) {
+                    // Fallback to default
+                }
+                
                 return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType("application/octet-stream"))
+                        .contentType(MediaType.parseMediaType(contentType != null ? contentType : "application/octet-stream"))
                         .body(resource);
             } else {
                 return ResponseEntity.notFound().build();

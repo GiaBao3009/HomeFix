@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Typography, Alert, Checkbox } from 'antd';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { Lock, Mail, Chrome, Eye, EyeOff } from 'lucide-react';
 
 const { Title, Text } = Typography;
 
 const Login = () => {
-    const { login } = useAuth();
+    const [form] = Form.useForm();
+    const { login, user } = useAuth(); // Get user from context
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState(null);
+
+    // If already logged in, redirect to Home (which handles role-based redirection)
+    if (user) {
+        return <Navigate to="/" replace />;
+    }
 
     const onFinish = async (values) => {
         setLoading(true);

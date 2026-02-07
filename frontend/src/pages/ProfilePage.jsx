@@ -5,7 +5,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 const ProfilePage = () => {
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const [loading, setLoading] = useState(false);
     const [profile, setProfile] = useState(null);
     const [avatarUrl, setAvatarUrl] = useState(null);
@@ -36,8 +36,16 @@ const ProfilePage = () => {
             });
             setAvatarUrl(response.data.fileUrl);
             form.setFieldValue('avatarUrl', response.data.fileUrl);
+            
+            // Auto-save profile with new avatar
+            const currentValues = form.getFieldsValue();
+            await api.put('/users/profile', { ...currentValues, avatarUrl: response.data.fileUrl });
+            
+            // Update Auth Context to reflect changes immediately
+            updateUser({ avatarUrl: response.data.fileUrl });
+            
             onSuccess(response.data);
-            message.success('Tải ảnh đại diện thành công');
+            message.success('Cập nhật ảnh đại diện thành công');
         } catch (error) {
             console.error('Upload error:', error);
             onError(error);
@@ -50,6 +58,13 @@ const ProfilePage = () => {
         try {
             await api.put('/users/profile', values);
             message.success('Cập nhật thông tin thành công');
+            
+            // Update Auth Context
+            updateUser({ 
+                fullName: values.fullName,
+                // Add other fields if they are in the user object (like email/role which usually don't change here)
+            });
+            
             fetchProfile();
         } catch (error) {
             message.error('Cập nhật thất bại');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, InputNumber, DatePicker, message, Card, Space, Tag, Tooltip } from 'antd';
+import { Table, Button, Modal, Form, Input, InputNumber, DatePicker, message, Card, Space, Tag, Tooltip, Switch } from 'antd';
 import { Plus, Edit, Trash2, Tag as TagIcon, Search } from 'lucide-react';
 import api from '../services/api';
 import dayjs from 'dayjs';
@@ -29,19 +29,27 @@ const AdminCouponManager = () => {
     fetchCoupons();
   }, []);
 
+  useEffect(() => {
+    if (isModalVisible) {
+      if (editingCoupon) {
+        form.setFieldsValue({
+          ...editingCoupon,
+          validUntil: editingCoupon.validUntil ? dayjs(editingCoupon.validUntil) : null,
+          isActive: editingCoupon.status === 'ACTIVE',
+        });
+      } else {
+        form.resetFields();
+      }
+    }
+  }, [isModalVisible, editingCoupon, form]);
+
   const handleAdd = () => {
     setEditingCoupon(null);
-    form.resetFields();
     setIsModalVisible(true);
   };
 
   const handleEdit = (record) => {
     setEditingCoupon(record);
-    form.setFieldsValue({
-      ...record,
-      validUntil: record.validUntil ? dayjs(record.validUntil) : null,
-      isActive: record.status === 'ACTIVE',
-    });
     setIsModalVisible(true);
   };
 
@@ -69,7 +77,7 @@ const AdminCouponManager = () => {
     try {
       const couponData = {
         ...values,
-        validUntil: values.validUntil ? values.validUntil.toISOString() : null,
+        validUntil: values.validUntil ? values.validUntil.format('YYYY-MM-DDTHH:mm:ss') : null,
         status: values.isActive ? 'ACTIVE' : 'DISABLED',
       };
 
@@ -120,8 +128,8 @@ const AdminCouponManager = () => {
     },
     {
       title: 'Hết hạn',
-      dataIndex: 'expiryDate',
-      key: 'expiryDate',
+      dataIndex: 'validUntil',
+      key: 'validUntil',
       render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : 'Vĩnh viễn',
     },
     {
@@ -136,10 +144,10 @@ const AdminCouponManager = () => {
       title: 'Trạng thái',
       key: 'status',
       render: (_, record) => {
-        const isExpired = record.expiryDate && dayjs(record.expiryDate).isBefore(dayjs());
+        const isExpired = record.validUntil && dayjs(record.validUntil).isBefore(dayjs());
         const isDepleted = record.usageLimit && record.usedCount >= record.usageLimit;
         
-        if (!record.isActive) return <Tag color="red">Đã khóa</Tag>;
+        if (record.status !== 'ACTIVE') return <Tag color="red">Đã khóa</Tag>;
         if (isExpired) return <Tag color="orange">Hết hạn</Tag>;
         if (isDepleted) return <Tag color="volcano">Hết lượt</Tag>;
         return <Tag color="green">Đang hoạt động</Tag>;
@@ -201,7 +209,7 @@ const AdminCouponManager = () => {
           form={form}
           layout="vertical"
           onFinish={handleSave}
-          initialValues={{ isActive: true, usageLimit: 100 }}
+          preserve={false}
         >
           <div className="grid grid-cols-2 gap-4">
             <Form.Item
@@ -271,9 +279,9 @@ const AdminCouponManager = () => {
           <Form.Item
              name="isActive"
              valuePropName="checked"
-             label="Kích hoạt ngay"
+             label="Trạng thái kích hoạt"
           >
-             <input type="checkbox" className="w-4 h-4" />
+             <Switch checkedChildren="Hoạt động" unCheckedChildren="Đã khóa" />
           </Form.Item>
 
           <div className="flex gap-2 justify-end mt-4">

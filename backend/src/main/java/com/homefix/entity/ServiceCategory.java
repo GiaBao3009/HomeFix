@@ -19,11 +19,14 @@ public class ServiceCategory {
     private String iconUrl;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private List<ServicePackage> servicePackages;
 
-    public ServiceCategory() {}
+    public ServiceCategory() {
+    }
 
-    public ServiceCategory(Long id, String name, String description, String iconUrl, List<ServicePackage> servicePackages) {
+    public ServiceCategory(Long id, String name, String description, String iconUrl,
+            List<ServicePackage> servicePackages) {
         this.id = id;
         this.name = name;
         this.description = description;

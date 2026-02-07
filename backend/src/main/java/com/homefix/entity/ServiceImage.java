@@ -23,6 +23,12 @@ public class ServiceImage {
         this.servicePackage = servicePackage;
     }
 
+    public ServiceImage(Long id, String imageUrl, ServicePackage servicePackage) {
+        this.id = id;
+        this.imageUrl = imageUrl;
+        this.servicePackage = servicePackage;
+    }
+
     public Long getId() {
         return id;
     }

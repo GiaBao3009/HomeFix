@@ -120,9 +120,9 @@ public class BookingService {
         if (user.getRole() == Role.ADMIN) {
             bookings = bookingRepository.findAll();
         } else if (user.getRole() == Role.TECHNICIAN) {
-            bookings = bookingRepository.findByTechnicianId(user.getId());
+            bookings = bookingRepository.findByTechnician(user);
         } else {
-            bookings = bookingRepository.findByCustomerId(user.getId());
+            bookings = bookingRepository.findByCustomer(user);
         }
 
         return bookings.stream().map(this::mapToDto).collect(Collectors.toList());
@@ -140,15 +140,29 @@ public class BookingService {
 
         // Add logic validation if needed (e.g. only Admin/Tech can update)
         booking.setStatus(status);
-        Booking saved = bookingRepository.save(booking);
-
-        // Notify Customer
-        notificationService.createNotification(
+        
+        if (status == BookingStatus.COMPLETED) {
+            booking.setCompletedAt(LocalDateTime.now());
+            booking.setPaymentStatus("PAID"); // Auto mark as paid if completed (or depend on payment method)
+            
+            // Notify Customer to rate
+            notificationService.createNotification(
+                booking.getCustomer(),
+                "Đơn hàng hoàn thành",
+                "Đơn hàng #" + booking.getId() + " đã hoàn thành. Vui lòng đánh giá dịch vụ.",
+                "ORDER_COMPLETED",
+                booking.getId());
+        } else {
+             // Notify Customer
+            notificationService.createNotification(
                 booking.getCustomer(),
                 "Cập nhật trạng thái đơn hàng",
                 "Đơn hàng #" + booking.getId() + " đã chuyển sang trạng thái: " + status,
                 "ORDER",
                 booking.getId());
+        }
+        
+        Booking saved = bookingRepository.save(booking);
 
         return mapToDto(saved);
     }

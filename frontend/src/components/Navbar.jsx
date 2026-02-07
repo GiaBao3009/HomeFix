@@ -89,7 +89,7 @@ const Navbar = () => {
             <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-20">
                     <div className="flex gap-12 items-center">
-                        <Link to="/" className="flex gap-2 items-center">
+                        <Link to={user?.role === 'ADMIN' ? '/admin/dispatch' : user?.role === 'TECHNICIAN' ? '/technician/dashboard' : '/'} className="flex gap-2 items-center">
                             <div className="flex justify-center items-center w-10 h-10 text-xl font-bold text-white bg-blue-600 rounded-xl shadow-lg shadow-blue-200">
                                 H
                             </div>
@@ -98,9 +98,13 @@ const Navbar = () => {
                             </span>
                         </Link>
                         <div className="hidden items-center space-x-8 md:flex">
-                            <Link to="/services" className="font-medium text-gray-600 transition-colors hover:text-blue-600">Dịch vụ</Link>
-                            <Link to="/about" className="font-medium text-gray-600 transition-colors hover:text-blue-600">Giới thiệu</Link>
-                            <Link to="/contact" className="font-medium text-gray-600 transition-colors hover:text-blue-600">Liên hệ</Link>
+                            {(!user || user.role === 'CUSTOMER') && (
+                                <>
+                                    <Link to="/services" className="font-medium text-gray-600 transition-colors hover:text-blue-600">Dịch vụ</Link>
+                                    <Link to="/about" className="font-medium text-gray-600 transition-colors hover:text-blue-600">Giới thiệu</Link>
+                                    <Link to="/contact" className="font-medium text-gray-600 transition-colors hover:text-blue-600">Liên hệ</Link>
+                                </>
+                            )}
                         </div>
                     </div>
                     

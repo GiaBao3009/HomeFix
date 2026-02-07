@@ -19,4 +19,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT b.servicePackage.name, COUNT(b) FROM Booking b WHERE b.status = 'COMPLETED' GROUP BY b.servicePackage.name ORDER BY COUNT(b) DESC")
     List<Object[]> findTopServices();
+
+    @org.springframework.data.jpa.repository.Query("SELECT MONTH(b.createdAt), SUM(b.totalPrice) FROM Booking b WHERE b.status = 'COMPLETED' GROUP BY MONTH(b.createdAt) ORDER BY MONTH(b.createdAt)")
+    List<Object[]> findRevenueByMonth();
+
+    @org.springframework.data.jpa.repository.Query("SELECT b.status, COUNT(b) FROM Booking b GROUP BY b.status")
+    List<Object[]> countByStatus();
 }

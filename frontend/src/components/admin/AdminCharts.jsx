@@ -1,75 +1,73 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Typography, Spin } from 'antd';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import api from '../../services/api';
 
 const { Title } = Typography;
 
-const AdminCharts = ({ bookings = [] }) => {
+const AdminCharts = () => {
     const [topServices, setTopServices] = useState([]);
+    const [revenueData, setRevenueData] = useState([]);
+    const [statusData, setStatusData] = useState([]);
+    const [loading, setLoading] = useState(true);
     
     useEffect(() => {
-        const fetchTopServices = async () => {
+        const fetchData = async () => {
             try {
-                const res = await api.get('/statistics/top-services');
-                setTopServices(res.data);
+                const [topServicesRes, revenueRes, statusRes] = await Promise.all([
+                    api.get('/statistics/top-services'),
+                    api.get('/statistics/revenue'),
+                    api.get('/statistics/order-status')
+                ]);
+                
+                setTopServices(topServicesRes.data);
+                
+                // Format revenue data
+                // Backend returns [{month: "Tháng 1", revenue: 1000}, ...]
+                // Chart expects {name: "Tháng 1", total: 1000}
+                const formattedRevenue = revenueRes.data.map(item => ({
+                    name: item.month,
+                    total: item.revenue
+                }));
+                setRevenueData(formattedRevenue);
+
+                // Format status data
+                // Backend returns [{status: "COMPLETED", count: 5}, ...]
+                // Chart expects {name: "Hoàn thành", value: 5}
+                const statusMap = {
+                    'COMPLETED': 'Hoàn thành',
+                    'IN_PROGRESS': 'Đang xử lý',
+                    'CANCELLED': 'Đã hủy',
+                    'PENDING': 'Chờ xác nhận',
+                    'ASSIGNED': 'Đã phân công',
+                    'DECLINED': 'Đã từ chối'
+                };
+                
+                const formattedStatus = statusRes.data.map(item => ({
+                    name: statusMap[item.status] || item.status,
+                    value: item.count
+                })).filter(item => item.value > 0);
+                
+                setStatusData(formattedStatus);
+
             } catch (error) {
-                console.error("Error fetching top services:", error);
+                console.error("Error fetching statistics:", error);
+            } finally {
+                setLoading(false);
             }
         };
-        fetchTopServices();
+        fetchData();
     }, []);
 
-    // Calculate Revenue
-    const dataRevenue = useMemo(() => {
-        if (!bookings.length) return [];
-        const revenueByMonth = {};
-        
-        bookings.forEach(booking => {
-            if (booking.status === 'COMPLETED' || booking.status === 'CONFIRMED') {
-                const date = new Date(booking.bookingTime);
-                const month = `T${date.getMonth() + 1}`;
-                revenueByMonth[month] = (revenueByMonth[month] || 0) + (booking.totalPrice || 0);
-            }
-        });
+    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF1919'];
 
-        // Ensure all months are represented or just existing ones sorted
-        return Object.entries(revenueByMonth)
-            .map(([name, total]) => ({ name, total }))
-            .sort((a, b) => {
-                const mA = parseInt(a.name.substring(1));
-                const mB = parseInt(b.name.substring(1));
-                return mA - mB;
-            });
-    }, [bookings]);
-
-    // Calculate Status
-    const dataStatus = useMemo(() => {
-        if (!bookings.length) return [];
-        const statusCounts = {
-            'COMPLETED': 0,
-            'IN_PROGRESS': 0,
-            'CANCELLED': 0,
-            'PENDING': 0,
-            'CONFIRMED': 0,
-            'DECLINED': 0
-        };
-
-        bookings.forEach(b => {
-            if (statusCounts[b.status] !== undefined) {
-                statusCounts[b.status]++;
-            }
-        });
-
-        return [
-            { name: 'Hoàn thành', value: statusCounts['COMPLETED'] },
-            { name: 'Đang xử lý', value: statusCounts['IN_PROGRESS'] + statusCounts['CONFIRMED'] },
-            { name: 'Đã hủy', value: statusCounts['CANCELLED'] + statusCounts['DECLINED'] },
-            { name: 'Chờ xác nhận', value: statusCounts['PENDING'] },
-        ].filter(item => item.value > 0);
-    }, [bookings]);
-
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <Spin size="large" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -78,7 +76,7 @@ const AdminCharts = ({ bookings = [] }) => {
                     <Card title="Doanh thu theo tháng" bordered={false} className="shadow-sm">
                         <div className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={dataRevenue}>
+                                <AreaChart data={revenueData}>
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="name" />
                                     <YAxis />
@@ -95,7 +93,7 @@ const AdminCharts = ({ bookings = [] }) => {
                             <ResponsiveContainer width="100%" height="100%">
                                 <PieChart>
                                     <Pie
-                                        data={dataStatus}
+                                        data={statusData}
                                         cx="50%"
                                         cy="50%"
                                         innerRadius={60}
@@ -105,7 +103,7 @@ const AdminCharts = ({ bookings = [] }) => {
                                         dataKey="value"
                                         label
                                     >
-                                        {dataStatus.map((entry, index) => (
+                                        {statusData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>

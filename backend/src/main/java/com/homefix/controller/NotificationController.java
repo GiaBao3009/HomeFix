@@ -1,5 +1,6 @@
 package com.homefix.controller;
 
+import com.homefix.dto.NotificationDto;
 import com.homefix.entity.Notification;
 import com.homefix.service.NotificationService;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class NotificationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Notification>> getMyNotifications() {
+    public ResponseEntity<List<NotificationDto>> getMyNotifications() {
         return ResponseEntity.ok(notificationService.getMyNotifications());
     }
 

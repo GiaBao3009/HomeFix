@@ -7,10 +7,12 @@ import ProfilePage from './pages/ProfilePage';
 import ServiceList from './pages/ServiceList';
 import ServiceDetailPage from './pages/ServiceDetailPage';
 import AdminServiceManager from './pages/AdminServiceManager';
+import AdminUserManager from './pages/AdminUserManager';
 import BookingPage from './pages/BookingPage';
 import Dashboard from './pages/Dashboard';
 import TechnicianDashboard from './pages/TechnicianDashboard';
 import AdminDispatch from './pages/AdminDispatch';
+import AdminCategoryManager from './pages/AdminCategoryManager';
 import AdminCouponManager from './pages/AdminCouponManager';
 import OrderHistory from './pages/OrderHistory';
 import PaymentGateway from './pages/PaymentGateway';
@@ -91,10 +93,26 @@ function App() {
                         } 
                     />
                     <Route 
+                        path="/admin/categories" 
+                        element={
+                            <PrivateRoute>
+                                <AdminCategoryManager />
+                            </PrivateRoute>
+                        } 
+                    />
+                    <Route 
                         path="/admin/services" 
                         element={
                             <PrivateRoute>
                                 <AdminServiceManager />
+                            </PrivateRoute>
+                        } 
+                    />
+                    <Route 
+                        path="/admin/users" 
+                        element={
+                            <PrivateRoute>
+                                <AdminUserManager />
                             </PrivateRoute>
                         } 
                     />

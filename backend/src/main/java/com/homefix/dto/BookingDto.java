@@ -23,6 +23,7 @@ public class BookingDto {
     private BigDecimal discountAmount;
     private String couponCode;
     private String rejectionReason;
+    private Long couponId;
 
     public BookingDto() {
     }
@@ -183,6 +184,14 @@ public class BookingDto {
 
     public void setCouponCode(String couponCode) {
         this.couponCode = couponCode;
+    }
+
+    public Long getCouponId() {
+        return couponId;
+    }
+
+    public void setCouponId(Long couponId) {
+        this.couponId = couponId;
     }
 
     public String getRejectionReason() {

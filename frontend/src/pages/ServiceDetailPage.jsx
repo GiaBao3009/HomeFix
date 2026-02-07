@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Button, Spin, Typography, Row, Col, Rate, Divider, Avatar, Tag, message, Carousel } from 'antd';
+import { Card, Button, Spin, Typography, Row, Col, Rate, Divider, Avatar, Tag, message, Carousel, Modal, Form, Input } from 'antd';
 import { Clock, Shield, Star, User, ArrowLeft, CheckCircle } from 'lucide-react';
 import api from '../services/api';
 import dayjs from 'dayjs';
@@ -13,6 +13,59 @@ const ServiceDetailPage = () => {
     const [service, setService] = useState(null);
     const [reviews, setReviews] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [canReview, setCanReview] = useState(false);
+    const [bookingToReview, setBookingToReview] = useState(null);
+    const [reviewModalVisible, setReviewModalVisible] = useState(false);
+    const [reviewForm] = Form.useForm();
+    const { TextArea } = Input;
+
+    useEffect(() => {
+        const checkReviewCapability = async () => {
+            try {
+                const res = await api.get('/bookings/my-bookings');
+                const myBookings = res.data;
+                // Get list of booking IDs that already have reviews for this service
+                // Note: reviews array contains ReviewDto which has bookingId
+                const reviewBookingIds = reviews.map(r => r.bookingId);
+                
+                const validBooking = myBookings.find(b => 
+                    b.serviceId === parseInt(id) && 
+                    b.status === 'COMPLETED' &&
+                    !reviewBookingIds.includes(b.id)
+                );
+                
+                if (validBooking) {
+                    setCanReview(true);
+                    setBookingToReview(validBooking);
+                } else {
+                    setCanReview(false);
+                    setBookingToReview(null);
+                }
+            } catch (e) {
+                // Ignore if not logged in
+            }
+        };
+        if (id && !loading) checkReviewCapability();
+    }, [id, reviews, loading]);
+
+    const handleReviewSubmit = async (values) => {
+        try {
+            await api.post('/reviews', {
+                bookingId: bookingToReview.id,
+                rating: values.rating,
+                comment: values.comment
+            });
+            message.success('Đánh giá thành công!');
+            setReviewModalVisible(false);
+            reviewForm.resetFields();
+            
+            // Refresh reviews
+            const reviewsRes = await api.get(`/reviews/service/${id}`);
+            setReviews(reviewsRes.data);
+        } catch (error) {
+            message.error('Gửi đánh giá thất bại');
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -163,7 +216,14 @@ const ServiceDetailPage = () => {
                     </Card>
 
                     <div className="space-y-6">
-                        <Title level={4}>Đánh giá từ khách hàng ({reviews.length})</Title>
+                        <div className="flex justify-between items-center">
+                            <Title level={4}>Đánh giá từ khách hàng ({reviews.length})</Title>
+                            {canReview && (
+                                <Button type="primary" onClick={() => setReviewModalVisible(true)}>
+                                    Viết đánh giá
+                                </Button>
+                            )}
+                        </div>
                         {reviews.length > 0 ? (
                             <div className="grid gap-4">
                                 {reviews.map((review) => (
@@ -248,6 +308,38 @@ const ServiceDetailPage = () => {
                     </div>
                 </div>
             </div>
+
+            <Modal
+                title="Viết đánh giá dịch vụ"
+                open={reviewModalVisible}
+                onCancel={() => setReviewModalVisible(false)}
+                footer={null}
+            >
+                <Form
+                    form={reviewForm}
+                    onFinish={handleReviewSubmit}
+                    layout="vertical"
+                >
+                    <Form.Item 
+                        name="rating" 
+                        label="Đánh giá" 
+                        rules={[{ required: true, message: 'Vui lòng chọn số sao' }]}
+                    >
+                        <Rate />
+                    </Form.Item>
+                    <Form.Item 
+                        name="comment" 
+                        label="Nhận xét"
+                        rules={[{ required: true, message: 'Vui lòng nhập nhận xét' }]}
+                    >
+                        <TextArea rows={4} placeholder="Chia sẻ trải nghiệm của bạn..." />
+                    </Form.Item>
+                    <div className="flex justify-end gap-2">
+                        <Button onClick={() => setReviewModalVisible(false)}>Hủy</Button>
+                        <Button type="primary" htmlType="submit">Gửi đánh giá</Button>
+                    </div>
+                </Form>
+            </Modal>
         </div>
     );
 };

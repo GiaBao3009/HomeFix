@@ -8,6 +8,8 @@ public class ServicePackageDto {
     private String description;
     private BigDecimal price;
     private String imageUrl;
+    private String detailedDescription;
+    private java.util.List<String> imageUrls;
     private Long categoryId;
     private String categoryName;
 

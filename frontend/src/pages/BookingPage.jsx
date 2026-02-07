@@ -46,17 +46,27 @@ const BookingPage = () => {
             const response = await api.post('/bookings', bookingData);
             
             if (values.paymentMethod === 'MOMO' || values.paymentMethod === 'VNPAY') {
-                const paymentRes = await api.post('/payment/create-url', {
-                    bookingId: response.data.id,
-                    method: values.paymentMethod,
-                    amount: response.data.totalPrice
-                });
-                window.location.href = paymentRes.data.paymentUrl;
-            } else {
-                    toast.success('Đặt lịch thành công!');
-                    navigate('/dashboard');
+                try {
+                    const paymentRes = await api.post('/payment/create-url', {
+                        bookingId: response.data.id,
+                        method: values.paymentMethod,
+                        amount: response.data.totalPrice
+                    });
+                    if (paymentRes.data && paymentRes.data.paymentUrl) {
+                        window.location.href = paymentRes.data.paymentUrl;
+                    } else {
+                        throw new Error('Không nhận được đường dẫn thanh toán');
+                    }
+                } catch (paymentError) {
+                    console.error("Payment creation error:", paymentError);
+                    toast.error('Lỗi tạo cổng thanh toán. Vui lòng thử lại hoặc chọn thanh toán tiền mặt.');
+                    // Optionally cancel the booking or redirect to details to pay later
                 }
-            } catch (error) {
+            } else {
+                toast.success('Đặt lịch thành công!');
+                navigate('/dashboard');
+            }
+        } catch (error) {
                 console.error("Booking error:", error);
                 const errorData = error.response?.data;
                 let errorMessage = 'Đặt lịch thất bại';
@@ -65,7 +75,9 @@ const BookingPage = () => {
                     if (typeof errorData === 'string') {
                         errorMessage = errorData;
                     } else if (typeof errorData === 'object') {
-                        if (errorData.error) {
+                        if (errorData.message) {
+                            errorMessage = errorData.message;
+                        } else if (errorData.error) {
                             errorMessage = errorData.error;
                         } else {
                             errorMessage = Object.values(errorData).join(', ');

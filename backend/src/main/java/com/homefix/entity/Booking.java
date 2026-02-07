@@ -58,6 +58,8 @@ public class Booking {
     @Column(columnDefinition = "TEXT")
     private String rejectionReason;
 
+    private LocalDateTime completedAt;
+
     public Booking() {
     }
 
@@ -153,6 +155,14 @@ public class Booking {
 
     public void setPaymentStatus(String paymentStatus) {
         this.paymentStatus = paymentStatus;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
     }
 
     public String getRejectionReason() {

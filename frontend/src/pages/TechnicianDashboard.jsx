@@ -181,7 +181,7 @@ const TechnicianDashboard = () => {
                 </Button>
             </div>
 
-            <Card className="rounded-2xl border-0 shadow-sm">
+            <Card bordered={false} className="shadow-sm">
                 <Table 
                     columns={columns} 
                     dataSource={bookings} 

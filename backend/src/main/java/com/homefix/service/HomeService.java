@@ -32,11 +32,11 @@ public class HomeService {
     public ServiceCategory updateCategory(Long id, ServiceCategory categoryDetails) {
         ServiceCategory category = categoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
-        
+
         category.setName(categoryDetails.getName());
         category.setDescription(categoryDetails.getDescription());
         category.setIconUrl(categoryDetails.getIconUrl());
-        
+
         return categoryRepository.save(category);
     }
 
@@ -71,7 +71,19 @@ public class HomeService {
         servicePackage.setDescription(dto.getDescription());
         servicePackage.setPrice(dto.getPrice());
         servicePackage.setImageUrl(dto.getImageUrl());
+        servicePackage.setDetailedDescription(dto.getDetailedDescription());
         servicePackage.setCategory(category);
+
+        if (dto.getImageUrls() != null) {
+            // Clear existing images logic if needed, but here we replace the list
+            // Because CascadeType.ALL + orphanRemoval=true, setting new list should work if
+            // we manage it right
+            // Ideally we should clear and addAll, but let's try replacing list
+            servicePackage.getImages().clear();
+            if (dto.getImageUrls() != null) {
+                dto.getImageUrls().forEach(url -> servicePackage.addImage(new ServiceImage(null, url, servicePackage)));
+            }
+        }
 
         ServicePackage saved = packageRepository.save(servicePackage);
         return mapToDto(saved);
@@ -90,10 +102,15 @@ public class HomeService {
         servicePackage.setImageUrl(dto.getImageUrl());
         servicePackage.setCategory(category);
 
+        if (dto.getImageUrls() != null) {
+            servicePackage.getImages().clear();
+            dto.getImageUrls().forEach(url -> servicePackage.addImage(new ServiceImage(null, url, servicePackage)));
+        }
+
         ServicePackage saved = packageRepository.save(servicePackage);
         return mapToDto(saved);
     }
-    
+
     public void deletePackage(Long id) {
         packageRepository.deleteById(id);
     }
@@ -106,8 +123,7 @@ public class HomeService {
                 entity.getPrice(),
                 entity.getImageUrl(),
                 entity.getCategory().getId(),
-                entity.getCategory().getName()
-        );
+                entity.getCategory().getName());
         dto.setDetailedDescription(entity.getDetailedDescription());
         if (entity.getImages() != null) {
             dto.setImageUrls(entity.getImages().stream().map(ServiceImage::getImageUrl).collect(Collectors.toList()));
