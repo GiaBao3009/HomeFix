@@ -5,12 +5,17 @@ import com.homefix.dto.auth.AuthResponse;
 import com.homefix.dto.auth.LoginRequest;
 import com.homefix.dto.auth.RegisterRequest;
 import com.homefix.entity.User;
+import com.homefix.entity.PasswordResetToken;
 import com.homefix.repository.UserRepository;
+import com.homefix.repository.PasswordResetTokenRepository;
 import com.homefix.security.JwtUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 public class AuthService {
@@ -19,12 +24,14 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
+    private final PasswordResetTokenRepository resetRepo;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, AuthenticationManager authenticationManager) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, AuthenticationManager authenticationManager, PasswordResetTokenRepository resetRepo) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
         this.authenticationManager = authenticationManager;
+        this.resetRepo = resetRepo;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -70,5 +77,26 @@ public class AuthService {
         var token = jwtUtils.generateToken(user);
         return new AuthResponse(token, user.getRole().name(), user.getFullName(), user.getId(), user.getAvatarUrl());
     }
-}
 
+    public Map<String, String> requestPasswordReset(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Email không tồn tại"));
+        PasswordResetToken prt = new PasswordResetToken(user, 15);
+        resetRepo.save(prt);
+        System.out.println("RESET LINK (dev): http://localhost:5173/reset-password?token=" + prt.getToken());
+        return Map.of("message", "Đã gửi hướng dẫn đặt lại mật khẩu (xem log server dev)");
+    }
+
+    @Transactional
+    public Map<String, String> resetPassword(String token, String newPassword) {
+        PasswordResetToken prt = resetRepo.findByToken(token).orElseThrow(() -> new RuntimeException("Token không hợp lệ"));
+        if (prt.isUsed() || prt.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token đã hết hạn hoặc đã sử dụng");
+        }
+        User user = prt.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        prt.setUsed(true);
+        resetRepo.save(prt);
+        return Map.of("message", "Đặt lại mật khẩu thành công");
+    }
+}

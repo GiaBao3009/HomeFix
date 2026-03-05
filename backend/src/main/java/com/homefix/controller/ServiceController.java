@@ -46,6 +46,21 @@ public class ServiceController {
         return ResponseEntity.ok(homeService.getAllPackages());
     }
 
+    @GetMapping("/packages/search")
+    public ResponseEntity<java.util.Map<String, Object>> searchPackages(
+            @RequestParam(required = false, defaultValue = "") String q,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "10") int size) {
+        var pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        var result = homeService.searchPackages(q, pageable);
+        java.util.Map<String, Object> body = new java.util.HashMap<>();
+        body.put("items", result.getContent());
+        body.put("total", result.getTotalElements());
+        body.put("page", result.getNumber());
+        body.put("size", result.getSize());
+        return ResponseEntity.ok(body);
+    }
+
     @GetMapping("/packages/{id}")
     public ResponseEntity<ServicePackageDto> getPackage(@PathVariable Long id) {
         return ResponseEntity.ok(homeService.getPackageById(id));

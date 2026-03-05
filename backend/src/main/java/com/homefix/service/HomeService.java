@@ -7,6 +7,8 @@ import com.homefix.entity.ServicePackage;
 import com.homefix.repository.ServiceCategoryRepository;
 import com.homefix.repository.ServicePackageRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -113,6 +115,13 @@ public class HomeService {
 
     public void deletePackage(Long id) {
         packageRepository.deleteById(id);
+    }
+
+    public Page<ServicePackageDto> searchPackages(String q, Pageable pageable) {
+        Page<ServicePackage> page = packageRepository
+                .findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                        q == null ? "" : q, q == null ? "" : q, pageable);
+        return page.map(this::mapToDto);
     }
 
     private ServicePackageDto mapToDto(ServicePackage entity) {
