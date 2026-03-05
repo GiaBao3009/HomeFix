@@ -58,6 +58,8 @@ const ServiceList = () => {
                                 src={service.imageUrl || 'https://placehold.co/800x600?text=Service'} 
                                 alt={service.name}
                                 className="object-cover w-full h-full"
+                                referrerPolicy="no-referrer"
+                                crossOrigin="anonymous"
                                 onError={(e) => { 
                                     e.target.onerror = null; 
                                     e.target.src = 'https://placehold.co/800x600?text=Service'; 
@@ -154,6 +156,8 @@ const ServiceList = () => {
                                             alt={service.name}
                                             src={service.imageUrl || 'https://images.unsplash.com/photo-1581578731117-104f8a746950?auto=format&fit=crop&q=80&w=600'}
                                             className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-110"
+                                            referrerPolicy="no-referrer"
+                                            crossOrigin="anonymous"
                                             onError={(e) => { 
                                                 e.target.onerror = null; 
                                                 e.target.src = 'https://placehold.co/600x400?text=Service'; 

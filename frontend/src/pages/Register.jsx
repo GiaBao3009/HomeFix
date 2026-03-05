@@ -37,10 +37,16 @@ const Register = () => {
             <div className="flex overflow-hidden relative flex-col w-full max-w-5xl bg-white rounded-3xl shadow-2xl md:flex-row-reverse">
                 {/* Right Side - Image/Branding */}
                 <div className="hidden relative bg-gradient-to-br from-purple-600 via-pink-600 to-rose-600 md:w-1/2 md:block">
-                    <img 
-                        src="https://images.unsplash.com/photo-1505798577917-a651a5d6a301?auto=format&fit=crop&q=80&w=800" 
-                        alt="Register Visual" 
+                    <img
+                        src="https://images.unsplash.com/photo-1505798577917-a651a5d6a301?auto=format&fit=crop&q=80&w=800"
+                        alt="Register Visual"
                         className="object-cover absolute inset-0 w-full h-full opacity-20 mix-blend-overlay"
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://placehold.co/800x600/png?text=HomeFix+Register';
+                        }}
                     />
                     
                     <div className="flex absolute inset-0 flex-col justify-center p-12 text-white">

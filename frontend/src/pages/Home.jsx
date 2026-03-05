@@ -86,9 +86,15 @@ const Home = () => {
                         {/* Background with overlay */}
                         <div className="absolute inset-0">
                             <img
-                                src={pageContent?.hero_image?.imageUrl || "https://images.unsplash.com/photo-1505798577917-a651a5d6a301?auto=format&fit=crop&q=80&w=1600"}
+                                src={pageContent?.hero_image?.imageUrl || "https://placehold.co/1600x900/png?text=HomeFix+Hero"}
                                 alt="HomeFix Hero"
                                 className="object-cover w-full h-full"
+                                referrerPolicy="no-referrer"
+                                crossOrigin="anonymous"
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "https://placehold.co/1600x900/png?text=HomeFix+Hero";
+                                }}
                             />
                             <div className="absolute inset-0 bg-gradient-to-br from-slate-900/95 via-blue-900/90 to-slate-900/95"></div>
 
