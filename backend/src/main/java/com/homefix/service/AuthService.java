@@ -25,13 +25,15 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
     private final PasswordResetTokenRepository resetRepo;
+    private final EmailService emailService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, AuthenticationManager authenticationManager, PasswordResetTokenRepository resetRepo) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtils jwtUtils, AuthenticationManager authenticationManager, PasswordResetTokenRepository resetRepo, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtils = jwtUtils;
         this.authenticationManager = authenticationManager;
         this.resetRepo = resetRepo;
+        this.emailService = emailService;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -82,8 +84,8 @@ public class AuthService {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("Email không tồn tại"));
         PasswordResetToken prt = new PasswordResetToken(user, 15);
         resetRepo.save(prt);
-        System.out.println("RESET LINK (dev): http://localhost:5173/reset-password?token=" + prt.getToken());
-        return Map.of("message", "Đã gửi hướng dẫn đặt lại mật khẩu (xem log server dev)");
+        emailService.sendPasswordResetEmail(user.getEmail(), prt.getToken());
+        return Map.of("message", "Đã gửi hướng dẫn đặt lại mật khẩu vào email của bạn");
     }
 
     @Transactional
