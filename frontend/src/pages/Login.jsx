@@ -52,7 +52,7 @@ const Login = () => {
                             e.target.src = 'https://placehold.co/800x600/png?text=HomeFix+Login';
                         }}
                     />
-                    
+
                     <div className="flex absolute inset-0 flex-col justify-center p-12 text-white">
                         {/* Logo/Brand */}
                         <div className="mb-12">
@@ -69,7 +69,7 @@ const Login = () => {
                             <p className="text-lg leading-relaxed text-cyan-100">
                                 Đăng nhập để truy cập hệ thống HomeFix, quản lý công việc và dịch vụ tiện ích.
                             </p>
-                            
+
                             <div className="pt-8 space-y-4">
                                 <div className="flex gap-4 items-start">
                                     <div className="flex flex-shrink-0 justify-center items-center w-10 h-10 rounded-full backdrop-blur-sm bg-white/20">
@@ -82,7 +82,7 @@ const Login = () => {
                                         <p className="text-sm text-cyan-200">Theo dõi tiến độ và trạng thái công việc</p>
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex gap-4 items-start">
                                     <div className="flex flex-shrink-0 justify-center items-center w-10 h-10 rounded-full backdrop-blur-sm bg-white/20">
                                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -94,7 +94,7 @@ const Login = () => {
                                         <p className="text-sm text-cyan-200">Hệ thống phản hồi tức thì</p>
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex gap-4 items-start">
                                     <div className="flex flex-shrink-0 justify-center items-center w-10 h-10 rounded-full backdrop-blur-sm bg-white/20">
                                         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -144,9 +144,9 @@ const Login = () => {
                                     { type: 'email', message: 'Email không hợp lệ!' }
                                 ]}
                             >
-                                <Input 
-                                    prefix={<Mail className="mr-2 text-slate-400" size={20} />} 
-                                    placeholder="example@email.com" 
+                                <Input
+                                    prefix={<Mail className="mr-2 text-slate-400" size={20} />}
+                                    placeholder="example@email.com"
                                     className="py-3 rounded-xl border-slate-200 hover:border-blue-400 focus:border-blue-500"
                                 />
                             </Form.Item>
@@ -156,9 +156,9 @@ const Login = () => {
                                 name="password"
                                 rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
                             >
-                                <Input.Password 
-                                    prefix={<Lock className="mr-2 text-slate-400" size={20} />} 
-                                    placeholder="••••••••" 
+                                <Input.Password
+                                    prefix={<Lock className="mr-2 text-slate-400" size={20} />}
+                                    placeholder="••••••••"
                                     className="py-3 rounded-xl border-slate-200 hover:border-blue-400 focus:border-blue-500"
                                     iconRender={(visible) => (visible ? <Eye size={20} /> : <EyeOff size={20} />)}
                                 />
@@ -170,16 +170,16 @@ const Login = () => {
                                         Ghi nhớ đăng nhập
                                     </Checkbox>
                                 </Form.Item>
-                                <a className="font-semibold text-blue-600 transition-colors hover:text-blue-700" href="#">
+                                <a className="font-semibold text-blue-600 transition-colors hover:text-blue-700" href="/forgot-password">
                                     Quên mật khẩu?
                                 </a>
                             </div>
 
                             <Form.Item className="pt-4 mb-4">
-                                <Button 
-                                    type="primary" 
-                                    htmlType="submit" 
-                                    block 
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    block
                                     loading={loading}
                                     className="h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 border-none shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all"
                                 >
@@ -196,7 +196,7 @@ const Login = () => {
                                 </div>
                             </div>
 
-                            <Button 
+                            <Button
                                 block
                                 size="large"
                                 className="flex gap-3 justify-center items-center py-3 h-14 rounded-xl border-2 transition-all border-slate-200 hover:border-slate-300 hover:bg-slate-50 group"
