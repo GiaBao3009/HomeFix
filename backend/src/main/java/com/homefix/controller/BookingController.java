@@ -62,4 +62,10 @@ public class BookingController {
             @RequestParam boolean approve) {
         return ResponseEntity.ok(bookingService.reviewDecline(id, approve));
     }
+
+    @PatchMapping("/{id}/confirm-payment")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingDto> confirmPayment(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.confirmPayment(id));
+    }
 }
