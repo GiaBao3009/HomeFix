@@ -27,15 +27,17 @@ public class BookingService {
     private final ServicePackageRepository servicePackageRepository;
     private final CouponRepository couponRepository;
     private final NotificationService notificationService;
+    private final EmailService emailService;
 
     public BookingService(BookingRepository bookingRepository, UserRepository userRepository,
             ServicePackageRepository servicePackageRepository, CouponRepository couponRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService, EmailService emailService) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.servicePackageRepository = servicePackageRepository;
         this.couponRepository = couponRepository;
         this.notificationService = notificationService;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -109,7 +111,39 @@ public class BookingService {
         BookingDto result = mapToDto(saved);
         result.setDiscountAmount(discountAmount);
         result.setCouponCode(dto.getCouponCode());
+
+        // Send booking confirmation email for CASH payment immediately
+        if ("CASH".equals(saved.getPaymentMethod())) {
+            emailService.sendBookingConfirmationEmail(saved);
+        }
+
         return result;
+    }
+
+    @Transactional
+    public BookingDto confirmPayment(Long bookingId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if ("PAID".equals(booking.getPaymentStatus())) {
+            throw new RuntimeException("Đơn hàng đã được xác nhận thanh toán rồi");
+        }
+
+        booking.setPaymentStatus("PAID");
+        Booking saved = bookingRepository.save(booking);
+
+        // Notify customer
+        notificationService.createNotification(
+                booking.getCustomer(),
+                "Xác nhận thanh toán",
+                "Đơn hàng #" + booking.getId() + " đã được xác nhận thanh toán.",
+                "PAYMENT",
+                booking.getId());
+
+        // Send booking confirmation email after payment confirmed
+        emailService.sendBookingConfirmationEmail(saved);
+
+        return mapToDto(saved);
     }
 
     public List<BookingDto> getMyBookings() {

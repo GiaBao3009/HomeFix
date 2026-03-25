@@ -1,10 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Form, Input, DatePicker, Button, Card, Descriptions, Typography, Steps, message, Radio, Space } from 'antd';
+import { Form, Input, DatePicker, Button, Card, Descriptions, Typography, Steps, message, Radio, Space, Modal } from 'antd';
 import api from '../services/api';
 import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
-import { Calendar, MapPin, FileText, CheckCircle, Clock, Shield } from 'lucide-react';
+import { Calendar, MapPin, FileText, CheckCircle, Clock, Shield, Banknote, CreditCard, Smartphone, X, Copy } from 'lucide-react';
+
+// ============ CẤU HÌNH THANH TOÁN  ============
+const BANK_CONFIG = {
+    bankCode: 'MB',              // Mã ngân hàng (VietQR): MB, VCB, TCB, ACB, ...
+    accountNumber: '12333009200416',  // Số tài khoản
+    accountName: 'NGUYỄN ĐỨC GIA BẢO',       // Tên chủ tài khoản
+    template: 'compact2',         // Template QR: compact, compact2, qr_only
+};
+const MOMO_CONFIG = {
+    phoneNumber: '0834571574',    // Số điện thoại MoMo
+    accountName: 'NGUYỄN ĐỨC GIA BẢO',       // Tên chủ tài khoản MoMo
+};
+// ===================================================================
 
 const { Title, Text } = Typography;
 
@@ -14,6 +27,7 @@ const BookingPage = () => {
     const [service, setService] = useState(null);
     const [loading, setLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
+    const [qrModal, setQrModal] = useState({ open: false, method: '', bookingId: null, amount: 0 });
 
     useEffect(() => {
         const fetchService = async () => {
@@ -31,6 +45,23 @@ const BookingPage = () => {
         }
     }, [serviceId, navigate]);
 
+    const getTransferContent = (bookingId) => `HOMEFIX DH${bookingId}`;
+
+    const getBankQrUrl = (amount, bookingId) => {
+        const content = getTransferContent(bookingId);
+        return `https://img.vietqr.io/image/${BANK_CONFIG.bankCode}-${BANK_CONFIG.accountNumber}-${BANK_CONFIG.template}.png?amount=${amount}&addInfo=${encodeURIComponent(content)}&accountName=${encodeURIComponent(BANK_CONFIG.accountName)}`;
+    };
+
+    const getMomoQrUrl = (amount, bookingId) => {
+        const content = getTransferContent(bookingId);
+        return `https://momosv3.apimienphi.com/api/QRCode?phone=${MOMO_CONFIG.phoneNumber}&amount=${amount}&note=${encodeURIComponent(content)}`;
+    };
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        toast.success('Đã sao chép!');
+    };
+
     const onFinish = async (values) => {
         setLoading(true);
         try {
@@ -42,52 +73,43 @@ const BookingPage = () => {
                 couponCode: values.couponCode,
                 paymentMethod: values.paymentMethod
             };
-            
+
             const response = await api.post('/bookings', bookingData);
-            
-            if (values.paymentMethod === 'MOMO' || values.paymentMethod === 'VNPAY') {
-                try {
-                    const paymentRes = await api.post('/payment/create-url', {
-                        bookingId: response.data.id,
-                        method: values.paymentMethod,
-                        amount: response.data.totalPrice
-                    });
-                    if (paymentRes.data && paymentRes.data.paymentUrl) {
-                        window.location.href = paymentRes.data.paymentUrl;
-                    } else {
-                        throw new Error('Không nhận được đường dẫn thanh toán');
-                    }
-                } catch (paymentError) {
-                    console.error("Payment creation error:", paymentError);
-                    toast.error('Lỗi tạo cổng thanh toán. Vui lòng thử lại hoặc chọn thanh toán tiền mặt.');
-                    // Optionally cancel the booking or redirect to details to pay later
-                }
+
+            if (values.paymentMethod === 'BANK_TRANSFER' || values.paymentMethod === 'MOMO') {
+                toast.success('Đặt lịch thành công! Vui lòng thanh toán.');
+                setQrModal({
+                    open: true,
+                    method: values.paymentMethod,
+                    bookingId: response.data.id,
+                    amount: response.data.totalPrice
+                });
             } else {
                 toast.success('Đặt lịch thành công!');
                 navigate('/dashboard');
             }
         } catch (error) {
-                console.error("Booking error:", error);
-                const errorData = error.response?.data;
-                let errorMessage = 'Đặt lịch thất bại';
-                
-                if (errorData) {
-                    if (typeof errorData === 'string') {
-                        errorMessage = errorData;
-                    } else if (typeof errorData === 'object') {
-                        if (errorData.message) {
-                            errorMessage = errorData.message;
-                        } else if (errorData.error) {
-                            errorMessage = errorData.error;
-                        } else {
-                            errorMessage = Object.values(errorData).join(', ');
-                        }
+            console.error("Booking error:", error);
+            const errorData = error.response?.data;
+            let errorMessage = 'Đặt lịch thất bại';
+
+            if (errorData) {
+                if (typeof errorData === 'string') {
+                    errorMessage = errorData;
+                } else if (typeof errorData === 'object') {
+                    if (errorData.message) {
+                        errorMessage = errorData.message;
+                    } else if (errorData.error) {
+                        errorMessage = errorData.error;
+                    } else {
+                        errorMessage = Object.values(errorData).join(', ');
                     }
                 }
-                toast.error(errorMessage);
-            } finally {
-                setLoading(false);
             }
+            toast.error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (!service) {
@@ -137,7 +159,7 @@ const BookingPage = () => {
                     className="mx-auto max-w-2xl"
                 />
             </div>
-            
+
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
                 {/* Service Info - Sticky Sidebar */}
                 <div className="lg:col-span-2">
@@ -145,7 +167,7 @@ const BookingPage = () => {
                         <Card className="overflow-hidden rounded-3xl border-0 shadow-xl">
                             {/* Service Image */}
                             <div className="relative -m-6 mb-6 h-48">
-                                <img 
+                                <img
                                     src={service.imageUrl || 'https://images.unsplash.com/photo-1581578731117-104f8a746950?auto=format&fit=crop&q=80&w=600'}
                                     alt={service.name}
                                     className="object-cover w-full h-full"
@@ -190,7 +212,7 @@ const BookingPage = () => {
                                         <div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-full">
                                             <Shield size={16} className="text-blue-600" />
                                         </div>
-                                        <span className="font-medium">Bảo hành 30 ngày</span>
+                                        <span className="font-medium">Làm nhanh dọn lẹ</span>
                                     </div>
                                     <div className="flex gap-3 items-center text-slate-700">
                                         <div className="flex justify-center items-center w-8 h-8 bg-amber-100 rounded-full">
@@ -225,9 +247,9 @@ const BookingPage = () => {
                                 name="bookingTime"
                                 rules={[{ required: true, message: 'Vui lòng chọn thời gian!' }]}
                             >
-                                <DatePicker 
-                                    showTime 
-                                    format="DD/MM/YYYY HH:mm" 
+                                <DatePicker
+                                    showTime
+                                    format="DD/MM/YYYY HH:mm"
                                     className="w-full rounded-xl border-slate-200"
                                     placeholder="Chọn ngày và giờ"
                                     disabledDate={(current) => current && current < dayjs().endOf('day')}
@@ -244,8 +266,8 @@ const BookingPage = () => {
                                 name="address"
                                 rules={[{ required: true, message: 'Vui lòng nhập địa chỉ!' }]}
                             >
-                                <Input.TextArea 
-                                    rows={3} 
+                                <Input.TextArea
+                                    rows={3}
                                     placeholder="Nhập địa chỉ chi tiết (số nhà, đường, quận/huyện, thành phố)..."
                                     className="rounded-xl border-slate-200"
                                 />
@@ -260,8 +282,8 @@ const BookingPage = () => {
                                 }
                                 name="note"
                             >
-                                <Input.TextArea 
-                                    rows={4} 
+                                <Input.TextArea
+                                    rows={4}
                                     placeholder="Mô tả tình trạng hư hỏng, yêu cầu đặc biệt, thời gian thuận tiện..."
                                     className="rounded-xl border-slate-200"
                                 />
@@ -293,8 +315,8 @@ const BookingPage = () => {
                                 }
                                 name="couponCode"
                             >
-                                <Input 
-                                    placeholder="Nhập mã giảm giá..." 
+                                <Input
+                                    placeholder="Nhập mã giảm giá..."
                                     className="rounded-xl border-slate-200"
                                 />
                             </Form.Item>
@@ -311,28 +333,31 @@ const BookingPage = () => {
                             >
                                 <Radio.Group className="w-full">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <label className="cursor-pointer border border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:border-blue-500 hover:bg-blue-50 transition-all">
+                                        <label className="cursor-pointer border-2 border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:border-green-500 hover:bg-green-50 transition-all has-[:checked]:border-green-500 has-[:checked]:bg-green-50">
                                             <Radio value="CASH" className="mr-0" />
-                                            <span className="font-medium">Tiền mặt</span>
+                                            <Banknote size={20} className="text-green-600" />
+                                            <span className="font-semibold text-slate-700">Tiền mặt</span>
                                         </label>
-                                        <label className="cursor-pointer border border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:border-pink-500 hover:bg-pink-50 transition-all">
+                                        <label className="cursor-pointer border-2 border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:border-blue-500 hover:bg-blue-50 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                                            <Radio value="BANK_TRANSFER" className="mr-0" />
+                                            <CreditCard size={20} className="text-blue-600" />
+                                            <span className="font-semibold text-slate-700">Ngân hàng</span>
+                                        </label>
+                                        <label className="cursor-pointer border-2 border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:border-pink-500 hover:bg-pink-50 transition-all has-[:checked]:border-pink-500 has-[:checked]:bg-pink-50">
                                             <Radio value="MOMO" className="mr-0" />
-                                            <span className="font-medium">Ví MoMo</span>
-                                        </label>
-                                        <label className="cursor-pointer border border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:border-blue-500 hover:bg-blue-50 transition-all">
-                                            <Radio value="VNPAY" className="mr-0" />
-                                            <span className="font-medium">VNPAY</span>
+                                            <Smartphone size={20} className="text-pink-600" />
+                                            <span className="font-semibold text-slate-700">Ví MoMo</span>
                                         </label>
                                     </div>
                                 </Radio.Group>
                             </Form.Item>
 
                             <Form.Item className="mb-0">
-                                <Button 
-                                    type="primary" 
-                                    htmlType="submit" 
-                                    block 
-                                    size="large" 
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    block
+                                    size="large"
                                     loading={loading}
                                     className="h-14 text-lg font-bold rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 border-none shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all"
                                 >
@@ -343,6 +368,120 @@ const BookingPage = () => {
                     </Card>
                 </div>
             </div>
+
+            {/* QR Payment Modal */}
+            <Modal
+                open={qrModal.open}
+                onCancel={() => { setQrModal({ ...qrModal, open: false }); navigate('/dashboard'); }}
+                footer={null}
+                centered
+                width={480}
+                closeIcon={<X size={20} />}
+                className="qr-payment-modal"
+            >
+                <div className="text-center py-2">
+                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-white font-bold text-sm mb-6 ${qrModal.method === 'MOMO' ? 'bg-gradient-to-r from-pink-500 to-rose-500' : 'bg-gradient-to-r from-blue-600 to-cyan-500'
+                        }`}>
+                        {qrModal.method === 'MOMO' ? <Smartphone size={18} /> : <CreditCard size={18} />}
+                        {qrModal.method === 'MOMO' ? 'Thanh toán MoMo' : 'Chuyển khoản Ngân hàng'}
+                    </div>
+
+                    <h2 className="text-2xl font-black text-slate-900 mb-2">Quét mã QR để thanh toán</h2>
+                    <p className="text-slate-500 mb-6">Mở app {qrModal.method === 'MOMO' ? 'MoMo' : 'Ngân hàng'} → Quét mã QR bên dưới</p>
+
+                    {/* QR Image */}
+                    <div className="bg-white border-2 border-slate-100 rounded-2xl p-4 inline-block mb-6 shadow-lg">
+                        <img
+                            src={qrModal.method === 'MOMO'
+                                ? getMomoQrUrl(qrModal.amount, qrModal.bookingId)
+                                : getBankQrUrl(qrModal.amount, qrModal.bookingId)
+                            }
+                            alt="QR Code thanh toán"
+                            className="w-64 h-64 object-contain"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(
+                                    qrModal.method === 'MOMO'
+                                        ? `momo://${MOMO_CONFIG.phoneNumber}?amount=${qrModal.amount}&comment=${getTransferContent(qrModal.bookingId)}`
+                                        : `${BANK_CONFIG.bankCode}|${BANK_CONFIG.accountNumber}|${qrModal.amount}|${getTransferContent(qrModal.bookingId)}`
+                                )}`;
+                            }}
+                        />
+                    </div>
+
+                    {/* Payment Details */}
+                    <div className="bg-slate-50 rounded-2xl p-5 text-left space-y-3 mb-6">
+                        {qrModal.method === 'BANK_TRANSFER' && (
+                            <>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-slate-500">Ngân hàng</span>
+                                    <span className="font-bold text-slate-900">{BANK_CONFIG.bankCode}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-slate-500">Số tài khoản</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-slate-900">{BANK_CONFIG.accountNumber}</span>
+                                        <button onClick={() => copyToClipboard(BANK_CONFIG.accountNumber)} className="text-blue-500 hover:text-blue-700">
+                                            <Copy size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-slate-500">Chủ tài khoản</span>
+                                    <span className="font-bold text-slate-900">{BANK_CONFIG.accountName}</span>
+                                </div>
+                            </>
+                        )}
+                        {qrModal.method === 'MOMO' && (
+                            <>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-slate-500">Số MoMo</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-slate-900">{MOMO_CONFIG.phoneNumber}</span>
+                                        <button onClick={() => copyToClipboard(MOMO_CONFIG.phoneNumber)} className="text-pink-500 hover:text-pink-700">
+                                            <Copy size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm text-slate-500">Tên tài khoản</span>
+                                    <span className="font-bold text-slate-900">{MOMO_CONFIG.accountName}</span>
+                                </div>
+                            </>
+                        )}
+                        <hr className="border-slate-200" />
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm text-slate-500">💰 Số tiền</span>
+                            <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">
+                                {Number(qrModal.amount).toLocaleString('vi-VN')} đ
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm text-slate-500">📝 Nội dung CK</span>
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-orange-600">{getTransferContent(qrModal.bookingId)}</span>
+                                <button onClick={() => copyToClipboard(getTransferContent(qrModal.bookingId))} className="text-orange-500 hover:text-orange-700">
+                                    <Copy size={14} />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
+                        <p className="text-sm text-amber-800 font-medium">⚠️ Vui lòng chuyển <strong>đúng số tiền</strong> và ghi <strong>đúng nội dung</strong> để đơn hàng được xác nhận nhanh nhất.</p>
+                    </div>
+
+                    <Button
+                        type="primary"
+                        size="large"
+                        block
+                        onClick={() => { setQrModal({ ...qrModal, open: false }); navigate('/dashboard'); }}
+                        className="h-12 font-bold rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 border-none"
+                    >
+                        Đã thanh toán xong
+                    </Button>
+                </div>
+            </Modal>
         </div>
     );
 };
