@@ -10,12 +10,12 @@ import { Calendar, MapPin, FileText, CheckCircle, Clock, Shield, Banknote, Credi
 const BANK_CONFIG = {
     bankCode: 'MB',              // Mã ngân hàng (VietQR): MB, VCB, TCB, ACB, ...
     accountNumber: '12333009200416',  // Số tài khoản
-    accountName: 'NGUYEN DUC GIA BAO',       // Tên chủ tài khoản
+    accountName: 'NGUYỄN ĐỨC GIA BẢO',       // Tên chủ tài khoản
     template: 'compact2',         // Template QR: compact, compact2, qr_only
 };
 const MOMO_CONFIG = {
     phoneNumber: '0834571574',    // Số điện thoại MoMo
-    accountName: 'NGUYEN DUC GIA BAO',       // Tên chủ tài khoản MoMo
+    accountName: 'NGUYỄN ĐỨC GIA BẢO',       // Tên chủ tài khoản MoMo
 };
 // ===================================================================
 
@@ -212,7 +212,7 @@ const BookingPage = () => {
                                         <div className="flex justify-center items-center w-8 h-8 bg-blue-100 rounded-full">
                                             <Shield size={16} className="text-blue-600" />
                                         </div>
-                                        <span className="font-medium">Bảo hành 30 ngày</span>
+                                        <span className="font-medium">Làm nhanh dọn lẹ</span>
                                     </div>
                                     <div className="flex gap-3 items-center text-slate-700">
                                         <div className="flex justify-center items-center w-8 h-8 bg-amber-100 rounded-full">
