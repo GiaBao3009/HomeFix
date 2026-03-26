@@ -11,6 +11,7 @@ import AdminUserManager from './pages/AdminUserManager';
 import BookingPage from './pages/BookingPage';
 import Dashboard from './pages/Dashboard';
 import TechnicianDashboard from './pages/TechnicianDashboard';
+import TechnicianWallet from './pages/TechnicianWallet';
 import AdminDispatch from './pages/AdminDispatch';
 import AdminCategoryManager from './pages/AdminCategoryManager';
 import AdminCouponManager from './pages/AdminCouponManager';
@@ -18,6 +19,8 @@ import OrderHistory from './pages/OrderHistory';
 import PaymentGateway from './pages/PaymentGateway';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Footer from './components/Footer';
 import { useAuth } from './context/AuthContext';
 
@@ -29,6 +32,13 @@ const PrivateRoute = ({ children }) => {
     return user ? children : <Navigate to="/login" />;
 };
 
+const RoleRoute = ({ children, roles }) => {
+    const { user, loading } = useAuth();
+    if (loading) return <div>Loading...</div>;
+    if (!user) return <Navigate to="/login" />;
+    return roles.includes(user.role) ? children : <Navigate to="/" />;
+};
+
 function App() {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -38,6 +48,8 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/payment/gateway" element={<PrivateRoute><PaymentGateway /></PrivateRoute>} />
                     <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
                     <Route 
@@ -79,49 +91,57 @@ function App() {
                     <Route 
                         path="/technician/dashboard" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['TECHNICIAN']}>
                                 <TechnicianDashboard />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
+                    />
+                    <Route
+                        path="/technician/wallet"
+                        element={
+                            <RoleRoute roles={['TECHNICIAN']}>
+                                <TechnicianWallet />
+                            </RoleRoute>
+                        }
                     />
                     <Route 
                         path="/admin/dispatch" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['ADMIN']}>
                                 <AdminDispatch />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
                     />
                     <Route 
                         path="/admin/categories" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['ADMIN']}>
                                 <AdminCategoryManager />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
                     />
                     <Route 
                         path="/admin/services" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['ADMIN']}>
                                 <AdminServiceManager />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
                     />
                     <Route 
                         path="/admin/users" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['ADMIN']}>
                                 <AdminUserManager />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
                     />
                     <Route 
                         path="/admin/coupons" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['ADMIN']}>
                                 <AdminCouponManager />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
                     />
                 </Routes>

@@ -18,7 +18,7 @@ public class WebsiteContentController {
     private WebsiteContentService contentService;
 
     @GetMapping("/{section}")
-    public ResponseEntity<Map<String, Object>> getContentBySection(@PathVariable String section) {
+    public ResponseEntity<Map<String, Object>> getContentBySection(@PathVariable("section") String section) {
         // Convert section to uppercase to match DB convention
         return ResponseEntity.ok(contentService.getStructuredContentBySection(section.toUpperCase()));
     }

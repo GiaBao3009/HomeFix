@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,13 +50,15 @@ public class HomeService {
 
     public List<ServicePackageDto> getAllPackages() {
         return packageRepository.findAll().stream()
-                .map(this::mapToDto)
+                .map(this::safeMapToDto)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     public List<ServicePackageDto> getPackagesByCategory(Long categoryId) {
         return packageRepository.findByCategoryId(categoryId).stream()
-                .map(this::mapToDto)
+                .map(this::safeMapToDto)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
@@ -125,18 +129,45 @@ public class HomeService {
     }
 
     private ServicePackageDto mapToDto(ServicePackage entity) {
+        Long categoryId = null;
+        String categoryName = null;
+        try {
+            if (entity.getCategory() != null) {
+                categoryId = entity.getCategory().getId();
+                categoryName = entity.getCategory().getName();
+            }
+        } catch (Exception ignored) {
+        }
         ServicePackageDto dto = new ServicePackageDto(
                 entity.getId(),
                 entity.getName(),
                 entity.getDescription(),
                 entity.getPrice(),
                 entity.getImageUrl(),
-                entity.getCategory().getId(),
-                entity.getCategory().getName());
+                categoryId,
+                categoryName);
         dto.setDetailedDescription(entity.getDetailedDescription());
-        if (entity.getImages() != null) {
-            dto.setImageUrls(entity.getImages().stream().map(ServiceImage::getImageUrl).collect(Collectors.toList()));
+        try {
+            if (entity.getImages() != null) {
+                dto.setImageUrls(entity.getImages().stream()
+                        .filter(Objects::nonNull)
+                        .map(ServiceImage::getImageUrl)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList()));
+            } else {
+                dto.setImageUrls(Collections.emptyList());
+            }
+        } catch (Exception ignored) {
+            dto.setImageUrls(Collections.emptyList());
         }
         return dto;
+    }
+
+    private ServicePackageDto safeMapToDto(ServicePackage entity) {
+        try {
+            return mapToDto(entity);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 }

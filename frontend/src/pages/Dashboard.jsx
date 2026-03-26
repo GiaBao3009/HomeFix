@@ -7,9 +7,10 @@ import AdminCategoryManager from './AdminCategoryManager';
 import AdminUserManager from './AdminUserManager';
 import AdminCouponManager from './AdminCouponManager';
 import TechnicianDashboard from './TechnicianDashboard';
+import TechnicianWallet from './TechnicianWallet';
 import OrderHistory from './OrderHistory';
 import AdminCharts from '../components/admin/AdminCharts';
-import { LayoutDashboard, Users, Calendar, Settings, Briefcase, Award, PieChart, Tag as TagIcon, Layers } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Settings, Briefcase, Award, PieChart, Tag as TagIcon, Layers, Wallet } from 'lucide-react';
 import api from '../services/api';
 
 const Dashboard = () => {
@@ -101,6 +102,16 @@ const Dashboard = () => {
                 </div>
             ),
             children: <TechnicianDashboard />
+        },
+        {
+            key: 'wallet',
+            label: (
+                <div className="flex gap-2 items-center px-2">
+                    <Wallet size={18}/>
+                    <span className="font-semibold">Ví kỹ thuật viên</span>
+                </div>
+            ),
+            children: <TechnicianWallet />
         }
     ];
 

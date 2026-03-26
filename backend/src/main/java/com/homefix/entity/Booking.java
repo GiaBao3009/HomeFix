@@ -15,6 +15,9 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    private Long version;
+
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
     private User customer;
@@ -59,6 +62,8 @@ public class Booking {
     private String rejectionReason;
 
     private LocalDateTime completedAt;
+    private BigDecimal technicianEarning = BigDecimal.ZERO;
+    private BigDecimal platformProfit = BigDecimal.ZERO;
 
     public Booking() {
     }
@@ -83,6 +88,14 @@ public class Booking {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     public User getCustomer() {
@@ -195,5 +208,21 @@ public class Booking {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public BigDecimal getTechnicianEarning() {
+        return technicianEarning;
+    }
+
+    public void setTechnicianEarning(BigDecimal technicianEarning) {
+        this.technicianEarning = technicianEarning;
+    }
+
+    public BigDecimal getPlatformProfit() {
+        return platformProfit;
+    }
+
+    public void setPlatformProfit(BigDecimal platformProfit) {
+        this.platformProfit = platformProfit;
     }
 }

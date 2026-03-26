@@ -6,6 +6,9 @@ public class AuthResponse {
     private String fullName;
     private Long id;
     private String avatarUrl;
+    private boolean technicianProfileCompleted;
+    private String technicianType;
+    private String technicianApprovalStatus;
 
     public AuthResponse() {
     }
@@ -56,5 +59,29 @@ public class AuthResponse {
 
     public void setAvatarUrl(String avatarUrl) {
         this.avatarUrl = avatarUrl;
+    }
+
+    public boolean isTechnicianProfileCompleted() {
+        return technicianProfileCompleted;
+    }
+
+    public void setTechnicianProfileCompleted(boolean technicianProfileCompleted) {
+        this.technicianProfileCompleted = technicianProfileCompleted;
+    }
+
+    public String getTechnicianType() {
+        return technicianType;
+    }
+
+    public void setTechnicianType(String technicianType) {
+        this.technicianType = technicianType;
+    }
+
+    public String getTechnicianApprovalStatus() {
+        return technicianApprovalStatus;
+    }
+
+    public void setTechnicianApprovalStatus(String technicianApprovalStatus) {
+        this.technicianApprovalStatus = technicianApprovalStatus;
     }
 }

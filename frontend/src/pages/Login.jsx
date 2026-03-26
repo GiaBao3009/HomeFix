@@ -1,14 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Typography, Alert, Checkbox } from 'antd';
+import { useState } from 'react';
+import { Form, Input, Button, Alert, Checkbox } from 'antd';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
-import { Lock, Mail, Chrome, Eye, EyeOff } from 'lucide-react';
-
-const { Title, Text } = Typography;
+import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
-    const [form] = Form.useForm();
-    const { login, user } = useAuth(); // Get user from context
+    const { login, user } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -21,10 +18,16 @@ const Login = () => {
     const onFinish = async (values) => {
         setLoading(true);
         setError('');
-        const success = await login(values.email, values.password);
+        const userData = await login(values.email, values.password);
         setLoading(false);
-        if (success) {
-            navigate('/');
+        if (userData) {
+            if (userData.role === 'TECHNICIAN') {
+                navigate('/technician/dashboard');
+            } else if (userData.role === 'ADMIN') {
+                navigate('/admin/dispatch');
+            } else {
+                navigate('/');
+            }
         } else {
             setError('Email hoặc mật khẩu không chính xác');
         }
@@ -170,9 +173,9 @@ const Login = () => {
                                         Ghi nhớ đăng nhập
                                     </Checkbox>
                                 </Form.Item>
-                                <a className="font-semibold text-blue-600 transition-colors hover:text-blue-700" href="#">
+                                <Link to="/forgot-password" className="font-semibold text-blue-600 transition-colors hover:text-blue-700">
                                     Quên mật khẩu?
-                                </a>
+                                </Link>
                             </div>
 
                             <Form.Item className="pt-4 mb-4">

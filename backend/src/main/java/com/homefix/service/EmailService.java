@@ -7,7 +7,6 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-
 import java.time.format.DateTimeFormatter;
 
 @Service
@@ -18,51 +17,75 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
+
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 
-    public void sendPasswordResetEmail(String toEmail, String resetLink) {
+    public void sendPasswordResetEmail(String toEmail, String token) {
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
+
+        String htmlContent = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f0f4f8; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+                    .header { background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%); padding: 40px 32px; text-align: center; }
+                    .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 800; }
+                    .header p { color: #e0f2fe; margin: 8px 0 0; font-size: 14px; }
+                    .body { padding: 40px 32px; }
+                    .body h2 { color: #1e293b; margin-top: 0; font-size: 22px; }
+                    .body p { color: #475569; line-height: 1.7; font-size: 15px; }
+                    .btn { display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%); color: #ffffff !important; text-decoration: none; padding: 14px 36px; border-radius: 12px; font-weight: 700; font-size: 16px; margin: 24px 0; }
+                    .footer { background: #f8fafc; padding: 24px 32px; text-align: center; border-top: 1px solid #e2e8f0; }
+                    .footer p { color: #94a3b8; font-size: 13px; margin: 4px 0; }
+                    .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 8px; margin: 20px 0; }
+                    .warning p { color: #92400e; margin: 0; font-size: 14px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🏠 HomeFix</h1>
+                        <p>Hệ thống đặt dịch vụ tiện ích</p>
+                    </div>
+                    <div class="body">
+                        <h2>Đặt lại mật khẩu</h2>
+                        <p>Xin chào,</p>
+                        <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Nhấn vào nút bên dưới để tạo mật khẩu mới:</p>
+                        <div style="text-align: center;">
+                            <a href="%s" class="btn">Đặt lại mật khẩu</a>
+                        </div>
+                        <div class="warning">
+                            <p>⏰ Link này sẽ hết hạn sau <strong>15 phút</strong>. Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+                        </div>
+                        <p>Nếu nút không hoạt động, bạn có thể sao chép và dán link sau vào trình duyệt:</p>
+                        <p style="word-break: break-all; color: #3b82f6; font-size: 13px;">%s</p>
+                    </div>
+                    <div class="footer">
+                        <p>© 2024 HomeFix. All rights reserved.</p>
+                        <p>Email này được gửi tự động, vui lòng không trả lời.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(resetLink, resetLink);
+
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);
             helper.setSubject("HomeFix - Đặt lại mật khẩu");
-
-            String htmlContent = """
-                <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 40px 20px;">
-                    <div style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
-                        <div style="text-align: center; margin-bottom: 32px;">
-                            <div style="display: inline-block; background: linear-gradient(135deg, #2563eb, #0891b2); color: white; font-size: 24px; font-weight: 800; padding: 12px 20px; border-radius: 12px;">HF</div>
-                            <h1 style="color: #1e293b; margin: 16px 0 8px; font-size: 24px;">HomeFix</h1>
-                            <p style="color: #64748b; margin: 0;">Chăm sóc ngôi nhà của bạn</p>
-                        </div>
-                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-                        <h2 style="color: #1e293b; font-size: 20px; margin-bottom: 16px;">Yêu cầu đặt lại mật khẩu</h2>
-                        <p style="color: #475569; line-height: 1.6; margin-bottom: 24px;">
-                            Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Nhấn vào nút bên dưới để tạo mật khẩu mới:
-                        </p>
-                        <div style="text-align: center; margin: 32px 0;">
-                            <a href="%s" style="display: inline-block; background: linear-gradient(135deg, #2563eb, #0891b2); color: white; text-decoration: none; padding: 14px 40px; border-radius: 12px; font-size: 16px; font-weight: 600;">Đặt lại mật khẩu</a>
-                        </div>
-                        <p style="color: #94a3b8; font-size: 13px; line-height: 1.5;">
-                            ⏰ Link này sẽ hết hạn sau <strong>15 phút</strong>.<br>
-                            Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.
-                        </p>
-                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
-                        <p style="color: #94a3b8; font-size: 12px; text-align: center;">
-                            © 2024 HomeFix. Tất cả quyền được bảo lưu.
-                        </p>
-                    </div>
-                </div>
-                """.formatted(resetLink);
-
             helper.setText(htmlContent, true);
             mailSender.send(message);
         } catch (MessagingException e) {
-            throw new RuntimeException("Không thể gửi email. Vui lòng thử lại sau.", e);
+            throw new RuntimeException("Không thể gửi email đặt lại mật khẩu: " + e.getMessage(), e);
         }
     }
 

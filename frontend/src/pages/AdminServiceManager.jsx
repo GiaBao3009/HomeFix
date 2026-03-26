@@ -19,9 +19,20 @@ const AdminServiceManager = () => {
 
     const [packageForm] = Form.useForm();
     const [packageFileList, setPackageFileList] = useState([]);
+    const [imageLinkInput, setImageLinkInput] = useState('');
 
     // Watch form values for preview
-    const packageImageUrl = Form.useWatch('imageUrl', packageForm);
+    const packageImageUrl = Form.useWatch('imageUrl', { form: packageForm, preserve: true });
+    const packageImageUrls = Form.useWatch('imageUrls', { form: packageForm, preserve: true }) || [];
+
+    const isValidHttpUrl = (value) => {
+        try {
+            const url = new URL(value);
+            return url.protocol === 'http:' || url.protocol === 'https:';
+        } catch {
+            return false;
+        }
+    };
 
     // Fetch Data
     const fetchData = async () => {
@@ -33,10 +44,12 @@ const AdminServiceManager = () => {
             ]);
             
             setCategories(Array.isArray(catRes.data) ? catRes.data : []);
-            setPackages(Array.isArray(pkgRes.data) ? pkgRes.data : []);
+            const packageData = Array.isArray(pkgRes.data) ? pkgRes.data : [];
+            setPackages(packageData);
         } catch (error) {
             console.error("Error fetching services:", error);
-            message.error('Không thể tải dữ liệu dịch vụ');
+            const errorMsg = error.response?.data?.message || error.response?.data?.error || 'Không thể tải dữ liệu dịch vụ';
+            message.error(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -106,6 +119,7 @@ const AdminServiceManager = () => {
             setIsPackageModalOpen(false);
             packageForm.resetFields();
             setEditingPackage(null);
+            setImageLinkInput('');
             fetchData();
         } catch (error) {
             console.error(error);
@@ -124,6 +138,36 @@ const AdminServiceManager = () => {
         }
     };
 
+    const handleAddImageLink = () => {
+        const url = imageLinkInput.trim();
+
+        if (!url) {
+            message.warning('Vui lòng nhập link ảnh');
+            return;
+        }
+
+        if (!isValidHttpUrl(url)) {
+            message.error('Link ảnh không hợp lệ');
+            return;
+        }
+
+        const currentUrls = packageForm.getFieldValue('imageUrls') || [];
+        if (currentUrls.includes(url)) {
+            message.info('Link ảnh đã tồn tại');
+            return;
+        }
+
+        const newUrls = [...currentUrls, url];
+        packageForm.setFieldValue('imageUrls', newUrls);
+
+        if (!packageForm.getFieldValue('imageUrl')) {
+            packageForm.setFieldValue('imageUrl', url);
+        }
+
+        setImageLinkInput('');
+        message.success('Đã thêm link ảnh');
+    };
+
     const packageColumns = [
         { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
         { title: 'Tên dịch vụ', dataIndex: 'name', key: 'name' },
@@ -137,7 +181,11 @@ const AdminServiceManager = () => {
                 <Space>
                     <Button icon={<Edit size={16} />} onClick={() => {
                         setEditingPackage(record);
-                        packageForm.setFieldsValue(record);
+                        packageForm.setFieldsValue({
+                            ...record,
+                            imageUrls: Array.isArray(record.imageUrls) ? record.imageUrls : (record.imageUrl ? [record.imageUrl] : [])
+                        });
+                        setImageLinkInput('');
                         setIsPackageModalOpen(true);
                     }} />
                     <Button danger icon={<Trash size={16} />} onClick={() => Modal.confirm({
@@ -157,6 +205,7 @@ const AdminServiceManager = () => {
                     setEditingPackage(null);
                     packageForm.resetFields();
                     setPackageFileList([]);
+                    setImageLinkInput('');
                     setIsPackageModalOpen(true);
                 }}>Thêm Dịch vụ</Button>
             </div>
@@ -167,7 +216,10 @@ const AdminServiceManager = () => {
             <Modal
                 title={editingPackage ? "Sửa Dịch vụ" : "Thêm Dịch vụ"}
                 open={isPackageModalOpen}
-                onCancel={() => setIsPackageModalOpen(false)}
+                onCancel={() => {
+                    setImageLinkInput('');
+                    setIsPackageModalOpen(false);
+                }}
                 footer={null}
             >
                 <Form form={packageForm} onFinish={handlePackageSubmit} layout="vertical">
@@ -198,8 +250,29 @@ const AdminServiceManager = () => {
                     </Form.Item>
                     <Form.Item label="Hình ảnh">
                         <div className="space-y-4">
+                            <div className="flex gap-2">
+                                <Input
+                                    value={imageLinkInput}
+                                    onChange={(e) => setImageLinkInput(e.target.value)}
+                                    placeholder="Dán link ảnh (https://...)"
+                                    onPressEnter={(e) => {
+                                        e.preventDefault();
+                                        handleAddImageLink();
+                                    }}
+                                />
+                                <Button onClick={handleAddImageLink}>Thêm link</Button>
+                            </div>
+                            {imageLinkInput.trim() && isValidHttpUrl(imageLinkInput.trim()) && (
+                                <div className="w-40 h-24">
+                                    <img
+                                        src={imageLinkInput.trim()}
+                                        alt="Xem trước link ảnh"
+                                        className="object-cover w-full h-full rounded border"
+                                    />
+                                </div>
+                            )}
                             <div className="flex flex-wrap gap-4">
-                                {(packageForm.getFieldValue('imageUrls') || [packageImageUrl]).filter(Boolean).map((url, index) => (
+                                {(packageImageUrls.length ? packageImageUrls : [packageImageUrl]).filter(Boolean).map((url, index) => (
                                     <div key={index} className="relative w-32 h-20 group">
                                         <img 
                                             src={url} 
