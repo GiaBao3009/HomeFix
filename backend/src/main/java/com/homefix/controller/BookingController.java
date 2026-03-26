@@ -33,6 +33,11 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.getAllBookings());
     }
 
+    @GetMapping("/available")
+    public ResponseEntity<List<BookingDto>> getAvailableBookingsForTechnician() {
+        return ResponseEntity.ok(bookingService.getAvailableBookingsForTechnician());
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<BookingDto> updateStatus(
             @PathVariable("id") Long id,
@@ -47,12 +52,31 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.assignTechnician(id, technicianId));
     }
 
+    @PostMapping("/{id}/claim")
+    public ResponseEntity<BookingDto> claimBooking(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(bookingService.claimBooking(id));
+    }
+
     @PostMapping("/{id}/technician-response")
     public ResponseEntity<BookingDto> technicianResponse(
             @PathVariable("id") Long id,
             @RequestParam("accepted") boolean accepted,
             @RequestParam(name = "reason", required = false) String reason) {
         return ResponseEntity.ok(bookingService.technicianResponse(id, accepted, reason));
+    }
+
+    @PostMapping("/{id}/assistants")
+    public ResponseEntity<BookingDto> addAssistantToBooking(
+            @PathVariable("id") Long id,
+            @RequestParam("assistantId") Long assistantId) {
+        return ResponseEntity.ok(bookingService.addAssistantToBooking(id, assistantId));
+    }
+
+    @DeleteMapping("/{id}/assistants/{assistantId}")
+    public ResponseEntity<BookingDto> removeAssistantFromBooking(
+            @PathVariable("id") Long id,
+            @PathVariable("assistantId") Long assistantId) {
+        return ResponseEntity.ok(bookingService.removeAssistantFromBooking(id, assistantId));
     }
 
     @PostMapping("/{id}/review-decline")

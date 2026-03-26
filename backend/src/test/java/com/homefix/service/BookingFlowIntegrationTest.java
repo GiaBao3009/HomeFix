@@ -5,7 +5,6 @@ import com.homefix.common.Role;
 import com.homefix.common.TechnicianApprovalStatus;
 import com.homefix.common.TechnicianType;
 import com.homefix.dto.BookingDto;
-import com.homefix.entity.Booking;
 import com.homefix.entity.ServiceCategory;
 import com.homefix.entity.ServicePackage;
 import com.homefix.entity.User;
@@ -31,6 +30,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -55,8 +55,9 @@ class BookingFlowIntegrationTest {
     private com.homefix.repository.ReviewRepository reviewRepository;
 
     private User customer;
-    private User technicianA;
-    private User technicianB;
+    private User mainTechnician;
+    private User assistantA;
+    private User assistantB;
     private ServicePackage servicePackage;
 
     @BeforeEach
@@ -67,12 +68,12 @@ class BookingFlowIntegrationTest {
         userRepository.deleteAll();
 
         ServiceCategory category = new ServiceCategory();
-        category.setName("Điện lạnh");
-        category.setDescription("Dịch vụ điện lạnh");
+        category.setName("Dien lanh");
+        category.setDescription("Dich vu dien lanh");
         category = serviceCategoryRepository.save(category);
 
         servicePackage = new ServicePackage();
-        servicePackage.setName("Sửa điều hòa");
+        servicePackage.setName("Sua dieu hoa");
         servicePackage.setPrice(BigDecimal.valueOf(450000));
         servicePackage.setCategory(category);
         servicePackage = servicePackageRepository.save(servicePackage);
@@ -84,60 +85,96 @@ class BookingFlowIntegrationTest {
         customer.setRole(Role.CUSTOMER);
         customer = userRepository.save(customer);
 
-        technicianA = buildTechnician("techa@test.com", "Cầu Giấy", category);
-        technicianB = buildTechnician("techb@test.com", "Long Biên", category);
-        when(reviewRepository.findAverageRatingByTechnicianId(technicianA.getId())).thenReturn(5.0);
-        when(reviewRepository.findAverageRatingByTechnicianId(technicianB.getId())).thenReturn(3.0);
+        mainTechnician = buildTechnician("main@test.com", "Cau Giay", category, TechnicianType.MAIN, null);
+        assistantA = buildTechnician("assistant-a@test.com", "Cau Giay", category, TechnicianType.ASSISTANT, mainTechnician);
+        assistantB = buildTechnician("assistant-b@test.com", "Long Bien", category, TechnicianType.ASSISTANT, mainTechnician);
+
+        when(reviewRepository.findAverageRatingByTechnicianId(mainTechnician.getId())).thenReturn(4.8);
+        when(reviewRepository.findAverageRatingByTechnicianId(assistantA.getId())).thenReturn(5.0);
+        when(reviewRepository.findAverageRatingByTechnicianId(assistantB.getId())).thenReturn(3.0);
     }
 
     @Test
-    void createBooking_shouldAutoAssignBestTechnician() {
+    void createBooking_shouldStayOpenUntilATechnicianClaimsIt() {
         authenticate(customer.getEmail());
+
         BookingDto dto = new BookingDto();
         dto.setServiceId(servicePackage.getId());
         dto.setBookingTime(LocalDateTime.of(2026, 5, 20, 9, 0));
-        dto.setAddress("Ngõ 12 Cầu Giấy Hà Nội");
+        dto.setAddress("Ngo 12 Cau Giay Ha Noi");
         dto.setPaymentMethod("cash");
 
         BookingDto result = bookingService.createBooking(dto);
 
-        assertThat(result.getStatus()).isEqualTo(BookingStatus.ASSIGNED);
-        assertThat(result.getTechnicianId()).isEqualTo(technicianA.getId());
+        assertThat(result.getStatus()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(result.getTechnicianId()).isNull();
+        assertThat(result.getPaymentStatus()).isEqualTo("PENDING");
+        assertThat(result.getPaymentMethod()).isEqualTo("CASH");
+
+        authenticate(assistantA.getEmail());
+        assertThat(bookingService.getAvailableBookingsForTechnician())
+                .extracting(BookingDto::getId)
+                .contains(result.getId());
     }
 
     @Test
-    void technicianReject_shouldReassignAnotherTechnicianAutomatically() {
+    void firstTechnicianToClaim_shouldBlockLaterClaims() {
+        BookingDto created = createBookingForCustomer(LocalDateTime.of(2026, 5, 20, 10, 0));
+
+        authenticate(assistantA.getEmail());
+        BookingDto claimed = bookingService.claimBooking(created.getId());
+
+        assertThat(claimed.getStatus()).isEqualTo(BookingStatus.ASSIGNED);
+        assertThat(claimed.getTechnicianId()).isEqualTo(assistantA.getId());
+
+        authenticate(assistantB.getEmail());
+        assertThatThrownBy(() -> bookingService.claimBooking(created.getId()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("already been claimed");
+    }
+
+    @Test
+    void mainTechnician_canAddOwnAssistantAfterClaimingBooking() {
+        BookingDto created = createBookingForCustomer(LocalDateTime.of(2026, 5, 21, 9, 0));
+
+        authenticate(mainTechnician.getEmail());
+        BookingDto claimed = bookingService.claimBooking(created.getId());
+        BookingDto withAssistant = bookingService.addAssistantToBooking(claimed.getId(), assistantA.getId());
+
+        assertThat(withAssistant.getAssistantTechnicianIds()).containsExactly(assistantA.getId());
+        assertThat(withAssistant.getAssistantTechnicianNames()).containsExactly(assistantA.getFullName());
+    }
+
+    private BookingDto createBookingForCustomer(LocalDateTime bookingTime) {
         authenticate(customer.getEmail());
         BookingDto dto = new BookingDto();
         dto.setServiceId(servicePackage.getId());
-        dto.setBookingTime(LocalDateTime.of(2026, 5, 20, 10, 0));
-        dto.setAddress("Ngõ 12 Cầu Giấy Hà Nội");
-        BookingDto created = bookingService.createBooking(dto);
-
-        authenticate(technicianA.getEmail());
-        BookingDto afterReject = bookingService.technicianResponse(created.getId(), false, "Bận lịch");
-
-        assertThat(afterReject.getStatus()).isEqualTo(BookingStatus.ASSIGNED);
-        assertThat(afterReject.getTechnicianId()).isEqualTo(technicianB.getId());
+        dto.setBookingTime(bookingTime);
+        dto.setAddress("Ngo 12 Cau Giay Ha Noi");
+        return bookingService.createBooking(dto);
     }
 
-    private User buildTechnician(String email, String location, ServiceCategory category) {
+    private User buildTechnician(String email, String location, ServiceCategory category, TechnicianType technicianType,
+            User supervisor) {
         User technician = new User();
         technician.setFullName(email);
         technician.setEmail(email);
         technician.setPassword("x");
         technician.setRole(Role.TECHNICIAN);
         technician.setTechnicianProfileCompleted(true);
-        technician.setTechnicianType(TechnicianType.ASSISTANT);
+        technician.setTechnicianType(technicianType);
         technician.setTechnicianApprovalStatus(TechnicianApprovalStatus.APPROVED);
         technician.setAvailableForAutoAssign(true);
         technician.setBaseLocation(location);
         technician.setAvailableFrom(LocalTime.of(8, 0));
         technician.setAvailableTo(LocalTime.of(18, 0));
         technician.setCategories(Set.of(category));
-        technician = userRepository.save(technician);
-
-        return technician;
+        if (technicianType == TechnicianType.ASSISTANT) {
+            technician.setSupervisingTechnician(supervisor);
+            technician.setAssistantStartedAt(LocalDateTime.now().minusDays(10));
+            technician.setAssistantPromoteAt(LocalDateTime.now().plusDays(20));
+        }
+        return userRepository.save(technician);
     }
 
     private void authenticate(String email) {

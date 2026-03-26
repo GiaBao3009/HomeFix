@@ -7,6 +7,10 @@ DROP TABLE IF EXISTS password_reset_tokens;
 DROP TABLE IF EXISTS service_images;
 DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS support_ticket_messages;
+DROP TABLE IF EXISTS support_tickets;
+DROP TABLE IF EXISTS booking_chat_messages;
+DROP TABLE IF EXISTS technician_interaction_logs;
 DROP TABLE IF EXISTS technician_categories;
 DROP TABLE IF EXISTS service_packages;
 DROP TABLE IF EXISTS service_categories;
@@ -126,11 +130,68 @@ CREATE TABLE technician_categories (
   CONSTRAINT fk_technician_categories_category FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE CASCADE
 );
 
+CREATE TABLE support_tickets (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  booking_id BIGINT NULL,
+  customer_id BIGINT NOT NULL,
+  technician_id BIGINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NOT NULL,
+  category VARCHAR(50) NOT NULL,
+  priority VARCHAR(20) NOT NULL DEFAULT 'MEDIUM',
+  status VARCHAR(30) NOT NULL DEFAULT 'OPEN',
+  due_at DATETIME NULL,
+  resolved_at DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_support_tickets_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL,
+  CONSTRAINT fk_support_tickets_customer FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_support_tickets_technician FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE support_ticket_messages (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  ticket_id BIGINT NOT NULL,
+  sender_id BIGINT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_support_ticket_messages_ticket FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE,
+  CONSTRAINT fk_support_ticket_messages_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE booking_chat_messages (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  booking_id BIGINT NOT NULL,
+  sender_id BIGINT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL,
+  deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  CONSTRAINT fk_booking_chat_messages_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+  CONSTRAINT fk_booking_chat_messages_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE technician_interaction_logs (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  technician_id BIGINT NOT NULL,
+  customer_id BIGINT NULL,
+  booking_id BIGINT NULL,
+  interaction_type VARCHAR(100) NOT NULL,
+  detail TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_technician_interaction_technician FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_technician_interaction_customer FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_technician_interaction_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL
+);
+
 CREATE INDEX idx_bookings_customer ON bookings(customer_id);
 CREATE INDEX idx_bookings_technician ON bookings(technician_id);
 CREATE INDEX idx_bookings_status ON bookings(status);
 CREATE INDEX idx_bookings_booking_time ON bookings(booking_time);
 CREATE INDEX idx_bookings_service_package ON bookings(service_package_id);
+CREATE INDEX idx_support_tickets_technician_status ON support_tickets(technician_id, status);
+CREATE INDEX idx_booking_chat_booking_expired ON booking_chat_messages(booking_id, deleted, expires_at);
+CREATE INDEX idx_interaction_technician_created ON technician_interaction_logs(technician_id, created_at);
 
 CREATE TABLE reviews (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,

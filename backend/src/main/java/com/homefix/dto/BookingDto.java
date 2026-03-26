@@ -3,6 +3,8 @@ package com.homefix.dto;
 import com.homefix.common.BookingStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BookingDto {
     private Long id;
@@ -26,6 +28,8 @@ public class BookingDto {
     private Long couponId;
     private BigDecimal technicianEarning;
     private BigDecimal platformProfit;
+    private List<Long> assistantTechnicianIds = new ArrayList<>();
+    private List<String> assistantTechnicianNames = new ArrayList<>();
 
     public BookingDto() {
     }
@@ -218,5 +222,21 @@ public class BookingDto {
 
     public void setPlatformProfit(BigDecimal platformProfit) {
         this.platformProfit = platformProfit;
+    }
+
+    public List<Long> getAssistantTechnicianIds() {
+        return assistantTechnicianIds;
+    }
+
+    public void setAssistantTechnicianIds(List<Long> assistantTechnicianIds) {
+        this.assistantTechnicianIds = assistantTechnicianIds;
+    }
+
+    public List<String> getAssistantTechnicianNames() {
+        return assistantTechnicianNames;
+    }
+
+    public void setAssistantTechnicianNames(List<String> assistantTechnicianNames) {
+        this.assistantTechnicianNames = assistantTechnicianNames;
     }
 }

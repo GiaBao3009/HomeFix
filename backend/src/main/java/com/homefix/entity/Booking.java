@@ -7,6 +7,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "bookings")
@@ -25,6 +27,10 @@ public class Booking {
     @ManyToOne
     @JoinColumn(name = "technician_id")
     private User technician;
+
+    @ManyToMany
+    @JoinTable(name = "booking_assistants", joinColumns = @JoinColumn(name = "booking_id"), inverseJoinColumns = @JoinColumn(name = "assistant_id"))
+    private Set<User> assistantTechnicians = new LinkedHashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "service_package_id", nullable = false)
@@ -112,6 +118,14 @@ public class Booking {
 
     public void setTechnician(User technician) {
         this.technician = technician;
+    }
+
+    public Set<User> getAssistantTechnicians() {
+        return assistantTechnicians;
+    }
+
+    public void setAssistantTechnicians(Set<User> assistantTechnicians) {
+        this.assistantTechnicians = assistantTechnicians;
     }
 
     public ServicePackage getServicePackage() {

@@ -9,6 +9,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.LinkedHashSet;
 import java.util.Collection;
@@ -70,6 +71,16 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     private boolean availableForAutoAssign = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supervising_technician_id")
+    private User supervisingTechnician;
+
+    @OneToMany(mappedBy = "supervisingTechnician")
+    private Set<User> assistantTechnicians = new LinkedHashSet<>();
+
+    private LocalDateTime assistantStartedAt;
+    private LocalDateTime assistantPromoteAt;
 
     @ManyToMany
     @JoinTable(name = "technician_categories", joinColumns = @JoinColumn(name = "technician_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
@@ -242,6 +253,38 @@ public class User implements UserDetails {
 
     public void setAvailableForAutoAssign(boolean availableForAutoAssign) {
         this.availableForAutoAssign = availableForAutoAssign;
+    }
+
+    public User getSupervisingTechnician() {
+        return supervisingTechnician;
+    }
+
+    public void setSupervisingTechnician(User supervisingTechnician) {
+        this.supervisingTechnician = supervisingTechnician;
+    }
+
+    public Set<User> getAssistantTechnicians() {
+        return assistantTechnicians;
+    }
+
+    public void setAssistantTechnicians(Set<User> assistantTechnicians) {
+        this.assistantTechnicians = assistantTechnicians;
+    }
+
+    public LocalDateTime getAssistantStartedAt() {
+        return assistantStartedAt;
+    }
+
+    public void setAssistantStartedAt(LocalDateTime assistantStartedAt) {
+        this.assistantStartedAt = assistantStartedAt;
+    }
+
+    public LocalDateTime getAssistantPromoteAt() {
+        return assistantPromoteAt;
+    }
+
+    public void setAssistantPromoteAt(LocalDateTime assistantPromoteAt) {
+        this.assistantPromoteAt = assistantPromoteAt;
     }
 
     public Set<ServiceCategory> getCategories() {

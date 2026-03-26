@@ -2,6 +2,7 @@ package com.homefix.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +30,10 @@ public class UserDto {
     private LocalTime availableFrom;
     private LocalTime availableTo;
     private boolean availableForAutoAssign;
+    private Long supervisingTechnicianId;
+    private String supervisingTechnicianName;
+    private LocalDateTime assistantStartedAt;
+    private LocalDateTime assistantPromoteAt;
     private Double averageRating;
     private Long totalReviews;
     private Long completedJobs;
@@ -213,6 +218,38 @@ public class UserDto {
 
     public void setAvailableForAutoAssign(boolean availableForAutoAssign) {
         this.availableForAutoAssign = availableForAutoAssign;
+    }
+
+    public Long getSupervisingTechnicianId() {
+        return supervisingTechnicianId;
+    }
+
+    public void setSupervisingTechnicianId(Long supervisingTechnicianId) {
+        this.supervisingTechnicianId = supervisingTechnicianId;
+    }
+
+    public String getSupervisingTechnicianName() {
+        return supervisingTechnicianName;
+    }
+
+    public void setSupervisingTechnicianName(String supervisingTechnicianName) {
+        this.supervisingTechnicianName = supervisingTechnicianName;
+    }
+
+    public LocalDateTime getAssistantStartedAt() {
+        return assistantStartedAt;
+    }
+
+    public void setAssistantStartedAt(LocalDateTime assistantStartedAt) {
+        this.assistantStartedAt = assistantStartedAt;
+    }
+
+    public LocalDateTime getAssistantPromoteAt() {
+        return assistantPromoteAt;
+    }
+
+    public void setAssistantPromoteAt(LocalDateTime assistantPromoteAt) {
+        this.assistantPromoteAt = assistantPromoteAt;
     }
 
     public Double getAverageRating() {
