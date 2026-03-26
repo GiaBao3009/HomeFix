@@ -4,8 +4,10 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 -- Drop tables if they exist
 DROP TABLE IF EXISTS website_content;
+DROP TABLE IF EXISTS service_images;
 DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS technician_categories;
 DROP TABLE IF EXISTS service_packages;
 DROP TABLE IF EXISTS service_categories;
 DROP TABLE IF EXISTS users;
@@ -24,6 +26,18 @@ CREATE TABLE users (
     address TEXT,
     role VARCHAR(20) NOT NULL, -- CUSTOMER, ADMIN, TECHNICIAN
     avatar_url VARCHAR(255),
+    specialty VARCHAR(255),
+    experience_years INT,
+    work_description TEXT,
+    citizen_id VARCHAR(20),
+    technician_profile_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    technician_type VARCHAR(20),
+    technician_approval_status VARCHAR(20) DEFAULT 'NOT_REQUIRED',
+    wallet_balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    base_location VARCHAR(255),
+    available_from TIME,
+    available_to TIME,
+    available_for_auto_assign BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -42,13 +56,22 @@ CREATE TABLE service_packages (
     category_id BIGINT,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    detailed_description TEXT,
     price DECIMAL(10, 2) NOT NULL,
     image_url VARCHAR(255),
     status VARCHAR(20) DEFAULT 'ACTIVE', -- ACTIVE, INACTIVE
     FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE SET NULL
 );
 
--- 4. Coupons Table
+-- 4. Service Images Table
+CREATE TABLE service_images (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    service_package_id BIGINT,
+    image_url VARCHAR(255),
+    FOREIGN KEY (service_package_id) REFERENCES service_packages(id) ON DELETE CASCADE
+);
+
+-- 5. Coupons Table
 CREATE TABLE coupons (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(50) NOT NULL UNIQUE,
@@ -61,7 +84,7 @@ CREATE TABLE coupons (
     status VARCHAR(20) DEFAULT 'ACTIVE' -- ACTIVE, EXPIRED, DISABLED
 );
 
--- 5. Bookings Table
+-- 6. Bookings Table
 CREATE TABLE bookings (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     customer_id BIGINT NOT NULL,
@@ -72,17 +95,30 @@ CREATE TABLE bookings (
     status VARCHAR(20) NOT NULL, -- PENDING, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED
     note TEXT,
     total_price DECIMAL(10, 2),
-    address VARCHAR(255),
+    address VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    payment_method VARCHAR(50) DEFAULT 'CASH',
-    payment_status VARCHAR(50) DEFAULT 'PENDING',
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'CASH',
+    payment_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    rejection_reason TEXT,
+    completed_at DATETIME,
+    technician_earning DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    platform_profit DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    version BIGINT,
     FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (service_package_id) REFERENCES service_packages(id) ON DELETE CASCADE,
     FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE SET NULL
 );
 
--- 6. Reviews Table
+CREATE TABLE technician_categories (
+    technician_id BIGINT NOT NULL,
+    category_id BIGINT NOT NULL,
+    PRIMARY KEY (technician_id, category_id),
+    FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE CASCADE
+);
+
+-- 7. Reviews Table
 CREATE TABLE reviews (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     booking_id BIGINT NOT NULL,
@@ -92,7 +128,7 @@ CREATE TABLE reviews (
     FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
 );
 
--- 7. Website Content Table
+-- 8. Website Content Table
 CREATE TABLE website_content (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     section VARCHAR(255) NOT NULL, -- HOME, ABOUT, CONTACT, REGISTER

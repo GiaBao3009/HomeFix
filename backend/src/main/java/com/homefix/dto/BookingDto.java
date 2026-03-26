@@ -24,6 +24,8 @@ public class BookingDto {
     private String couponCode;
     private String rejectionReason;
     private Long couponId;
+    private BigDecimal technicianEarning;
+    private BigDecimal platformProfit;
 
     public BookingDto() {
     }
@@ -200,5 +202,21 @@ public class BookingDto {
 
     public void setRejectionReason(String rejectionReason) {
         this.rejectionReason = rejectionReason;
+    }
+
+    public BigDecimal getTechnicianEarning() {
+        return technicianEarning;
+    }
+
+    public void setTechnicianEarning(BigDecimal technicianEarning) {
+        this.technicianEarning = technicianEarning;
+    }
+
+    public BigDecimal getPlatformProfit() {
+        return platformProfit;
+    }
+
+    public void setPlatformProfit(BigDecimal platformProfit) {
+        this.platformProfit = platformProfit;
     }
 }

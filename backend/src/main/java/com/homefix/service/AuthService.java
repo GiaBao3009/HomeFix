@@ -59,8 +59,7 @@ public class AuthService {
 
         userRepository.save(user);
 
-        var token = jwtUtils.generateToken(user);
-        return new AuthResponse(token, user.getRole().name(), user.getFullName(), user.getId(), user.getAvatarUrl());
+        return toAuthResponse(user);
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -74,8 +73,7 @@ public class AuthService {
         var user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow();
         
-        var token = jwtUtils.generateToken(user);
-        return new AuthResponse(token, user.getRole().name(), user.getFullName(), user.getId(), user.getAvatarUrl());
+        return toAuthResponse(user);
     }
 
     public Map<String, String> requestPasswordReset(String email) {
@@ -98,5 +96,14 @@ public class AuthService {
         prt.setUsed(true);
         resetRepo.save(prt);
         return Map.of("message", "Đặt lại mật khẩu thành công");
+    }
+
+    private AuthResponse toAuthResponse(User user) {
+        var token = jwtUtils.generateToken(user);
+        AuthResponse response = new AuthResponse(token, user.getRole().name(), user.getFullName(), user.getId(), user.getAvatarUrl());
+        response.setTechnicianProfileCompleted(user.isTechnicianProfileCompleted());
+        response.setTechnicianType(user.getTechnicianType() != null ? user.getTechnicianType().name() : null);
+        response.setTechnicianApprovalStatus(user.getTechnicianApprovalStatus() != null ? user.getTechnicianApprovalStatus().name() : null);
+        return response;
     }
 }

@@ -45,6 +45,12 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
+    public List<ReviewDto> getReviewsByTechnician(Long technicianId) {
+        return reviewRepository.findByTechnicianIdOrderByCreatedAtDesc(technicianId).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
     private ReviewDto mapToDto(Review entity) {
         return new ReviewDto(
                 entity.getId(),
