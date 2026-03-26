@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Table, Card, Tag, Button, Space, Typography, message, Modal, Select, Alert, Form, Input, InputNumber, Switch, Row, Col, Statistic, Rate, List } from 'antd';
-import { Clock, MapPin, User, Wrench, RefreshCw, Star } from 'lucide-react';
+import { Table, Card, Tag, Button, Space, Typography, message, Modal, Select, Alert, Form, Input, InputNumber, Switch, Row, Col, Statistic, Rate, List, Tabs } from 'antd';
+import { Clock, MapPin, User, Wrench, RefreshCw, Star, Trophy, MessageSquare, AlertTriangle } from 'lucide-react';
 import api from '../services/api';
 import dayjs from 'dayjs';
 import { useAuth } from '../context/AuthContext';
@@ -9,11 +9,23 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 const TechnicianDashboard = () => {
-    const { refreshUserProfile } = useAuth();
+    const { user, refreshUserProfile } = useAuth();
     const [bookings, setBookings] = useState([]);
+    const [openBookings, setOpenBookings] = useState([]);
     const [reviews, setReviews] = useState([]);
     const [dashboard, setDashboard] = useState({});
+    const [advancedAnalytics, setAdvancedAnalytics] = useState({});
+    const [leaderboard, setLeaderboard] = useState([]);
+    const [tickets, setTickets] = useState([]);
+    const [alerts, setAlerts] = useState([]);
+    const [interactions, setInteractions] = useState([]);
+    const [autoReport, setAutoReport] = useState({});
     const [categories, setCategories] = useState([]);
+    const [mainTechnicians, setMainTechnicians] = useState([]);
+    const [chatBookingId, setChatBookingId] = useState(null);
+    const [chatMessages, setChatMessages] = useState([]);
+    const [chatInput, setChatInput] = useState('');
+    const [ticketForm] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [profileLoading, setProfileLoading] = useState(false);
     const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -23,16 +35,29 @@ const TechnicianDashboard = () => {
     const [rejectionModalVisible, setRejectionModalVisible] = useState(false);
     const [selectedBookingId, setSelectedBookingId] = useState(null);
     const [rejectionReason, setRejectionReason] = useState('');
+    const [assistantModalVisible, setAssistantModalVisible] = useState(false);
+    const [assistantBooking, setAssistantBooking] = useState(null);
+    const [assistantCandidates, setAssistantCandidates] = useState([]);
+    const [selectedAssistantId, setSelectedAssistantId] = useState(null);
+    const [assistantLoading, setAssistantLoading] = useState(false);
     const assignedIdsRef = useRef(new Set());
+    const selectedTechnicianType = Form.useWatch('technicianType', profileForm);
 
     const fetchBookings = async (silent = false) => {
         if (!silent) {
             setLoading(true);
         }
-        const [bookingsRes, dashboardRes, reviewsRes] = await Promise.allSettled([
+        const [bookingsRes, openBookingsRes, dashboardRes, reviewsRes, leaderboardRes, analyticsRes, ticketsRes, alertsRes, interactionsRes, reportRes] = await Promise.allSettled([
             api.get('/users/technician/history'),
+            api.get('/bookings/available'),
             api.get('/users/technician/dashboard'),
-            api.get('/users/technician/reviews')
+            api.get('/users/technician/reviews'),
+            api.get('/technician/leaderboard'),
+            api.get('/technician/analytics'),
+            api.get('/technician/tickets'),
+            api.get('/technician/alerts'),
+            api.get('/technician/interactions'),
+            api.get('/technician/report')
         ]);
         try {
             let bookingData = [];
@@ -55,8 +80,15 @@ const TechnicianDashboard = () => {
             }
             assignedIdsRef.current = assignedIds;
             setBookings(bookingData);
+            setOpenBookings(openBookingsRes.status === 'fulfilled' ? (openBookingsRes.value.data || []) : []);
             setDashboard(dashboardRes.status === 'fulfilled' ? (dashboardRes.value.data || {}) : {});
             setReviews(reviewsRes.status === 'fulfilled' ? (reviewsRes.value.data || []) : []);
+            setLeaderboard(leaderboardRes.status === 'fulfilled' ? (leaderboardRes.value.data || []) : []);
+            setAdvancedAnalytics(analyticsRes.status === 'fulfilled' ? (analyticsRes.value.data || {}) : {});
+            setTickets(ticketsRes.status === 'fulfilled' ? (ticketsRes.value.data || []) : []);
+            setAlerts(alertsRes.status === 'fulfilled' ? (alertsRes.value.data || []) : []);
+            setInteractions(interactionsRes.status === 'fulfilled' ? (interactionsRes.value.data || []) : []);
+            setAutoReport(reportRes.status === 'fulfilled' ? (reportRes.value.data || {}) : {});
         } catch (error) {
             console.error(error);
             if (!silent) {
@@ -72,12 +104,14 @@ const TechnicianDashboard = () => {
     const fetchTechnicianProfile = async () => {
         setProfileLoading(true);
         try {
-            const [profileRes, categoriesRes] = await Promise.all([
+            const [profileRes, categoriesRes, techniciansRes] = await Promise.all([
                 api.get('/users/technician/profile'),
-                api.get('/categories')
+                api.get('/categories'),
+                api.get('/users/technicians')
             ]);
             const profile = profileRes.data || {};
             setCategories(categoriesRes.data || []);
+            setMainTechnicians((techniciansRes.data || []).filter((tech) => tech.technicianType === 'MAIN' && tech.id !== profile.id));
             setTechnicianProfile(profile);
             if (!profile.technicianProfileCompleted) {
                 setProfileModalOpen(true);
@@ -105,6 +139,7 @@ const TechnicianDashboard = () => {
                 workDescription: technicianProfile.workDescription,
                 citizenId: technicianProfile.citizenId,
                 technicianType: technicianProfile.technicianType || 'ASSISTANT',
+                supervisingTechnicianId: technicianProfile.supervisingTechnicianId || undefined,
                 categoryIds: technicianProfile.categoryIds || [],
                 baseLocation: technicianProfile.baseLocation,
                 availableFrom: technicianProfile.availableFrom,
@@ -140,6 +175,56 @@ const TechnicianDashboard = () => {
         } catch (error) {
             console.error(error);
             message.error('Cập nhật trạng thái thất bại');
+        }
+    };
+
+    const createTicket = async (values) => {
+        try {
+            const payload = {
+                ...values,
+                bookingId: values.bookingId ? Number(values.bookingId) : null,
+                customerId: Number(values.customerId)
+            };
+            await api.post('/technician/tickets', payload);
+            message.success('Đã tạo ticket hỗ trợ');
+            ticketForm.resetFields();
+            fetchBookings();
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Không thể tạo ticket');
+        }
+    };
+
+    const updateTicketStatus = async (ticketId, status) => {
+        try {
+            await api.patch(`/technician/tickets/${ticketId}/status?status=${status}`);
+            message.success('Đã cập nhật ticket');
+            fetchBookings(true);
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Cập nhật ticket thất bại');
+        }
+    };
+
+    const openChat = async (bookingId) => {
+        setChatBookingId(bookingId);
+        try {
+            const res = await api.get(`/technician/chat/${bookingId}/messages`);
+            setChatMessages(res.data || []);
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Không tải được đoạn chat');
+        }
+    };
+
+    const sendChat = async () => {
+        if (!chatBookingId || !chatInput.trim()) {
+            return;
+        }
+        try {
+            await api.post(`/technician/chat/${chatBookingId}/messages`, { content: chatInput.trim() });
+            setChatInput('');
+            const res = await api.get(`/technician/chat/${chatBookingId}/messages`);
+            setChatMessages(res.data || []);
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Không gửi được tin nhắn');
         }
     };
 
@@ -329,7 +414,7 @@ const TechnicianDashboard = () => {
             <Row gutter={16} className="mb-4">
                 <Col xs={24} md={8}>
                     <Card bordered={false}>
-                        <Statistic title="Đơn chờ nhận" value={dashboard.pendingJobs || 0} />
+                        <Statistic title="Đơn chờ nhận" value={dashboard.pendingJobs || 0} prefix={<MessageSquare size={16} />} />
                     </Card>
                 </Col>
                 <Col xs={24} md={8}>
@@ -366,6 +451,29 @@ const TechnicianDashboard = () => {
                 </Col>
             </Row>
 
+            <Row gutter={16} className="mb-4">
+                <Col xs={24} md={6}>
+                    <Card bordered={false}>
+                        <Statistic title="Tỉ lệ hoàn thành" value={advancedAnalytics.completionRate || 0} suffix="%" />
+                    </Card>
+                </Col>
+                <Col xs={24} md={6}>
+                    <Card bordered={false}>
+                        <Statistic title="Ticket quá hạn" value={advancedAnalytics.overdueTickets || 0} />
+                    </Card>
+                </Col>
+                <Col xs={24} md={6}>
+                    <Card bordered={false}>
+                        <Statistic title="Đơn hủy" value={advancedAnalytics.cancelled || 0} />
+                    </Card>
+                </Col>
+                <Col xs={24} md={6}>
+                    <Card bordered={false}>
+                        <Statistic title="Đơn từ chối" value={advancedAnalytics.declined || 0} />
+                    </Card>
+                </Col>
+            </Row>
+
             <Card bordered={false} className="shadow-sm mb-4">
                 <Table
                     columns={columns}
@@ -374,6 +482,121 @@ const TechnicianDashboard = () => {
                     loading={loading || profileLoading}
                 />
             </Card>
+
+            <Tabs
+                className="mb-4"
+                items={[
+                    {
+                        key: 'ranking',
+                        label: 'Xếp hạng kỹ thuật viên',
+                        children: (
+                            <Card bordered={false}>
+                                <List
+                                    dataSource={leaderboard}
+                                    renderItem={(item) => (
+                                        <List.Item>
+                                            <Space className="w-full justify-between">
+                                                <Space>
+                                                    <Trophy size={16} className="text-amber-500" />
+                                                    <Text strong>#{item.rank} {item.technicianName}</Text>
+                                                </Space>
+                                                <Space>
+                                                    <Tag color="blue">Rating: {item.averageRating}</Tag>
+                                                    <Tag color="green">Đơn xong: {item.completedJobs}</Tag>
+                                                    <Tag>{item.totalReviews} review</Tag>
+                                                </Space>
+                                            </Space>
+                                        </List.Item>
+                                    )}
+                                />
+                            </Card>
+                        )
+                    },
+                    {
+                        key: 'tickets',
+                        label: 'Ticketing nâng cao',
+                        children: (
+                            <Card bordered={false}>
+                                <Form form={ticketForm} layout="vertical" onFinish={createTicket}>
+                                    <Row gutter={12}>
+                                        <Col xs={24} md={6}><Form.Item name="title" label="Tiêu đề" rules={[{ required: true, message: 'Nhập tiêu đề' }]}><Input /></Form.Item></Col>
+                                        <Col xs={24} md={6}><Form.Item name="customerId" label="ID khách hàng" rules={[{ required: true, message: 'Nhập customerId' }]}><Input /></Form.Item></Col>
+                                        <Col xs={24} md={4}><Form.Item name="bookingId" label="ID đơn (tuỳ chọn)"><Input /></Form.Item></Col>
+                                        <Col xs={24} md={4}><Form.Item name="category" label="Loại ticket" rules={[{ required: true, message: 'Chọn loại' }]}><Select options={[{ value: 'SERVICE_ISSUE', label: 'Service' }, { value: 'PAYMENT_ISSUE', label: 'Payment' }, { value: 'SCHEDULE_CHANGE', label: 'Schedule' }, { value: 'CUSTOMER_COMPLAINT', label: 'Complaint' }, { value: 'TECHNICAL_SUPPORT', label: 'Technical' }]} /></Form.Item></Col>
+                                        <Col xs={24} md={4}><Form.Item name="priority" label="Ưu tiên" rules={[{ required: true, message: 'Chọn ưu tiên' }]}><Select options={[{ value: 'LOW', label: 'Low' }, { value: 'MEDIUM', label: 'Medium' }, { value: 'HIGH', label: 'High' }, { value: 'URGENT', label: 'Urgent' }]} /></Form.Item></Col>
+                                    </Row>
+                                    <Form.Item name="description" label="Mô tả" rules={[{ required: true, message: 'Nhập mô tả' }]}><Input.TextArea rows={2} /></Form.Item>
+                                    <Button type="primary" htmlType="submit">Tạo ticket</Button>
+                                </Form>
+                                <div className="mt-4">
+                                    <List
+                                        dataSource={tickets}
+                                        renderItem={(item) => (
+                                            <List.Item
+                                                actions={[
+                                                    <Button key="progress" size="small" onClick={() => updateTicketStatus(item.id, 'IN_PROGRESS')}>In Progress</Button>,
+                                                    <Button key="resolve" size="small" type="primary" onClick={() => updateTicketStatus(item.id, 'RESOLVED')}>Resolve</Button>
+                                                ]}
+                                            >
+                                                <List.Item.Meta
+                                                    title={`#${item.id} - ${item.title}`}
+                                                    description={`${item.customerName} | ${item.priority} | ${item.status}`}
+                                                />
+                                            </List.Item>
+                                        )}
+                                    />
+                                </div>
+                            </Card>
+                        )
+                    },
+                    {
+                        key: 'alerts',
+                        label: 'Cảnh báo thông minh',
+                        children: (
+                            <Card bordered={false}>
+                                <List
+                                    dataSource={alerts}
+                                    renderItem={(item) => (
+                                        <List.Item>
+                                            <Space>
+                                                <AlertTriangle size={16} className="text-amber-500" />
+                                                <Tag color={item.severity === 'HIGH' ? 'red' : item.severity === 'MEDIUM' ? 'orange' : 'green'}>{item.severity}</Tag>
+                                                <Text>{item.message}</Text>
+                                            </Space>
+                                        </List.Item>
+                                    )}
+                                />
+                                <div className="mt-4">
+                                    <Text strong>Báo cáo tự động</Text>
+                                    <div className="text-slate-600 mt-1">Khuyến nghị: {autoReport.recommendation || 'Chưa có dữ liệu'}</div>
+                                </div>
+                            </Card>
+                        )
+                    },
+                    {
+                        key: 'interactions',
+                        label: 'Lịch sử tương tác',
+                        children: (
+                            <Card bordered={false}>
+                                <List
+                                    dataSource={interactions}
+                                    renderItem={(item) => (
+                                        <List.Item>
+                                            <Space className="w-full justify-between">
+                                                <div>
+                                                    <Text strong>{item.interactionType}</Text>
+                                                    <div className="text-slate-600">{item.detail}</div>
+                                                </div>
+                                                <Text type="secondary">{dayjs(item.createdAt).format('DD/MM HH:mm')}</Text>
+                                            </Space>
+                                        </List.Item>
+                                    )}
+                                />
+                            </Card>
+                        )
+                    }
+                ]}
+            />
 
             <Card bordered={false} className="shadow-sm">
                 <Title level={4}>Lịch sử đánh giá</Title>
@@ -403,6 +626,41 @@ const TechnicianDashboard = () => {
                         </List.Item>
                     )}
                 />
+            </Card>
+
+            <Card bordered={false} className="shadow-sm mt-4">
+                <Title level={4}>Chat real-time theo đơn</Title>
+                <Space className="mb-3">
+                    <Select
+                        style={{ width: 240 }}
+                        placeholder="Chọn booking để chat"
+                        value={chatBookingId}
+                        onChange={openChat}
+                        options={bookings.map(item => ({ value: item.id, label: `#${item.id} - ${item.customerName}` }))}
+                    />
+                </Space>
+                <List
+                    dataSource={chatMessages}
+                    locale={{ emptyText: 'Chưa có tin nhắn' }}
+                    renderItem={(item) => (
+                        <List.Item>
+                            <Space className="w-full justify-between">
+                                <div>
+                                    <Text strong>{item.senderName}</Text>
+                                    <div>{item.content}</div>
+                                </div>
+                                <div className="text-right">
+                                    <Text type="secondary">{dayjs(item.createdAt).format('DD/MM HH:mm')}</Text>
+                                    <div className="text-xs text-slate-500">Xóa lúc {dayjs(item.expiresAt).format('DD/MM HH:mm')}</div>
+                                </div>
+                            </Space>
+                        </List.Item>
+                    )}
+                />
+                <Space className="w-full mt-3">
+                    <Input value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Nhập tin nhắn..." />
+                    <Button type="primary" onClick={sendChat}>Gửi</Button>
+                </Space>
             </Card>
 
             <Modal
