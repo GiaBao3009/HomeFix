@@ -105,6 +105,12 @@ public class UserController {
         return ResponseEntity.ok(bookingService.getMyBookings());
     }
 
+    @GetMapping("/technician/assistant-candidates")
+    public ResponseEntity<List<UserDto>> getAssistantCandidates(@RequestParam("bookingId") Long bookingId) {
+        String email = getCurrentUserEmail();
+        return ResponseEntity.ok(userService.getAssistantCandidates(email, bookingId));
+    }
+
     @GetMapping("/technician/reviews")
     public ResponseEntity<List<com.homefix.dto.ReviewDto>> getTechnicianReviews() {
         String email = getCurrentUserEmail();
