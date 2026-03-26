@@ -23,12 +23,25 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     long countByTechnicianAndStatusIn(User technician, List<BookingStatus> statuses);
     long countByTechnicianAndStatus(User technician, BookingStatus status);
     boolean existsByTechnicianAndBookingTimeAndStatusIn(User technician, LocalDateTime bookingTime, List<BookingStatus> statuses);
+    boolean existsByAssistantTechniciansContainingAndBookingTimeAndStatusIn(User technician, LocalDateTime bookingTime, List<BookingStatus> statuses);
     List<Booking> findByTechnicianOrderByCreatedAtDesc(User technician);
 
     List<Booking> findByStatus(BookingStatus status);
 
+    @Query("SELECT DISTINCT b FROM Booking b LEFT JOIN FETCH b.assistantTechnicians assistants WHERE b.technician = :technician OR :technician MEMBER OF b.assistantTechnicians ORDER BY b.createdAt DESC")
+    List<Booking> findVisibleToTechnicianOrderByCreatedAtDesc(User technician);
+
+    @Query("SELECT COUNT(DISTINCT b) FROM Booking b LEFT JOIN b.assistantTechnicians assistants WHERE (b.technician = :technician OR assistants = :technician) AND b.status = :status")
+    long countVisibleToTechnicianAndStatus(User technician, BookingStatus status);
+
+    @Query("SELECT COUNT(DISTINCT b) FROM Booking b LEFT JOIN b.assistantTechnicians assistants WHERE (b.technician = :technician OR assistants = :technician) AND b.status IN :statuses")
+    long countVisibleToTechnicianAndStatusIn(User technician, List<BookingStatus> statuses);
+
+    @Query("SELECT DISTINCT b FROM Booking b JOIN FETCH b.customer JOIN FETCH b.servicePackage sp LEFT JOIN FETCH sp.category LEFT JOIN FETCH b.assistantTechnicians WHERE b.status = com.homefix.common.BookingStatus.CONFIRMED AND b.technician IS NULL ORDER BY b.createdAt DESC")
+    List<Booking> findOpenBookingsForDispatch();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT b FROM Booking b WHERE b.id = :id")
+    @Query("SELECT DISTINCT b FROM Booking b LEFT JOIN FETCH b.assistantTechnicians WHERE b.id = :id")
     Optional<Booking> findByIdForUpdate(Long id);
 
     @org.springframework.data.jpa.repository.Query("SELECT b.servicePackage.name, COUNT(b) FROM Booking b WHERE b.status = 'COMPLETED' GROUP BY b.servicePackage.name ORDER BY COUNT(b) DESC")

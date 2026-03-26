@@ -5,6 +5,7 @@ import com.homefix.common.Role;
 import com.homefix.common.TechnicianApprovalStatus;
 import com.homefix.common.TechnicianType;
 import com.homefix.entity.ServiceCategory;
+import com.homefix.entity.Booking;
 import com.homefix.entity.ServicePackage;
 import com.homefix.entity.User;
 import com.homefix.repository.BookingRepository;
@@ -41,7 +42,7 @@ public class TechnicianMatchingService {
         List<MatchResult> matches = new ArrayList<>();
 
         for (User technician : technicians) {
-            if (!isEligible(technician)) {
+            if (!isEligibleForDispatch(technician)) {
                 continue;
             }
             if (!matchesCategory(technician, category)) {
@@ -64,7 +65,7 @@ public class TechnicianMatchingService {
                 .toList();
     }
 
-    private boolean isEligible(User technician) {
+    public boolean isEligibleForDispatch(User technician) {
         if (technician.getRole() != Role.TECHNICIAN) {
             return false;
         }
@@ -78,6 +79,25 @@ public class TechnicianMatchingService {
             return technician.getTechnicianApprovalStatus() == TechnicianApprovalStatus.APPROVED;
         }
         return technician.getTechnicianType() == TechnicianType.ASSISTANT;
+    }
+
+    public boolean canClaimBooking(User technician, Booking booking) {
+        if (booking == null || booking.getServicePackage() == null || booking.getStatus() != BookingStatus.CONFIRMED) {
+            return false;
+        }
+        if (booking.getTechnician() != null) {
+            return false;
+        }
+        if (!isEligibleForDispatch(technician)) {
+            return false;
+        }
+        if (!matchesCategory(technician, booking.getServicePackage().getCategory())) {
+            return false;
+        }
+        if (!isWithinAvailability(technician, booking.getBookingTime())) {
+            return false;
+        }
+        return !hasConflict(technician, booking.getBookingTime());
     }
 
     private boolean matchesCategory(User technician, ServiceCategory targetCategory) {
@@ -98,10 +118,15 @@ public class TechnicianMatchingService {
     }
 
     private boolean hasConflict(User technician, LocalDateTime bookingTime) {
+        List<BookingStatus> activeStatuses = List.of(BookingStatus.ASSIGNED, BookingStatus.IN_PROGRESS);
         return bookingRepository.existsByTechnicianAndBookingTimeAndStatusIn(
                 technician,
                 bookingTime,
-                List.of(BookingStatus.ASSIGNED, BookingStatus.IN_PROGRESS));
+                activeStatuses)
+                || bookingRepository.existsByAssistantTechniciansContainingAndBookingTimeAndStatusIn(
+                        technician,
+                        bookingTime,
+                        activeStatuses);
     }
 
     private double calculateScore(User technician, String bookingAddress) {
@@ -121,7 +146,7 @@ public class TechnicianMatchingService {
     }
 
     private double workloadScore(User technician) {
-        long activeJobs = bookingRepository.countByTechnicianAndStatusIn(
+        long activeJobs = bookingRepository.countVisibleToTechnicianAndStatusIn(
                 technician, List.of(BookingStatus.ASSIGNED, BookingStatus.IN_PROGRESS));
         if (activeJobs >= 5) {
             return 0;

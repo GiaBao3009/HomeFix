@@ -24,8 +24,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.format.DateTimeFormatter;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,12 +35,15 @@ import java.util.stream.Collectors;
 @Service
 public class BookingService {
     private static final BigDecimal COMMISSION_RATE = new BigDecimal("0.10");
+    private static final List<BookingStatus> ACTIVE_WORK_STATUSES = List.of(BookingStatus.ASSIGNED, BookingStatus.IN_PROGRESS);
+
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final ServicePackageRepository servicePackageRepository;
     private final CouponRepository couponRepository;
     private final NotificationService notificationService;
     private final TechnicianMatchingService technicianMatchingService;
+    private final TechnicianEngagementService technicianEngagementService;
     private final JavaMailSender mailSender;
 
     @Value("${app.mail.from:no-reply@homefix.local}")
@@ -47,13 +52,14 @@ public class BookingService {
     public BookingService(BookingRepository bookingRepository, UserRepository userRepository,
             ServicePackageRepository servicePackageRepository, CouponRepository couponRepository,
             NotificationService notificationService, TechnicianMatchingService technicianMatchingService,
-            JavaMailSender mailSender) {
+            TechnicianEngagementService technicianEngagementService, JavaMailSender mailSender) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.servicePackageRepository = servicePackageRepository;
         this.couponRepository = couponRepository;
         this.notificationService = notificationService;
         this.technicianMatchingService = technicianMatchingService;
+        this.technicianEngagementService = technicianEngagementService;
         this.mailSender = mailSender;
     }
 
@@ -70,10 +76,9 @@ public class BookingService {
         booking.setBookingTime(dto.getBookingTime());
         booking.setAddress(dto.getAddress());
         booking.setNote(dto.getNote());
-        String paymentMethod = normalizePaymentMethod(dto.getPaymentMethod());
-        booking.setPaymentMethod(paymentMethod);
-        booking.setPaymentStatus("UNPAID");
-        booking.setStatus(BookingStatus.PENDING);
+        booking.setPaymentMethod(normalizePaymentMethod(dto.getPaymentMethod()));
+        booking.setPaymentStatus("PENDING");
+        booking.setStatus(BookingStatus.CONFIRMED);
 
         BigDecimal originalPrice = servicePackage.getPrice();
         BigDecimal finalPrice = originalPrice;
@@ -111,15 +116,15 @@ public class BookingService {
 
         booking.setTotalPrice(finalPrice);
         Booking saved = bookingRepository.save(booking);
-        autoAssignTechnician(saved);
-        saved = bookingRepository.save(saved);
 
         notificationService.createNotification(
                 customer,
                 "Booking created",
-                "Your booking #" + saved.getId() + " has been created successfully.",
+                "Booking #" + saved.getId() + " is waiting for a matching technician.",
                 "ORDER",
                 saved.getId());
+        publishBooking(saved, null);
+
         try {
             sendBookingCreatedEmail(saved);
         } catch (RuntimeException ignored) {
@@ -131,6 +136,7 @@ public class BookingService {
         return result;
     }
 
+    @Transactional(readOnly = true)
     public List<BookingDto> getMyBookings() {
         User user = getCurrentUser();
 
@@ -138,7 +144,7 @@ public class BookingService {
         if (user.getRole() == Role.ADMIN) {
             bookings = bookingRepository.findAll();
         } else if (user.getRole() == Role.TECHNICIAN) {
-            bookings = bookingRepository.findByTechnician(user);
+            bookings = bookingRepository.findVisibleToTechnicianOrderByCreatedAtDesc(user);
         } else {
             bookings = bookingRepository.findByCustomer(user);
         }
@@ -146,8 +152,25 @@ public class BookingService {
         return bookings.stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<BookingDto> getAllBookings() {
         return bookingRepository.findAll().stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<BookingDto> getAvailableBookingsForTechnician() {
+        User technician = getCurrentUser();
+        if (technician.getRole() != Role.TECHNICIAN) {
+            throw new RuntimeException("Only technicians can see dispatch feed");
+        }
+        if (!isTechnicianReadyForDispatch(technician)) {
+            return List.of();
+        }
+
+        return bookingRepository.findOpenBookingsForDispatch().stream()
+                .filter(booking -> technicianMatchingService.canClaimBooking(technician, booking))
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
@@ -166,8 +189,8 @@ public class BookingService {
 
         if (currentUser.getRole() == Role.TECHNICIAN) {
             ensureTechnicianCanWork(currentUser);
-            if (booking.getTechnician() == null || !booking.getTechnician().getId().equals(currentUser.getId())) {
-                throw new RuntimeException("You are not assigned to this booking");
+            if (!isTechnicianOnBooking(currentUser, booking)) {
+                throw new RuntimeException("You are not part of this booking");
             }
             if (!Set.of(BookingStatus.IN_PROGRESS, BookingStatus.COMPLETED).contains(newStatus)) {
                 throw new RuntimeException("Technician can only move booking to IN_PROGRESS or COMPLETED");
@@ -190,6 +213,7 @@ public class BookingService {
                     "Booking #" + booking.getId() + " is completed. Please leave a review.",
                     "ORDER_COMPLETED",
                     booking.getId());
+            technicianEngagementService.notifyChatRetentionAfterCompletion(booking);
         } else {
             booking.setCompletedAt(null);
             notificationService.createNotification(
@@ -206,39 +230,42 @@ public class BookingService {
 
     @Transactional
     public BookingDto assignTechnician(Long bookingId, Long technicianId) {
-        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
-        User technician = userRepository.findById(technicianId)
-                .orElseThrow(() -> new RuntimeException("Technician not found"));
+        throw new RuntimeException("Manual admin assignment is disabled in the live dispatch flow");
+    }
 
-        if (technician.getRole() != Role.TECHNICIAN) {
-            throw new RuntimeException("User is not a technician");
-        }
+    @Transactional
+    public BookingDto claimBooking(Long bookingId) {
+        User technician = getCurrentUser();
         ensureTechnicianCanWork(technician);
 
-        if (booking.getStatus() == BookingStatus.COMPLETED || booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new RuntimeException("Cannot assign technician for completed/cancelled booking");
-        }
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        if (bookingRepository.existsByTechnicianAndBookingTimeAndStatusIn(
-                technician,
-                booking.getBookingTime(),
-                List.of(BookingStatus.ASSIGNED, BookingStatus.IN_PROGRESS))) {
-            throw new RuntimeException("Technician already has another booking at this timeslot");
+        if (booking.getStatus() != BookingStatus.CONFIRMED || booking.getTechnician() != null) {
+            throw new RuntimeException("This booking has already been claimed");
+        }
+        if (!technicianMatchingService.canClaimBooking(technician, booking)) {
+            throw new RuntimeException("You are not eligible to claim this booking");
         }
 
         booking.setTechnician(technician);
         booking.setStatus(BookingStatus.ASSIGNED);
-        Booking saved = bookingRepository.save(booking);
+        booking.setRejectionReason(null);
 
         notificationService.createNotification(
+                booking.getCustomer(),
+                "Technician claimed booking",
+                "Technician " + technician.getFullName() + " claimed booking #" + booking.getId() + ".",
+                "ORDER",
+                booking.getId());
+        notificationService.createNotification(
                 technician,
-                "New job assigned",
-                "You have been assigned booking #" + booking.getId() + ".",
+                "Booking claimed",
+                "You claimed booking #" + booking.getId() + ".",
                 "JOB_ASSIGNMENT",
                 booking.getId());
 
-        return mapToDto(saved);
+        return mapToDto(bookingRepository.save(booking));
     }
 
     @Transactional
@@ -250,70 +277,108 @@ public class BookingService {
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
         if (booking.getTechnician() == null || !booking.getTechnician().getId().equals(technician.getId())) {
-            throw new RuntimeException("You are not assigned to this booking");
+            throw new RuntimeException("You are not assigned as the main technician of this booking");
         }
-
         if (booking.getStatus() != BookingStatus.ASSIGNED) {
-            throw new RuntimeException("Only ASSIGNED booking can be accepted/rejected by technician");
+            throw new RuntimeException("Only ASSIGNED booking can be accepted or released");
         }
 
         if (accepted) {
             booking.setStatus(BookingStatus.IN_PROGRESS);
             booking.setRejectionReason(null);
-
             notificationService.createNotification(
                     booking.getCustomer(),
-                    "Technician accepted booking",
-                    "Technician " + technician.getFullName() + " accepted booking #" + booking.getId(),
+                    "Technician started the job",
+                    "Technician " + technician.getFullName() + " started booking #" + booking.getId() + ".",
                     "ORDER",
                     booking.getId());
         } else {
             if (reason == null || reason.trim().isEmpty()) {
                 throw new RuntimeException("Please provide a reason for rejection");
             }
+
+            notifyAssistantsReleased(booking);
             booking.setRejectionReason(reason.trim());
-            List<User> candidates = technicianMatchingService.findMatchingTechnicians(
-                    booking.getServicePackage(),
-                    booking.getBookingTime(),
-                    booking.getAddress(),
-                    5);
-            User nextTechnician = candidates.stream()
-                    .filter(candidate -> !candidate.getId().equals(technician.getId()))
-                    .findFirst()
-                    .orElse(null);
-            if (nextTechnician != null) {
-                booking.setTechnician(nextTechnician);
-                booking.setStatus(BookingStatus.ASSIGNED);
-                booking.setRejectionReason(null);
-                notificationService.createNotification(
-                        nextTechnician,
-                        "New job assigned",
-                        "You have been auto-assigned booking #" + booking.getId() + ".",
-                        "JOB_ASSIGNMENT",
-                        booking.getId());
-                notificationService.createNotification(
-                        booking.getCustomer(),
-                        "Booking re-assigned",
-                        "Booking #" + booking.getId() + " has been reassigned to another technician.",
-                        "ORDER",
-                        booking.getId());
-            } else {
-                booking.setTechnician(null);
-                booking.setStatus(BookingStatus.CONFIRMED);
-                List<User> admins = userRepository.findByRole(Role.ADMIN);
-                for (User admin : admins) {
-                    notificationService.createNotification(
-                            admin,
-                            "Need manual follow-up",
-                            "No replacement technician found for booking #" + booking.getId()
-                                    + " after rejection. Reason: " + reason,
-                            "JOB_REJECTED",
-                            booking.getId());
-                }
-            }
+            booking.setTechnician(null);
+            booking.setAssistantTechnicians(new LinkedHashSet<>());
+            booking.setStatus(BookingStatus.CONFIRMED);
+
+            notificationService.createNotification(
+                    booking.getCustomer(),
+                    "Booking reopened",
+                    "Booking #" + booking.getId() + " is back in the dispatch queue.",
+                    "ORDER",
+                    booking.getId());
+            publishBooking(booking, technician.getId());
         }
 
         return mapToDto(bookingRepository.save(booking));
+    }
+
+    @Transactional
+    public BookingDto addAssistantToBooking(Long bookingId, Long assistantId) {
+        User mainTechnician = getCurrentUser();
+        ensureMainTechnicianCanManageAssistants(mainTechnician);
+
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+        if (booking.getTechnician() == null || !booking.getTechnician().getId().equals(mainTechnician.getId())) {
+            throw new RuntimeException("You are not the main technician of this booking");
+        }
+        if (booking.getStatus() == BookingStatus.CANCELLED || booking.getStatus() == BookingStatus.COMPLETED) {
+            throw new RuntimeException("Cannot add assistants to a closed booking");
+        }
+
+        User assistant = userRepository.findById(assistantId)
+                .orElseThrow(() -> new RuntimeException("Assistant not found"));
+        ensureAssistantEligibleForBooking(assistant, mainTechnician, booking);
+
+        booking.getAssistantTechnicians().add(assistant);
+        Booking saved = bookingRepository.save(booking);
+
+        notificationService.createNotification(
+                assistant,
+                "Assigned as assistant",
+                "You were added as an assistant to booking #" + booking.getId() + ".",
+                "JOB_ASSIGNMENT",
+                booking.getId());
+        notificationService.createNotification(
+                booking.getCustomer(),
+                "Booking team updated",
+                "Main technician " + mainTechnician.getFullName() + " added an assistant to booking #" + booking.getId() + ".",
+                "ORDER",
+                booking.getId());
+
+        return mapToDto(saved);
+    }
+
+    @Transactional
+    public BookingDto removeAssistantFromBooking(Long bookingId, Long assistantId) {
+        User mainTechnician = getCurrentUser();
+        ensureMainTechnicianCanManageAssistants(mainTechnician);
+
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+        if (booking.getTechnician() == null || !booking.getTechnician().getId().equals(mainTechnician.getId())) {
+            throw new RuntimeException("You are not the main technician of this booking");
+        }
+
+        User removedAssistant = booking.getAssistantTechnicians().stream()
+                .filter(item -> item.getId().equals(assistantId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Assistant is not on this booking"));
+
+        booking.getAssistantTechnicians().removeIf(item -> item.getId().equals(assistantId));
+        Booking saved = bookingRepository.save(booking);
+
+        notificationService.createNotification(
+                removedAssistant,
+                "Removed from booking",
+                "You were removed from booking #" + booking.getId() + ".",
+                "JOB_ASSIGNMENT",
+                booking.getId());
+
+        return mapToDto(saved);
     }
 
     @Transactional
@@ -329,6 +394,7 @@ public class BookingService {
             booking.setTechnician(null);
             booking.setStatus(BookingStatus.CONFIRMED);
             booking.setRejectionReason(null);
+            publishBooking(booking, null);
         } else {
             booking.setStatus(BookingStatus.ASSIGNED);
             if (booking.getTechnician() != null) {
@@ -349,16 +415,17 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
         if (booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new RuntimeException("Không thể xác nhận thanh toán cho đơn đã hủy");
+            throw new RuntimeException("Cannot confirm payment for a cancelled booking");
         }
         booking.setPaymentStatus("PAID");
         return mapToDto(bookingRepository.save(booking));
     }
 
+    @Transactional(readOnly = true)
     public List<BookingDto> getMyCompletedJobsWithEarnings() {
         User technician = getCurrentUser();
         if (technician.getRole() != Role.TECHNICIAN) {
-            throw new RuntimeException("Tài khoản không phải kỹ thuật viên");
+            throw new RuntimeException("Account is not a technician");
         }
         return bookingRepository.findByTechnicianAndStatus(technician, BookingStatus.COMPLETED).stream()
                 .map(this::mapToDto)
@@ -369,28 +436,34 @@ public class BookingService {
     public BookingDto cancelBooking(Long bookingId) {
         User currentUser = getCurrentUser();
 
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
         if (currentUser.getRole() != Role.ADMIN &&
                 !booking.getCustomer().getId().equals(currentUser.getId())) {
             throw new RuntimeException("You are not allowed to cancel this booking");
         }
-
-        if (booking.getStatus() != BookingStatus.PENDING &&
-                booking.getStatus() != BookingStatus.CONFIRMED) {
+        if (booking.getStatus() != BookingStatus.PENDING && booking.getStatus() != BookingStatus.CONFIRMED) {
             throw new RuntimeException("Only PENDING/CONFIRMED bookings can be cancelled");
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
+        notifyAssistantsReleased(booking);
         Booking saved = bookingRepository.save(booking);
 
-        List<User> admins = userRepository.findByRole(Role.ADMIN);
-        for (User admin : admins) {
+        if (booking.getTechnician() != null) {
             notificationService.createNotification(
-                    admin,
+                    booking.getTechnician(),
                     "Booking cancelled",
-                    "Customer " + booking.getCustomer().getFullName() + " cancelled booking #" + booking.getId(),
+                    "Booking #" + booking.getId() + " has been cancelled by the customer/admin.",
+                    "ORDER_CANCELLED",
+                    booking.getId());
+        }
+        for (User assistant : booking.getAssistantTechnicians()) {
+            notificationService.createNotification(
+                    assistant,
+                    "Booking cancelled",
+                    "Booking #" + booking.getId() + " has been cancelled.",
                     "ORDER_CANCELLED",
                     booking.getId());
         }
@@ -407,10 +480,9 @@ public class BookingService {
         }
 
         return switch (current) {
-            case PENDING -> Set.of(BookingStatus.CONFIRMED, BookingStatus.ASSIGNED, BookingStatus.CANCELLED)
-                    .contains(target);
+            case PENDING -> Set.of(BookingStatus.CONFIRMED, BookingStatus.CANCELLED).contains(target);
             case CONFIRMED -> Set.of(BookingStatus.ASSIGNED, BookingStatus.CANCELLED).contains(target);
-            case ASSIGNED -> Set.of(BookingStatus.IN_PROGRESS, BookingStatus.DECLINED, BookingStatus.CANCELLED)
+            case ASSIGNED -> Set.of(BookingStatus.IN_PROGRESS, BookingStatus.CONFIRMED, BookingStatus.CANCELLED)
                     .contains(target);
             case IN_PROGRESS -> Set.of(BookingStatus.COMPLETED, BookingStatus.CANCELLED).contains(target);
             case DECLINED -> Set.of(BookingStatus.CONFIRMED, BookingStatus.ASSIGNED, BookingStatus.CANCELLED)
@@ -439,11 +511,14 @@ public class BookingService {
         if (booking.getTechnicianEarning() != null && booking.getTechnicianEarning().compareTo(BigDecimal.ZERO) > 0) {
             return;
         }
-        BigDecimal commission = booking.getTotalPrice().multiply(COMMISSION_RATE).setScale(0, java.math.RoundingMode.HALF_UP);
+
+        BigDecimal commission = booking.getTotalPrice().multiply(COMMISSION_RATE)
+                .setScale(0, java.math.RoundingMode.HALF_UP);
         BigDecimal technicianIncome = booking.getTotalPrice().subtract(commission);
         if (technicianIncome.compareTo(BigDecimal.ZERO) < 0) {
             technicianIncome = BigDecimal.ZERO;
         }
+
         booking.setPlatformProfit(commission);
         booking.setTechnicianEarning(technicianIncome);
         User technician = booking.getTechnician();
@@ -457,59 +532,139 @@ public class BookingService {
             return;
         }
         if (!technician.isTechnicianProfileCompleted()) {
-            throw new RuntimeException("Kỹ thuật viên cần hoàn tất hồ sơ trước khi nhận việc");
+            throw new RuntimeException("Technician must complete profile before taking jobs");
         }
         if (technician.getTechnicianType() == TechnicianType.MAIN
                 && technician.getTechnicianApprovalStatus() != TechnicianApprovalStatus.APPROVED) {
-            throw new RuntimeException("Thợ chính đang chờ admin duyệt kỹ năng");
+            throw new RuntimeException("Main technician is still waiting for approval");
+        }
+        if (technician.getTechnicianType() == TechnicianType.ASSISTANT
+                && technician.getSupervisingTechnician() == null) {
+            throw new RuntimeException("Assistant technician must belong to a main technician");
         }
     }
 
-    private void autoAssignTechnician(Booking booking) {
+    private boolean isTechnicianReadyForDispatch(User technician) {
+        try {
+            ensureTechnicianCanWork(technician);
+            return technician.isAvailableForAutoAssign();
+        } catch (RuntimeException ex) {
+            return false;
+        }
+    }
+
+    private void ensureMainTechnicianCanManageAssistants(User technician) {
+        ensureTechnicianCanWork(technician);
+        if (technician.getTechnicianType() != TechnicianType.MAIN) {
+            throw new RuntimeException("Only main technicians can manage assistants");
+        }
+    }
+
+    private boolean isTechnicianOnBooking(User technician, Booking booking) {
+        if (booking.getTechnician() != null && booking.getTechnician().getId().equals(technician.getId())) {
+            return true;
+        }
+        return booking.getAssistantTechnicians().stream()
+                .anyMatch(assistant -> assistant.getId().equals(technician.getId()));
+    }
+
+    private void ensureAssistantEligibleForBooking(User assistant, User mainTechnician, Booking booking) {
+        if (assistant.getId().equals(mainTechnician.getId())) {
+            throw new RuntimeException("Main technician cannot add themselves as assistant");
+        }
+        if (assistant.getRole() != Role.TECHNICIAN
+                || assistant.getTechnicianType() != TechnicianType.ASSISTANT
+                || !assistant.isTechnicianProfileCompleted()
+                || assistant.getTechnicianApprovalStatus() != TechnicianApprovalStatus.APPROVED) {
+            throw new RuntimeException("Selected technician is not an eligible assistant");
+        }
+        if (assistant.getSupervisingTechnician() == null
+                || !assistant.getSupervisingTechnician().getId().equals(mainTechnician.getId())) {
+            throw new RuntimeException("Assistant must belong to the current main technician");
+        }
+        if (!isWithinAvailability(assistant, booking.getBookingTime())) {
+            throw new RuntimeException("Assistant is outside their availability window");
+        }
+        if (bookingRepository.existsByTechnicianAndBookingTimeAndStatusIn(
+                assistant,
+                booking.getBookingTime(),
+                ACTIVE_WORK_STATUSES)
+                || bookingRepository.existsByAssistantTechniciansContainingAndBookingTimeAndStatusIn(
+                        assistant,
+                        booking.getBookingTime(),
+                        ACTIVE_WORK_STATUSES)) {
+            throw new RuntimeException("Assistant already has another booking at this timeslot");
+        }
+    }
+
+    private boolean isWithinAvailability(User technician, LocalDateTime bookingTime) {
+        LocalTime from = technician.getAvailableFrom();
+        LocalTime to = technician.getAvailableTo();
+        if (from == null || to == null) {
+            return true;
+        }
+        LocalTime time = bookingTime.toLocalTime();
+        return !time.isBefore(from) && !time.isAfter(to);
+    }
+
+    private void publishBooking(Booking booking, Long excludedTechnicianId) {
         List<User> candidates = technicianMatchingService.findMatchingTechnicians(
                 booking.getServicePackage(),
                 booking.getBookingTime(),
                 booking.getAddress(),
-                5);
-        if (candidates.isEmpty()) {
-            booking.setStatus(BookingStatus.CONFIRMED);
+                20);
+
+        List<User> notifiedTechnicians = candidates.stream()
+                .filter(candidate -> excludedTechnicianId == null || !candidate.getId().equals(excludedTechnicianId))
+                .toList();
+
+        if (notifiedTechnicians.isEmpty()) {
             List<User> admins = userRepository.findByRole(Role.ADMIN);
             for (User admin : admins) {
                 notificationService.createNotification(
                         admin,
-                        "No technician matched",
-                        "Booking #" + booking.getId() + " requires manual follow-up.",
+                        "No technician available",
+                        "Booking #" + booking.getId() + " is open but no matching technician is available right now.",
                         "JOB_MATCHING",
                         booking.getId());
             }
             return;
         }
 
-        User selected = candidates.get(0);
-        booking.setTechnician(selected);
-        booking.setStatus(BookingStatus.ASSIGNED);
-        notificationService.createNotification(
-                selected,
-                "New job assigned",
-                "You have been auto-assigned booking #" + booking.getId() + ".",
-                "JOB_ASSIGNMENT",
-                booking.getId());
+        for (User technician : notifiedTechnicians) {
+            notificationService.createNotification(
+                    technician,
+                    "New open booking",
+                    "Booking #" + booking.getId() + " matches your category. Claim it before another technician does.",
+                    "JOB_ASSIGNMENT",
+                    booking.getId());
+        }
+    }
+
+    private void notifyAssistantsReleased(Booking booking) {
+        for (User assistant : booking.getAssistantTechnicians()) {
+            notificationService.createNotification(
+                    assistant,
+                    "Assistant assignment released",
+                    "Your assistant assignment on booking #" + booking.getId() + " has been removed.",
+                    "JOB_ASSIGNMENT",
+                    booking.getId());
+        }
     }
 
     private String getPaymentStatusText(String paymentStatus) {
         return switch (paymentStatus) {
-            case "PAID" -> "Đã thanh toán";
-            case "PENDING_ADMIN_CONFIRMATION" -> "Đã chuyển khoản, chờ admin xác nhận";
-            case "FAILED" -> "Thanh toán thất bại";
-            default -> "Chưa thanh toán";
+            case "PAID" -> "Paid";
+            case "FAILED" -> "Failed";
+            default -> "Pending";
         };
     }
 
     private String getPaymentMethodText(String paymentMethod) {
         return switch (paymentMethod) {
-            case "MOMO" -> "MoMo (chuyển khoản)";
-            case "VNPAY" -> "VNPay (chuyển khoản)";
-            default -> "Tiền mặt";
+            case "MOMO" -> "MoMo";
+            case "VNPAY" -> "VNPay";
+            default -> "Cash";
         };
     }
 
@@ -525,44 +680,43 @@ public class BookingService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(mailFrom);
             helper.setTo(booking.getCustomer().getEmail());
-            helper.setSubject("HomeFix - Xác nhận đặt lịch #" + booking.getId());
+            helper.setSubject("HomeFix - Booking #" + booking.getId());
             helper.setText(
-                    "Xin chào " + booking.getCustomer().getFullName() + ",\n\n"
-                            + "Đơn đặt lịch của bạn đã được tạo thành công.\n"
-                            + "Mã đơn: #" + booking.getId() + "\n"
-                            + "Thời gian hẹn: " + bookingTimeText + "\n"
-                            + "Địa chỉ thực hiện: " + booking.getAddress() + "\n"
-                            + "Phương thức thanh toán: " + paymentMethodText + "\n"
-                            + "Trạng thái thanh toán: " + paymentStatusText + "\n"
-                            + "Tổng tiền: " + totalPriceText + " VND\n\n"
-                            + "Trân trọng,\nHomeFix",
-                    "<!doctype html><html lang=\"vi\"><head><meta charset=\"UTF-8\" />"
+                    "Hello " + booking.getCustomer().getFullName() + ",\n\n"
+                            + "Your booking has been created successfully.\n"
+                            + "Booking ID: #" + booking.getId() + "\n"
+                            + "Scheduled time: " + bookingTimeText + "\n"
+                            + "Address: " + booking.getAddress() + "\n"
+                            + "Payment method: " + paymentMethodText + "\n"
+                            + "Payment status: " + paymentStatusText + "\n"
+                            + "Total: " + totalPriceText + " VND\n\n"
+                            + "HomeFix",
+                    "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\" />"
                             + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" /></head>"
                             + "<body style=\"margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#0f172a;\">"
                             + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"padding:24px 12px;\">"
                             + "<tr><td align=\"center\"><table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width:620px;background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;\">"
                             + "<tr><td style=\"padding:24px;background:linear-gradient(135deg,#2563eb,#06b6d4);color:#ffffff;\">"
                             + "<div style=\"font-size:22px;font-weight:700;line-height:30px;\">HomeFix</div>"
-                            + "<div style=\"font-size:14px;line-height:22px;margin-top:6px;opacity:0.95;\">Xác nhận đặt lịch dịch vụ</div>"
+                            + "<div style=\"font-size:14px;line-height:22px;margin-top:6px;opacity:0.95;\">Booking confirmation</div>"
                             + "</td></tr>"
                             + "<tr><td style=\"padding:24px;\">"
-                            + "<p style=\"margin:0 0 14px;font-size:15px;line-height:23px;\">Xin chào <strong>" + booking.getCustomer().getFullName() + "</strong>,</p>"
-                            + "<p style=\"margin:0 0 16px;font-size:14px;line-height:22px;color:#334155;\">Đơn đặt lịch của bạn đã được tạo thành công. Thông tin chi tiết như sau:</p>"
+                            + "<p style=\"margin:0 0 14px;font-size:15px;line-height:23px;\">Hello <strong>" + booking.getCustomer().getFullName() + "</strong>,</p>"
+                            + "<p style=\"margin:0 0 16px;font-size:14px;line-height:22px;color:#334155;\">Your booking is now in the live technician dispatch queue.</p>"
                             + "<table role=\"presentation\" width=\"100%\" cellspacing=\"0\" cellpadding=\"0\" style=\"border-collapse:collapse;font-size:14px;line-height:22px;color:#1e293b;\">"
-                            + "<tr><td style=\"padding:8px 0;width:42%;color:#64748b;\">Mã đơn</td><td style=\"padding:8px 0;\">#" + booking.getId() + "</td></tr>"
-                            + "<tr><td style=\"padding:8px 0;color:#64748b;\">Thời gian hẹn</td><td style=\"padding:8px 0;\">" + bookingTimeText + "</td></tr>"
-                            + "<tr><td style=\"padding:8px 0;color:#64748b;\">Địa chỉ thực hiện</td><td style=\"padding:8px 0;\">" + booking.getAddress() + "</td></tr>"
-                            + "<tr><td style=\"padding:8px 0;color:#64748b;\">Phương thức thanh toán</td><td style=\"padding:8px 0;\">" + paymentMethodText + "</td></tr>"
-                            + "<tr><td style=\"padding:8px 0;color:#64748b;\">Trạng thái thanh toán</td><td style=\"padding:8px 0;\">" + paymentStatusText + "</td></tr>"
-                            + "<tr><td style=\"padding:8px 0;color:#64748b;\">Tổng tiền</td><td style=\"padding:8px 0;\">" + totalPriceText + " VND</td></tr>"
+                            + "<tr><td style=\"padding:8px 0;width:42%;color:#64748b;\">Booking ID</td><td style=\"padding:8px 0;\">#" + booking.getId() + "</td></tr>"
+                            + "<tr><td style=\"padding:8px 0;color:#64748b;\">Scheduled time</td><td style=\"padding:8px 0;\">" + bookingTimeText + "</td></tr>"
+                            + "<tr><td style=\"padding:8px 0;color:#64748b;\">Address</td><td style=\"padding:8px 0;\">" + booking.getAddress() + "</td></tr>"
+                            + "<tr><td style=\"padding:8px 0;color:#64748b;\">Payment method</td><td style=\"padding:8px 0;\">" + paymentMethodText + "</td></tr>"
+                            + "<tr><td style=\"padding:8px 0;color:#64748b;\">Payment status</td><td style=\"padding:8px 0;\">" + paymentStatusText + "</td></tr>"
+                            + "<tr><td style=\"padding:8px 0;color:#64748b;\">Total</td><td style=\"padding:8px 0;\">" + totalPriceText + " VND</td></tr>"
                             + "</table>"
-                            + "<p style=\"margin:18px 0 0;font-size:13px;line-height:21px;color:#64748b;\">Cảm ơn bạn đã sử dụng dịch vụ HomeFix.</p>"
                             + "</td></tr>"
                             + "</table></td></tr></table></body></html>");
 
             mailSender.send(message);
         } catch (MailException | MessagingException ex) {
-            throw new RuntimeException("Không thể gửi email xác nhận đặt lịch");
+            throw new RuntimeException("Unable to send booking confirmation email");
         }
     }
 
@@ -591,7 +745,8 @@ public class BookingService {
         }
         dto.setTechnicianEarning(entity.getTechnicianEarning());
         dto.setPlatformProfit(entity.getPlatformProfit());
-
+        dto.setAssistantTechnicianIds(entity.getAssistantTechnicians().stream().map(User::getId).toList());
+        dto.setAssistantTechnicianNames(entity.getAssistantTechnicians().stream().map(User::getFullName).toList());
         return dto;
     }
 }
