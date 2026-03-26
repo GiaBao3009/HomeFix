@@ -28,18 +28,18 @@ public class ServiceController {
     }
 
     @PutMapping("/categories/{id}")
-    public ResponseEntity<ServiceCategory> updateCategory(@PathVariable Long id, @RequestBody ServiceCategory category) {
+    public ResponseEntity<ServiceCategory> updateCategory(@PathVariable("id") Long id, @RequestBody ServiceCategory category) {
         return ResponseEntity.ok(homeService.updateCategory(id, category));
     }
 
     @DeleteMapping("/categories/{id}")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCategory(@PathVariable("id") Long id) {
         homeService.deleteCategory(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/packages")
-    public ResponseEntity<List<ServicePackageDto>> getPackages(@RequestParam(required = false) Long categoryId) {
+    public ResponseEntity<List<ServicePackageDto>> getPackages(@RequestParam(name = "categoryId", required = false) Long categoryId) {
         if (categoryId != null) {
             return ResponseEntity.ok(homeService.getPackagesByCategory(categoryId));
         }
@@ -48,9 +48,9 @@ public class ServiceController {
 
     @GetMapping("/packages/search")
     public ResponseEntity<java.util.Map<String, Object>> searchPackages(
-            @RequestParam(required = false, defaultValue = "") String q,
-            @RequestParam(required = false, defaultValue = "0") int page,
-            @RequestParam(required = false, defaultValue = "10") int size) {
+            @RequestParam(name = "q", required = false, defaultValue = "") String q,
+            @RequestParam(name = "page", required = false, defaultValue = "0") int page,
+            @RequestParam(name = "size", required = false, defaultValue = "10") int size) {
         var pageable = org.springframework.data.domain.PageRequest.of(page, size);
         var result = homeService.searchPackages(q, pageable);
         java.util.Map<String, Object> body = new java.util.HashMap<>();
@@ -62,7 +62,7 @@ public class ServiceController {
     }
 
     @GetMapping("/packages/{id}")
-    public ResponseEntity<ServicePackageDto> getPackage(@PathVariable Long id) {
+    public ResponseEntity<ServicePackageDto> getPackage(@PathVariable("id") Long id) {
         return ResponseEntity.ok(homeService.getPackageById(id));
     }
 
@@ -72,12 +72,12 @@ public class ServiceController {
     }
 
     @PutMapping("/packages/{id}")
-    public ResponseEntity<ServicePackageDto> updatePackage(@PathVariable Long id, @RequestBody ServicePackageDto dto) {
+    public ResponseEntity<ServicePackageDto> updatePackage(@PathVariable("id") Long id, @RequestBody ServicePackageDto dto) {
         return ResponseEntity.ok(homeService.updatePackage(id, dto));
     }
 
     @DeleteMapping("/packages/{id}")
-    public ResponseEntity<Void> deletePackage(@PathVariable Long id) {
+    public ResponseEntity<Void> deletePackage(@PathVariable("id") Long id) {
         homeService.deletePackage(id);
         return ResponseEntity.noContent().build();
     }
