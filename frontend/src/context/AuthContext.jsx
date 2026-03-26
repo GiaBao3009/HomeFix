@@ -22,33 +22,33 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         try {
             const response = await api.post('/auth/login', { email, password });
-            const { token, role, fullName, id, avatarUrl } = response.data;
+            const { token, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus } = response.data;
             
             localStorage.setItem('token', token);
-            const userData = { email, role, fullName, id, avatarUrl };
+            const userData = { email, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus };
             localStorage.setItem('user', JSON.stringify(userData));
             
             setUser(userData);
             toast.success('Đăng nhập thành công!');
-            return true;
+            return userData;
         } catch (error) {
             toast.error(error.response?.data?.error || 'Đăng nhập thất bại');
-            return false;
+            return null;
         }
     };
 
     const register = async (data) => {
         try {
             const response = await api.post('/auth/register', data);
-            const { token, role, fullName, id, avatarUrl } = response.data;
+            const { token, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus } = response.data;
             
             localStorage.setItem('token', token);
-            const userData = { email: data.email, role, fullName, id, avatarUrl };
+            const userData = { email: data.email, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus };
             localStorage.setItem('user', JSON.stringify(userData));
             
             setUser(userData);
             toast.success('Đăng ký thành công!');
-            return true;
+            return userData;
         } catch (error) {
             console.error("Register error:", error);
             const errorData = error.response?.data;
@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
             }
             
             toast.error(errorMessage);
-            return false;
+            return null;
         }
     };
 
@@ -86,8 +86,24 @@ export const AuthProvider = ({ children }) => {
         setUser(updatedUser);
     };
 
+    const refreshUserProfile = async () => {
+        try {
+            const response = await api.get('/users/profile');
+            const profile = response.data || {};
+            updateUser({
+                fullName: profile.fullName,
+                avatarUrl: profile.avatarUrl,
+                technicianProfileCompleted: profile.technicianProfileCompleted,
+                technicianType: profile.technicianType,
+                technicianApprovalStatus: profile.technicianApprovalStatus
+            });
+        } catch (error) {
+            console.error('Refresh user profile error:', error);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, updateUser, loading }}>
+        <AuthContext.Provider value={{ user, login, register, logout, updateUser, refreshUserProfile, loading }}>
             {children}
         </AuthContext.Provider>
     );

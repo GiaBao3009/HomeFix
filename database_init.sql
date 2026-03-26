@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS password_reset_tokens;
 DROP TABLE IF EXISTS service_images;
 DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS technician_categories;
 DROP TABLE IF EXISTS service_packages;
 DROP TABLE IF EXISTS service_categories;
 DROP TABLE IF EXISTS coupons;
@@ -23,6 +24,18 @@ CREATE TABLE users (
   address TEXT,
   role VARCHAR(20) NOT NULL,
   avatar_url VARCHAR(255),
+  specialty VARCHAR(255),
+  experience_years INT,
+  work_description TEXT,
+  citizen_id VARCHAR(20),
+  technician_profile_completed BOOLEAN NOT NULL DEFAULT FALSE,
+  technician_type VARCHAR(20),
+  technician_approval_status VARCHAR(20) DEFAULT 'NOT_REQUIRED',
+  wallet_balance DECIMAL(15,2) NOT NULL DEFAULT 0,
+  base_location VARCHAR(255),
+  available_from TIME,
+  available_to TIME,
+  available_for_auto_assign BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT chk_users_role CHECK (role IN ('CUSTOMER', 'ADMIN', 'TECHNICIAN'))
@@ -92,6 +105,9 @@ CREATE TABLE bookings (
   payment_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
   rejection_reason TEXT NULL,
   completed_at DATETIME NULL,
+  technician_earning DECIMAL(10,2) NOT NULL DEFAULT 0,
+  platform_profit DECIMAL(10,2) NOT NULL DEFAULT 0,
+  version BIGINT NULL,
   CONSTRAINT chk_bookings_status CHECK (status IN ('PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'DECLINED')),
   CONSTRAINT chk_bookings_total_price CHECK (total_price >= 0),
   CONSTRAINT chk_bookings_payment_method CHECK (payment_method IN ('CASH', 'MOMO', 'VNPAY')),
@@ -100,6 +116,14 @@ CREATE TABLE bookings (
   CONSTRAINT fk_bookings_package FOREIGN KEY (service_package_id) REFERENCES service_packages(id) ON DELETE CASCADE,
   CONSTRAINT fk_bookings_technician FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT fk_bookings_coupon FOREIGN KEY (coupon_id) REFERENCES coupons(id) ON DELETE SET NULL
+);
+
+CREATE TABLE technician_categories (
+  technician_id BIGINT NOT NULL,
+  category_id BIGINT NOT NULL,
+  PRIMARY KEY (technician_id, category_id),
+  CONSTRAINT fk_technician_categories_technician FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_technician_categories_category FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_bookings_customer ON bookings(customer_id);
@@ -155,4 +179,3 @@ CREATE TABLE password_reset_tokens (
 );
 
 CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens(user_id);
-

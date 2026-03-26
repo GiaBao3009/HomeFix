@@ -23,7 +23,7 @@ public class ServiceCategoryController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ServiceCategory> getCategoryById(@PathVariable Long id) {
+    public ResponseEntity<ServiceCategory> getCategoryById(@PathVariable("id") Long id) {
         return ResponseEntity.ok(service.getCategoryById(id));
     }
 
@@ -35,13 +35,13 @@ public class ServiceCategoryController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ServiceCategory> updateCategory(@PathVariable Long id, @RequestBody ServiceCategory category) {
+    public ResponseEntity<ServiceCategory> updateCategory(@PathVariable("id") Long id, @RequestBody ServiceCategory category) {
         return ResponseEntity.ok(service.updateCategory(id, category));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCategory(@PathVariable("id") Long id) {
         service.deleteCategory(id);
         return ResponseEntity.ok().build();
     }

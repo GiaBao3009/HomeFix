@@ -35,31 +35,37 @@ public class BookingController {
 
     @PatchMapping("/{id}/status")
     public ResponseEntity<BookingDto> updateStatus(
-            @PathVariable Long id,
-            @RequestParam BookingStatus status) {
+            @PathVariable("id") Long id,
+            @RequestParam("status") BookingStatus status) {
         return ResponseEntity.ok(bookingService.updateStatus(id, status));
     }
 
     @PatchMapping("/{id}/assign")
     public ResponseEntity<BookingDto> assignTechnician(
-            @PathVariable Long id,
-            @RequestParam Long technicianId) {
+            @PathVariable("id") Long id,
+            @RequestParam("technicianId") Long technicianId) {
         return ResponseEntity.ok(bookingService.assignTechnician(id, technicianId));
     }
 
     @PostMapping("/{id}/technician-response")
     public ResponseEntity<BookingDto> technicianResponse(
-            @PathVariable Long id,
-            @RequestParam boolean accepted,
-            @RequestParam(required = false) String reason) {
+            @PathVariable("id") Long id,
+            @RequestParam("accepted") boolean accepted,
+            @RequestParam(name = "reason", required = false) String reason) {
         return ResponseEntity.ok(bookingService.technicianResponse(id, accepted, reason));
     }
 
     @PostMapping("/{id}/review-decline")
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BookingDto> reviewDecline(
-            @PathVariable Long id,
-            @RequestParam boolean approve) {
+            @PathVariable("id") Long id,
+            @RequestParam("approve") boolean approve) {
         return ResponseEntity.ok(bookingService.reviewDecline(id, approve));
+    }
+
+    @PatchMapping("/{id}/confirm-payment")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BookingDto> confirmPayment(@PathVariable("id") Long id) {
+        return ResponseEntity.ok(bookingService.confirmPayment(id));
     }
 }

@@ -1,17 +1,17 @@
-
 -- Disable foreign key checks for clean cleanup
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- Drop tables if they exist
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS password_reset_tokens;
+DROP TABLE IF EXISTS website_content;
 DROP TABLE IF EXISTS service_images;
 DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS technician_categories;
 DROP TABLE IF EXISTS service_packages;
 DROP TABLE IF EXISTS service_categories;
 DROP TABLE IF EXISTS coupons;
-DROP TABLE IF EXISTS website_content;
 DROP TABLE IF EXISTS users;
 
 -- Re-enable foreign key checks
@@ -27,6 +27,18 @@ CREATE TABLE users (
     address TEXT,
     role VARCHAR(20) NOT NULL,
     avatar_url VARCHAR(255),
+    specialty VARCHAR(255),
+    experience_years INT,
+    work_description TEXT,
+    citizen_id VARCHAR(20),
+    technician_profile_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    technician_type VARCHAR(20),
+    technician_approval_status VARCHAR(20) DEFAULT 'NOT_REQUIRED',
+    wallet_balance DECIMAL(15, 2) NOT NULL DEFAULT 0,
+    base_location VARCHAR(255),
+    available_from TIME,
+    available_to TIME,
+    available_for_auto_assign BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT chk_users_role CHECK (role IN ('CUSTOMER', 'ADMIN', 'TECHNICIAN'))
@@ -96,6 +108,9 @@ CREATE TABLE bookings (
     note TEXT,
     status VARCHAR(20) NOT NULL,
     total_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    technician_earning DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    platform_profit DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    version BIGINT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     payment_method VARCHAR(50) NOT NULL DEFAULT 'CASH',
     payment_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
@@ -116,6 +131,14 @@ CREATE INDEX idx_bookings_technician ON bookings(technician_id);
 CREATE INDEX idx_bookings_status ON bookings(status);
 CREATE INDEX idx_bookings_booking_time ON bookings(booking_time);
 CREATE INDEX idx_bookings_service_package ON bookings(service_package_id);
+
+CREATE TABLE technician_categories (
+    technician_id BIGINT NOT NULL,
+    category_id BIGINT NOT NULL,
+    PRIMARY KEY (technician_id, category_id),
+    CONSTRAINT fk_tech_cat_technician FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_tech_cat_category FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE CASCADE
+);
 
 -- 7. Reviews Table
 CREATE TABLE reviews (

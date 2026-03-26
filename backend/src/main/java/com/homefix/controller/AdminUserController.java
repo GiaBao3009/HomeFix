@@ -24,11 +24,20 @@ public class AdminUserController {
 
     @PatchMapping("/{id}/role")
     public ResponseEntity<UserDto> updateUserRole(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody Map<String, String> payload
     ) {
         String newRole = payload.get("role");
         return ResponseEntity.ok(userService.updateUserRole(id, newRole));
+    }
+
+    @PatchMapping("/{id}/technician-approval")
+    public ResponseEntity<UserDto> approveTechnician(
+            @PathVariable("id") Long id,
+            @RequestBody Map<String, Boolean> payload
+    ) {
+        boolean approved = payload.getOrDefault("approved", false);
+        return ResponseEntity.ok(userService.approveTechnician(id, approved));
     }
 }
 

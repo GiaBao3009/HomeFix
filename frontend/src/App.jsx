@@ -11,6 +11,7 @@ import AdminUserManager from './pages/AdminUserManager';
 import BookingPage from './pages/BookingPage';
 import Dashboard from './pages/Dashboard';
 import TechnicianDashboard from './pages/TechnicianDashboard';
+import TechnicianWallet from './pages/TechnicianWallet';
 import AdminDispatch from './pages/AdminDispatch';
 import AdminCategoryManager from './pages/AdminCategoryManager';
 import AdminCouponManager from './pages/AdminCouponManager';
@@ -29,6 +30,13 @@ const PrivateRoute = ({ children }) => {
     const { user, loading } = useAuth();
     if (loading) return <div>Loading...</div>;
     return user ? children : <Navigate to="/login" />;
+};
+
+const RoleRoute = ({ children, roles }) => {
+    const { user, loading } = useAuth();
+    if (loading) return <div>Loading...</div>;
+    if (!user) return <Navigate to="/login" />;
+    return roles.includes(user.role) ? children : <Navigate to="/" />;
 };
 
 function App() {
@@ -83,49 +91,57 @@ function App() {
                     <Route 
                         path="/technician/dashboard" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['TECHNICIAN']}>
                                 <TechnicianDashboard />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
+                    />
+                    <Route
+                        path="/technician/wallet"
+                        element={
+                            <RoleRoute roles={['TECHNICIAN']}>
+                                <TechnicianWallet />
+                            </RoleRoute>
+                        }
                     />
                     <Route 
                         path="/admin/dispatch" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['ADMIN']}>
                                 <AdminDispatch />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
                     />
                     <Route 
                         path="/admin/categories" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['ADMIN']}>
                                 <AdminCategoryManager />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
                     />
                     <Route 
                         path="/admin/services" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['ADMIN']}>
                                 <AdminServiceManager />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
                     />
                     <Route 
                         path="/admin/users" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['ADMIN']}>
                                 <AdminUserManager />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
                     />
                     <Route 
                         path="/admin/coupons" 
                         element={
-                            <PrivateRoute>
+                            <RoleRoute roles={['ADMIN']}>
                                 <AdminCouponManager />
-                            </PrivateRoute>
+                            </RoleRoute>
                         } 
                     />
                 </Routes>

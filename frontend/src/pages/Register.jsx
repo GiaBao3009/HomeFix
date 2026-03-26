@@ -1,26 +1,29 @@
 import { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Alert, Skeleton } from 'antd';
+import { Form, Input, Button, Alert, Skeleton, Radio, Space } from 'antd';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import useContent from '../hooks/useContent';
 import { User, Mail, Lock, Phone, Eye, EyeOff, Sparkles, Clock, ShieldCheck, CreditCard } from 'lucide-react';
-
-const { Title, Text } = Typography;
 
 const Register = () => {
     const { register } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [form] = Form.useForm();
+    const selectedRole = Form.useWatch('role', form);
     const { content: pageContent, loading: contentLoading } = useContent('REGISTER');
 
     const onFinish = async (values) => {
         setLoading(true);
         setError('');
-        const success = await register(values);
+        const userData = await register({
+            ...values,
+            role: values.role || 'CUSTOMER'
+        });
         setLoading(false);
-        if (success) {
-            navigate('/');
+        if (userData) {
+            navigate(userData.role === 'TECHNICIAN' ? '/technician/dashboard' : '/');
         } else {
             setError('Đăng ký thất bại. Email có thể đã tồn tại.');
         }
@@ -123,11 +126,39 @@ const Register = () => {
                         )}
 
                         <Form 
+                            form={form}
                             layout="vertical" 
                             onFinish={onFinish}
                             size="large"
                             className="space-y-1"
+                            initialValues={{ role: 'CUSTOMER' }}
                         >
+                            <Form.Item
+                                label={<span className="font-semibold text-slate-700">Loại tài khoản</span>}
+                                name="role"
+                                rules={[{ required: true, message: 'Vui lòng chọn loại tài khoản!' }]}
+                            >
+                                <Radio.Group className="w-full">
+                                    <Space className="flex w-full">
+                                        <Radio.Button value="CUSTOMER" className="!rounded-xl !h-11 !leading-[44px] !text-center !flex-1">
+                                            Khách hàng
+                                        </Radio.Button>
+                                        <Radio.Button value="TECHNICIAN" className="!rounded-xl !h-11 !leading-[44px] !text-center !flex-1">
+                                            Kỹ thuật viên
+                                        </Radio.Button>
+                                    </Space>
+                                </Radio.Group>
+                            </Form.Item>
+                            {selectedRole === 'TECHNICIAN' && (
+                                <Alert
+                                    type="info"
+                                    showIcon
+                                    className="mb-4 rounded-xl"
+                                    message="Sau khi đăng ký, bạn cần hoàn tất hồ sơ kỹ thuật viên để nhận việc."
+                                    description="Bạn sẽ chọn thợ chính hoặc thợ phụ, nhập chuyên môn, kinh nghiệm, mô tả công việc và CCCD."
+                                />
+                            )}
+
                             <Form.Item
                                 label={<span className="font-semibold text-slate-700">Họ và tên</span>}
                                 name="fullName"
@@ -172,6 +203,16 @@ const Register = () => {
                                 <Input 
                                     prefix={<Phone className="mr-2 text-slate-400" size={20} />}
                                     placeholder="0912 345 678" 
+                                    className="py-3 rounded-xl border-slate-200 hover:border-purple-400 focus:border-purple-500"
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                label={<span className="font-semibold text-slate-700">Địa chỉ</span>}
+                                name="address"
+                            >
+                                <Input
+                                    placeholder="Số nhà, đường, quận/huyện, tỉnh/thành"
                                     className="py-3 rounded-xl border-slate-200 hover:border-purple-400 focus:border-purple-500"
                                 />
                             </Form.Item>
