@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button, Dropdown, Avatar, Space } from 'antd';
-import { User, LogOut, LayoutDashboard, Settings, Users, Tag } from 'lucide-react';
+import { User, LogOut, LayoutDashboard, Settings, Users, Tag, Layers, Wallet } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
@@ -17,14 +17,24 @@ const Navbar = () => {
                 </div>
             ),
         },
-        ...(user?.role === 'TECHNICIAN' ? [{
-            key: 'tech-dashboard',
-            label: (
-                <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/technician/dashboard')}>
-                    <LayoutDashboard size={16} /> Bảng công việc
-                </div>
-            ),
-        }] : []),
+        ...(user?.role === 'TECHNICIAN' ? [
+            {
+                key: 'tech-dashboard',
+                label: (
+                    <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/technician/dashboard')}>
+                        <LayoutDashboard size={16} /> Bảng công việc
+                    </div>
+                ),
+            },
+            {
+                key: 'tech-wallet',
+                label: (
+                    <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/technician/wallet')}>
+                        <Wallet size={16} /> Ví kỹ thuật viên
+                    </div>
+                ),
+            }
+        ] : []),
         ...(user?.role === 'ADMIN' ? [
             {
                 key: 'admin-dispatch',
@@ -39,6 +49,14 @@ const Navbar = () => {
                 label: (
                     <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/admin/services')}>
                         <Settings size={16} /> Quản lý dịch vụ
+                    </div>
+                ),
+            },
+            {
+                key: 'admin-categories',
+                label: (
+                    <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/admin/categories')}>
+                        <Layers size={16} /> Quản lý danh mục
                     </div>
                 ),
             },

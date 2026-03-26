@@ -43,6 +43,17 @@ const AdminUserManager = () => {
         }
     };
 
+    const handleTechnicianApproval = async (userId, approved) => {
+        try {
+            await api.patch(`/admin/users/${userId}/technician-approval`, { approved });
+            message.success(approved ? 'Đã duyệt thợ chính' : 'Đã từ chối duyệt thợ chính');
+            fetchUsers();
+        } catch (error) {
+            console.error("Error approving technician:", error);
+            message.error(error.response?.data?.message || 'Duyệt kỹ thuật viên thất bại');
+        }
+    };
+
     const getRoleColor = (role) => {
         switch (role) {
             case 'ADMIN': return 'red';
@@ -91,8 +102,8 @@ const AdminUserManager = () => {
         },
         {
             title: 'Số điện thoại',
-            dataIndex: 'phoneNumber',
-            key: 'phoneNumber',
+            dataIndex: 'phone',
+            key: 'phone',
         },
         {
             title: 'Vai trò',
@@ -103,6 +114,36 @@ const AdminUserManager = () => {
                     {role === 'CUSTOMER' ? 'Khách hàng' : role === 'TECHNICIAN' ? 'Kỹ thuật viên' : 'Quản trị viên'}
                 </Tag>
             ),
+        },
+        {
+            title: 'Loại thợ',
+            dataIndex: 'technicianType',
+            key: 'technicianType',
+            render: (_, record) => {
+                if (record.role !== 'TECHNICIAN') return '-';
+                return record.technicianType === 'MAIN' ? 'Thợ chính' : record.technicianType === 'ASSISTANT' ? 'Thợ phụ' : 'Chưa chọn';
+            }
+        },
+        {
+            title: 'Duyệt thợ',
+            dataIndex: 'technicianApprovalStatus',
+            key: 'technicianApprovalStatus',
+            render: (_, record) => {
+                if (record.role !== 'TECHNICIAN' || record.technicianType !== 'MAIN') return '-';
+                const status = record.technicianApprovalStatus;
+                if (status === 'APPROVED') return <Tag color="green">Đã duyệt</Tag>;
+                if (status === 'REJECTED') return <Tag color="red">Đã từ chối</Tag>;
+                if (status === 'PENDING') {
+                    return (
+                        <Space>
+                            <Tag color="gold">Chờ duyệt</Tag>
+                            <Button size="small" type="primary" onClick={() => handleTechnicianApproval(record.id, true)}>Duyệt</Button>
+                            <Button size="small" danger onClick={() => handleTechnicianApproval(record.id, false)}>Từ chối</Button>
+                        </Space>
+                    );
+                }
+                return '-';
+            }
         },
         {
             title: 'Hành động',
