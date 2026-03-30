@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ProfilePage from './pages/ProfilePage';
+import MessagesPage from './pages/MessagesPage';
 import ServiceList from './pages/ServiceList';
 import ServiceDetailPage from './pages/ServiceDetailPage';
 import AdminServiceManager from './pages/AdminServiceManager';
@@ -11,6 +12,7 @@ import AdminUserManager from './pages/AdminUserManager';
 import BookingPage from './pages/BookingPage';
 import Dashboard from './pages/Dashboard';
 import TechnicianDashboard from './pages/TechnicianDashboard';
+import TechnicianProfilePage from './pages/TechnicianProfilePage';
 import TechnicianWallet from './pages/TechnicianWallet';
 import AdminDispatch from './pages/AdminDispatch';
 import AdminCategoryManager from './pages/AdminCategoryManager';
@@ -21,6 +23,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Footer from './components/Footer';
 import { useAuth } from './context/AuthContext';
+import { useTheme } from './context/ThemeContext';
 
 import OAuth2Redirect from './pages/OAuth2Redirect';
 
@@ -38,8 +41,9 @@ const RoleRoute = ({ children, roles }) => {
 };
 
 function App() {
+    const { darkMode } = useTheme();
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className={`min-h-screen flex flex-col transition-colors duration-300 ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-gray-50 text-slate-900'}`}>
             <Navbar />
             <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
                 <Routes>
@@ -63,6 +67,14 @@ function App() {
                                 <OrderHistory />
                             </PrivateRoute>
                         } 
+                    />
+                    <Route
+                        path="/messages"
+                        element={
+                            <PrivateRoute>
+                                <MessagesPage />
+                            </PrivateRoute>
+                        }
                     />
                     <Route path="/services" element={<ServiceList />} />
                     <Route path="/services/:id" element={<ServiceDetailPage />} />
@@ -91,6 +103,14 @@ function App() {
                                 <TechnicianDashboard />
                             </RoleRoute>
                         } 
+                    />
+                    <Route
+                        path="/technician/profile"
+                        element={
+                            <RoleRoute roles={['TECHNICIAN']}>
+                                <TechnicianProfilePage />
+                            </RoleRoute>
+                        }
                     />
                     <Route
                         path="/technician/wallet"
