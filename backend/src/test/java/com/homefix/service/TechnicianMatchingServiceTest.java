@@ -58,7 +58,8 @@ class TechnicianMatchingServiceTest {
 
         when(userRepository.findTechniciansForMatchingWithLock()).thenReturn(List.of(techA, techB));
         when(bookingRepository.existsByTechnicianAndBookingTimeAndStatusIn(any(), any(), anyList())).thenReturn(false);
-        when(bookingRepository.countByTechnicianAndStatusIn(any(), anyList())).thenReturn(1L);
+        when(bookingRepository.existsByAssistantTechniciansContainingAndBookingTimeAndStatusIn(any(), any(), anyList())).thenReturn(false);
+        when(bookingRepository.countVisibleToTechnicianAndStatusIn(any(), anyList())).thenReturn(1L);
         when(reviewRepository.findAverageRatingByTechnicianId(1L)).thenReturn(4.8);
         when(reviewRepository.findAverageRatingByTechnicianId(2L)).thenReturn(3.5);
 
