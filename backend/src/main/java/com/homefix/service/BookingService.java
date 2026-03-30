@@ -165,13 +165,16 @@ public class BookingService {
         if (technician.getRole() != Role.TECHNICIAN) {
             throw new RuntimeException("Only technicians can see dispatch feed");
         }
-        if (!isTechnicianReadyForDispatch(technician)) {
-            return List.of();
-        }
 
         return bookingRepository.findOpenBookingsForDispatch().stream()
-                .filter(booking -> technicianMatchingService.canClaimBooking(technician, booking))
-                .map(this::mapToDto)
+                .filter(booking -> technicianMatchingService.canSeeDispatchFeed(technician, booking))
+                .map(booking -> {
+                    BookingDto dto = mapToDto(booking);
+                    String dispatchBlockReason = technicianMatchingService.getDispatchBlockReason(technician, booking);
+                    dto.setDispatchEligible(dispatchBlockReason == null);
+                    dto.setDispatchBlockReason(dispatchBlockReason);
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -241,7 +244,7 @@ public class BookingService {
         Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
-        if (booking.getStatus() != BookingStatus.CONFIRMED || booking.getTechnician() != null) {
+        if (!technicianMatchingService.isOpenForDispatch(booking) || booking.getTechnician() != null) {
             throw new RuntimeException("This booking has already been claimed");
         }
         if (!technicianMatchingService.canClaimBooking(technician, booking)) {

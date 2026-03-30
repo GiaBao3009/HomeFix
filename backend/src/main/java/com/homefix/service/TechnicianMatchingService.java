@@ -82,22 +82,60 @@ public class TechnicianMatchingService {
     }
 
     public boolean canClaimBooking(User technician, Booking booking) {
-        if (booking == null || booking.getServicePackage() == null || booking.getStatus() != BookingStatus.CONFIRMED) {
+        return getDispatchBlockReason(technician, booking) == null;
+    }
+
+    public boolean isOpenForDispatch(Booking booking) {
+        if (booking == null) {
             return false;
         }
-        if (booking.getTechnician() != null) {
+        return booking.getStatus() == BookingStatus.PENDING || booking.getStatus() == BookingStatus.CONFIRMED;
+    }
+
+    public boolean canSeeDispatchFeed(User technician, Booking booking) {
+        if (technician == null || technician.getRole() != Role.TECHNICIAN) {
             return false;
         }
-        if (!isEligibleForDispatch(technician)) {
+        if (!isOpenForDispatch(booking) || booking.getTechnician() != null) {
             return false;
+        }
+        return booking.getServicePackage() != null && matchesCategory(technician, booking.getServicePackage().getCategory());
+    }
+
+    public String getDispatchBlockReason(User technician, Booking booking) {
+        if (booking == null || booking.getServicePackage() == null) {
+            return "Đơn không hợp lệ";
+        }
+        if (!isOpenForDispatch(booking) || booking.getTechnician() != null) {
+            return "Đơn không còn mở";
+        }
+        if (technician == null || technician.getRole() != Role.TECHNICIAN) {
+            return "Tài khoản không phải kỹ thuật viên";
+        }
+        if (!technician.isTechnicianProfileCompleted()) {
+            return "Chưa hoàn tất hồ sơ kỹ thuật viên";
+        }
+        if (!technician.isAvailableForAutoAssign()) {
+            return "Bạn đang tắt nhận phân công tự động";
+        }
+        if (technician.getTechnicianType() == TechnicianType.MAIN
+                && technician.getTechnicianApprovalStatus() != TechnicianApprovalStatus.APPROVED) {
+            return "Hồ sơ thợ chính đang chờ duyệt";
+        }
+        if (technician.getTechnicianType() == TechnicianType.ASSISTANT
+                && technician.getSupervisingTechnician() == null) {
+            return "Thợ phụ chưa được gán thợ chính phụ trách";
         }
         if (!matchesCategory(technician, booking.getServicePackage().getCategory())) {
-            return false;
+            return "Đơn này không thuộc chuyên mục của bạn";
         }
         if (!isWithinAvailability(technician, booking.getBookingTime())) {
-            return false;
+            return "Đơn nằm ngoài ca làm việc đã cấu hình";
         }
-        return !hasConflict(technician, booking.getBookingTime());
+        if (hasConflict(technician, booking.getBookingTime())) {
+            return "Bạn đang bị trùng lịch ở khung giờ này";
+        }
+        return null;
     }
 
     private boolean matchesCategory(User technician, ServiceCategory targetCategory) {
