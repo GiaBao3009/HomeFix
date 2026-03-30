@@ -23,4 +23,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findBySupervisingTechnician(User supervisingTechnician);
 
     List<User> findByTechnicianTypeAndAssistantPromoteAtBefore(TechnicianType technicianType, LocalDateTime assistantPromoteAt);
+
+    @Query("SELECT u FROM User u WHERE u.id <> :excludeUserId AND (LOWER(u.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(u.email) LIKE LOWER(CONCAT('%', :keyword, '%'))) ORDER BY u.fullName ASC")
+    List<User> searchForChat(Long excludeUserId, String keyword);
 }

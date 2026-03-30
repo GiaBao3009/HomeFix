@@ -37,7 +37,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT COUNT(DISTINCT b) FROM Booking b LEFT JOIN b.assistantTechnicians assistants WHERE (b.technician = :technician OR assistants = :technician) AND b.status IN :statuses")
     long countVisibleToTechnicianAndStatusIn(User technician, List<BookingStatus> statuses);
 
-    @Query("SELECT DISTINCT b FROM Booking b JOIN FETCH b.customer JOIN FETCH b.servicePackage sp LEFT JOIN FETCH sp.category LEFT JOIN FETCH b.assistantTechnicians WHERE b.status = com.homefix.common.BookingStatus.CONFIRMED AND b.technician IS NULL ORDER BY b.createdAt DESC")
+    @Query("SELECT DISTINCT b FROM Booking b JOIN FETCH b.customer JOIN FETCH b.servicePackage sp LEFT JOIN FETCH sp.category LEFT JOIN FETCH b.assistantTechnicians WHERE b.status IN (com.homefix.common.BookingStatus.PENDING, com.homefix.common.BookingStatus.CONFIRMED) AND b.technician IS NULL ORDER BY b.createdAt DESC")
     List<Booking> findOpenBookingsForDispatch();
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

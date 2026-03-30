@@ -2,6 +2,10 @@ CREATE DATABASE IF NOT EXISTS homefix;
 USE homefix;
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS message_attachments;
+DROP TABLE IF EXISTS conversation_messages;
+DROP TABLE IF EXISTS conversation_participants;
+DROP TABLE IF EXISTS conversations;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS password_reset_tokens;
 DROP TABLE IF EXISTS service_images;
@@ -239,3 +243,64 @@ CREATE TABLE password_reset_tokens (
 );
 
 CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens(user_id);
+
+-- =============================================
+-- Global Chat / Messenger Tables (Phase 1)
+-- =============================================
+
+CREATE TABLE conversations (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(120) NOT NULL,
+  created_by_id BIGINT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  last_message_at DATETIME NULL,
+  CONSTRAINT fk_conversations_created_by FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE conversation_participants (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  conversation_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_read_at DATETIME NULL,
+  archived BOOLEAN NOT NULL DEFAULT FALSE,
+  muted BOOLEAN NOT NULL DEFAULT FALSE,
+  CONSTRAINT uq_conversation_participant UNIQUE (conversation_id, user_id),
+  CONSTRAINT fk_conv_participants_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+  CONSTRAINT fk_conv_participants_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE conversation_messages (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  conversation_id BIGINT NOT NULL,
+  sender_id BIGINT NOT NULL,
+  content TEXT NOT NULL,
+  parent_message_id BIGINT NULL,
+  mentioned_user_ids VARCHAR(255) NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  edited_at DATETIME NULL,
+  deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  CONSTRAINT fk_conv_messages_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+  CONSTRAINT fk_conv_messages_sender FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_conv_messages_parent FOREIGN KEY (parent_message_id) REFERENCES conversation_messages(id) ON DELETE SET NULL
+);
+
+CREATE TABLE message_attachments (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  message_id BIGINT NOT NULL,
+  file_name VARCHAR(255) NOT NULL,
+  file_url VARCHAR(500) NOT NULL,
+  content_type VARCHAR(120) NOT NULL,
+  size_bytes BIGINT NOT NULL,
+  CONSTRAINT fk_msg_attachments_message FOREIGN KEY (message_id) REFERENCES conversation_messages(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_conversations_created_by ON conversations(created_by_id);
+CREATE INDEX idx_conversations_last_message ON conversations(last_message_at);
+CREATE INDEX idx_conv_participants_user ON conversation_participants(user_id);
+CREATE INDEX idx_conv_participants_conversation ON conversation_participants(conversation_id);
+CREATE INDEX idx_conv_messages_conversation ON conversation_messages(conversation_id, created_at);
+CREATE INDEX idx_conv_messages_sender ON conversation_messages(sender_id);
+CREATE INDEX idx_conv_messages_parent ON conversation_messages(parent_message_id);
+CREATE INDEX idx_msg_attachments_message ON message_attachments(message_id);
