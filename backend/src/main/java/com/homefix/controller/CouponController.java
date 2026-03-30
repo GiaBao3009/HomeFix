@@ -31,7 +31,7 @@ public class CouponController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Coupon> updateCoupon(@PathVariable Long id, @RequestBody Coupon couponDetails) {
+    public ResponseEntity<Coupon> updateCoupon(@PathVariable("id") Long id, @RequestBody Coupon couponDetails) {
         return couponRepository.findById(id)
                 .map(coupon -> {
                     coupon.setCode(couponDetails.getCode());
@@ -48,7 +48,7 @@ public class CouponController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteCoupon(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteCoupon(@PathVariable("id") Long id) {
         if (couponRepository.existsById(id)) {
             couponRepository.deleteById(id);
             return ResponseEntity.ok().build();

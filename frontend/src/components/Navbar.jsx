@@ -1,30 +1,42 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Button, Dropdown, Avatar, Space } from 'antd';
-import { User, LogOut, LayoutDashboard, Settings, Users, Tag } from 'lucide-react';
+import { Button, Dropdown, Avatar } from 'antd';
+import { User, LogOut, LayoutDashboard, Settings, Users, Tag, Layers, Wallet, MessageSquare, Moon, Sun } from 'lucide-react';
 import NotificationBell from './NotificationBell';
+import { useTheme } from '../context/ThemeContext';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
+    const { darkMode, toggleDarkMode } = useTheme();
     const navigate = useNavigate();
 
     const items = [
         {
             key: '1',
             label: (
-                <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/profile')}>
-                    <User size={16} /> Hồ sơ cá nhân
+                <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate(user?.role === 'TECHNICIAN' ? '/technician/profile' : '/profile')}>
+                    <User size={16} /> {user?.role === 'TECHNICIAN' ? 'Hồ sơ kỹ thuật viên' : 'Hồ sơ cá nhân'}
                 </div>
             ),
         },
-        ...(user?.role === 'TECHNICIAN' ? [{
-            key: 'tech-dashboard',
-            label: (
-                <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/technician/dashboard')}>
-                    <LayoutDashboard size={16} /> Bảng công việc
-                </div>
-            ),
-        }] : []),
+        ...(user?.role === 'TECHNICIAN' ? [
+            {
+                key: 'tech-dashboard',
+                label: (
+                    <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/technician/dashboard')}>
+                        <LayoutDashboard size={16} /> Bảng công việc
+                    </div>
+                ),
+            },
+            {
+                key: 'tech-wallet',
+                label: (
+                    <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/technician/wallet')}>
+                        <Wallet size={16} /> Ví kỹ thuật viên
+                    </div>
+                ),
+            }
+        ] : []),
         ...(user?.role === 'ADMIN' ? [
             {
                 key: 'admin-dispatch',
@@ -39,6 +51,14 @@ const Navbar = () => {
                 label: (
                     <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/admin/services')}>
                         <Settings size={16} /> Quản lý dịch vụ
+                    </div>
+                ),
+            },
+            {
+                key: 'admin-categories',
+                label: (
+                    <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/admin/categories')}>
+                        <Layers size={16} /> Quản lý danh mục
                     </div>
                 ),
             },
@@ -67,6 +87,14 @@ const Navbar = () => {
                 </div>
             ),
         }] : []),
+        ...(user ? [{
+            key: 'messages',
+            label: (
+                <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/messages')}>
+                    <MessageSquare size={16} /> Tin nhắn
+                </div>
+            ),
+        }] : []),
         {
             type: 'divider',
         },
@@ -85,7 +113,7 @@ const Navbar = () => {
     ];
 
     return (
-        <nav className="sticky top-0 z-50 border-b border-gray-100 backdrop-blur-md bg-white/80">
+        <nav className={`sticky top-0 z-50 border-b backdrop-blur-md ${darkMode ? 'border-slate-800 bg-slate-950/85' : 'border-gray-100 bg-white/80'}`}>
             <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-20">
                     <div className="flex gap-12 items-center">
@@ -100,20 +128,26 @@ const Navbar = () => {
                         <div className="hidden items-center space-x-8 md:flex">
                             {(!user || user.role === 'CUSTOMER') && (
                                 <>
-                                    <Link to="/services" className="font-medium text-gray-600 transition-colors hover:text-blue-600">Dịch vụ</Link>
-                                    <Link to="/about" className="font-medium text-gray-600 transition-colors hover:text-blue-600">Giới thiệu</Link>
-                                    <Link to="/contact" className="font-medium text-gray-600 transition-colors hover:text-blue-600">Liên hệ</Link>
+                                    <Link to="/services" className={`font-medium transition-colors hover:text-blue-600 ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>Dịch vụ</Link>
+                                    <Link to="/about" className={`font-medium transition-colors hover:text-blue-600 ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>Giới thiệu</Link>
+                                    <Link to="/contact" className={`font-medium transition-colors hover:text-blue-600 ${darkMode ? 'text-slate-300' : 'text-gray-600'}`}>Liên hệ</Link>
                                 </>
                             )}
                         </div>
                     </div>
                     
                     <div className="flex gap-4 items-center">
+                        <Button
+                            type="text"
+                            onClick={toggleDarkMode}
+                            className={darkMode ? 'text-slate-200 hover:!text-white hover:!bg-slate-800' : 'text-slate-600 hover:!text-blue-600 hover:!bg-blue-50'}
+                            icon={darkMode ? <Sun size={18} /> : <Moon size={18} />}
+                        />
                         {user ? (
                             <>
                                 <NotificationBell />
                                 <Dropdown menu={{ items }} placement="bottomRight" trigger={['click']}>
-                                <div className="flex gap-3 items-center px-3 py-2 rounded-full border border-transparent transition-colors cursor-pointer hover:bg-gray-50 hover:border-gray-200">
+                                <div className={`flex gap-3 items-center px-3 py-2 rounded-full border border-transparent transition-colors cursor-pointer ${darkMode ? 'hover:bg-slate-900 hover:border-slate-800' : 'hover:bg-gray-50 hover:border-gray-200'}`}>
                                     <Avatar 
                                         src={user.avatarUrl}
                                         className="font-bold uppercase bg-gradient-to-r from-blue-500 to-blue-600"
@@ -121,8 +155,8 @@ const Navbar = () => {
                                         {!user.avatarUrl && user.fullName?.charAt(0)}
                                     </Avatar>
                                     <div className="hidden text-left sm:block">
-                                        <div className="text-sm font-semibold text-gray-700">{user.fullName}</div>
-                                        <div className="text-xs text-gray-500 capitalize">{user.role.toLowerCase()}</div>
+                                        <div className={`text-sm font-semibold ${darkMode ? 'text-slate-200' : 'text-gray-700'}`}>{user.fullName}</div>
+                                        <div className={`text-xs capitalize ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>{user.role.toLowerCase()}</div>
                                     </div>
                                 </div>
                             </Dropdown>

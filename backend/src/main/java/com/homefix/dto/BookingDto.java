@@ -3,6 +3,8 @@ package com.homefix.dto;
 import com.homefix.common.BookingStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BookingDto {
     private Long id;
@@ -24,6 +26,12 @@ public class BookingDto {
     private String couponCode;
     private String rejectionReason;
     private Long couponId;
+    private BigDecimal technicianEarning;
+    private BigDecimal platformProfit;
+    private List<Long> assistantTechnicianIds = new ArrayList<>();
+    private List<String> assistantTechnicianNames = new ArrayList<>();
+    private boolean dispatchEligible;
+    private String dispatchBlockReason;
 
     public BookingDto() {
     }
@@ -200,5 +208,53 @@ public class BookingDto {
 
     public void setRejectionReason(String rejectionReason) {
         this.rejectionReason = rejectionReason;
+    }
+
+    public BigDecimal getTechnicianEarning() {
+        return technicianEarning;
+    }
+
+    public void setTechnicianEarning(BigDecimal technicianEarning) {
+        this.technicianEarning = technicianEarning;
+    }
+
+    public BigDecimal getPlatformProfit() {
+        return platformProfit;
+    }
+
+    public void setPlatformProfit(BigDecimal platformProfit) {
+        this.platformProfit = platformProfit;
+    }
+
+    public List<Long> getAssistantTechnicianIds() {
+        return assistantTechnicianIds;
+    }
+
+    public void setAssistantTechnicianIds(List<Long> assistantTechnicianIds) {
+        this.assistantTechnicianIds = assistantTechnicianIds;
+    }
+
+    public List<String> getAssistantTechnicianNames() {
+        return assistantTechnicianNames;
+    }
+
+    public void setAssistantTechnicianNames(List<String> assistantTechnicianNames) {
+        this.assistantTechnicianNames = assistantTechnicianNames;
+    }
+
+    public boolean isDispatchEligible() {
+        return dispatchEligible;
+    }
+
+    public void setDispatchEligible(boolean dispatchEligible) {
+        this.dispatchEligible = dispatchEligible;
+    }
+
+    public String getDispatchBlockReason() {
+        return dispatchBlockReason;
+    }
+
+    public void setDispatchBlockReason(String dispatchBlockReason) {
+        this.dispatchBlockReason = dispatchBlockReason;
     }
 }

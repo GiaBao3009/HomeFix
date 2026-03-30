@@ -17,6 +17,7 @@ import com.homefix.repository.ServicePackageRepository;
 import com.homefix.repository.UserRepository;
 import com.homefix.repository.WebsiteContentRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@Profile("!test")
 public class DataSeeder implements CommandLineRunner {
 
         private final UserRepository userRepository;
@@ -57,19 +59,7 @@ public class DataSeeder implements CommandLineRunner {
 
         @Override
         public void run(String... args) throws Exception {
-                System.out.println("Cleaning database...");
-                try {
-                        reviewRepository.deleteAllInBatch();
-                        bookingRepository.deleteAllInBatch();
-                        couponRepository.deleteAllInBatch();
-                        packageRepository.deleteAllInBatch();
-                        categoryRepository.deleteAllInBatch();
-                        userRepository.deleteAllInBatch();
-                        contentRepository.deleteAllInBatch();
-                } catch (Exception e) {
-                        System.err.println("Error cleaning database: " + e.getMessage());
-                }
-
+                System.out.println("DataSeeder started in non-destructive mode...");
                 seedUsers();
                 seedServices();
                 seedCoupons();
@@ -80,6 +70,11 @@ public class DataSeeder implements CommandLineRunner {
         private void seedBookings() {
                 System.out.println("Starting seedBookings...");
                 try {
+                        if (bookingRepository.count() > 0) {
+                                System.out.println("Skipping seedBookings: Existing bookings detected");
+                                return;
+                        }
+
                         User customer = userRepository.findByEmail("customer@homefix.com").orElse(null);
                         User tech1 = userRepository.findByEmail("tech1@homefix.com").orElse(null);
                         User tech2 = userRepository.findByEmail("tech2@homefix.com").orElse(null);
@@ -122,7 +117,7 @@ public class DataSeeder implements CommandLineRunner {
                                 b2.setAddress("456 Lang Ha, Dong Da, Hanoi");
                                 b2.setStatus(BookingStatus.ASSIGNED);
                                 b2.setTechnician(tech1);
-                                b2.setPaymentMethod("VN_PAY");
+                                b2.setPaymentMethod("VNPAY");
                                 b2.setPaymentStatus("PAID");
                                 b2.setTotalPrice(packages.get(1).getPrice());
                                 bookings.add(b2);
@@ -187,8 +182,10 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         private void seedWebsiteContent() {
-                // Clear existing content to ensure latest data is seeded
-                contentRepository.deleteAll();
+                if (contentRepository.count() > 0) {
+                        System.out.println("Skipping website content seed: Existing content detected");
+                        return;
+                }
 
                 List<WebsiteContent> contents = new ArrayList<>();
 
@@ -343,23 +340,19 @@ public class DataSeeder implements CommandLineRunner {
                                 "Thanh Xuân, Hà Nội",
                                 Role.CUSTOMER);
 
-                System.out.println("Users seeded/updated successfully!");
-
-                // Verify Admin Password
-                User admin = userRepository.findByEmail("admin@homefix.com").orElse(null);
-                if (admin != null) {
-                        boolean matches = passwordEncoder.matches("123456", admin.getPassword());
-                        System.out.println("DEBUG: Admin password verification (123456): " + matches);
-                        System.out.println("DEBUG: Admin encoded password: " + admin.getPassword());
-                }
+                System.out.println("User seed check completed.");
         }
 
         private void createOrUpdateUser(String email, String fullName, String password, String phone, String address,
                         Role role) {
-                User user = userRepository.findByEmail(email).orElse(new User());
+                if (userRepository.findByEmail(email).isPresent()) {
+                        System.out.println("Skipping seed user: " + email + " already exists");
+                        return;
+                }
+
+                User user = new User();
                 user.setEmail(email);
                 user.setFullName(fullName);
-                // Reset password to ensure access in dev environment
                 user.setPassword(passwordEncoder.encode(password));
                 user.setPhone(phone);
                 user.setAddress(address);
@@ -368,7 +361,11 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         private void seedServices() {
-                if (categoryRepository.count() == 0) {
+                if (categoryRepository.count() > 0 || packageRepository.count() > 0) {
+                        System.out.println("Skipping services seed: Existing service data detected");
+                        return;
+                }
+
                         // Categories
                         ServiceCategory cleaning = new ServiceCategory();
                         cleaning.setName("Dọn dẹp nhà cửa");
@@ -478,42 +475,44 @@ public class DataSeeder implements CommandLineRunner {
 
                         packageRepository.saveAll(packages);
                         System.out.println("Services seeded successfully!");
-                }
         }
 
         private void seedCoupons() {
-                if (couponRepository.count() == 0) {
-                        List<Coupon> coupons = new ArrayList<>();
-
-                        Coupon welcome = new Coupon();
-                        welcome.setCode("WELCOME");
-                        welcome.setDiscountPercent(10.0);
-                        welcome.setMaxDiscountAmount(new BigDecimal("50000"));
-                        welcome.setValidUntil(LocalDateTime.now().plusYears(1));
-                        welcome.setUsageLimit(1000);
-                        welcome.setStatus("ACTIVE");
-                        coupons.add(welcome);
-
-                        Coupon summer = new Coupon();
-                        summer.setCode("SUMMER2026");
-                        summer.setDiscountPercent(15.0);
-                        summer.setMaxDiscountAmount(new BigDecimal("100000"));
-                        summer.setValidUntil(LocalDateTime.now().plusMonths(6));
-                        summer.setUsageLimit(500);
-                        summer.setStatus("ACTIVE");
-                        coupons.add(summer);
-
-                        Coupon vip = new Coupon();
-                        vip.setCode("HOMEFIXVIP");
-                        vip.setDiscountPercent(20.0);
-                        vip.setMaxDiscountAmount(new BigDecimal("200000"));
-                        vip.setValidUntil(LocalDateTime.now().plusYears(1));
-                        vip.setUsageLimit(100);
-                        vip.setStatus("ACTIVE");
-                        coupons.add(vip);
-
-                        couponRepository.saveAll(coupons);
-                        System.out.println("Coupons seeded successfully!");
+                if (couponRepository.count() > 0) {
+                        System.out.println("Skipping coupons seed: Existing coupons detected");
+                        return;
                 }
+
+                List<Coupon> coupons = new ArrayList<>();
+
+                Coupon welcome = new Coupon();
+                welcome.setCode("WELCOME");
+                welcome.setDiscountPercent(10.0);
+                welcome.setMaxDiscountAmount(new BigDecimal("50000"));
+                welcome.setValidUntil(LocalDateTime.now().plusYears(1));
+                welcome.setUsageLimit(1000);
+                welcome.setStatus("ACTIVE");
+                coupons.add(welcome);
+
+                Coupon summer = new Coupon();
+                summer.setCode("SUMMER2026");
+                summer.setDiscountPercent(15.0);
+                summer.setMaxDiscountAmount(new BigDecimal("100000"));
+                summer.setValidUntil(LocalDateTime.now().plusMonths(6));
+                summer.setUsageLimit(500);
+                summer.setStatus("ACTIVE");
+                coupons.add(summer);
+
+                Coupon vip = new Coupon();
+                vip.setCode("HOMEFIXVIP");
+                vip.setDiscountPercent(20.0);
+                vip.setMaxDiscountAmount(new BigDecimal("200000"));
+                vip.setValidUntil(LocalDateTime.now().plusYears(1));
+                vip.setUsageLimit(100);
+                vip.setStatus("ACTIVE");
+                coupons.add(vip);
+
+                couponRepository.saveAll(coupons);
+                System.out.println("Coupons seeded successfully!");
         }
 }

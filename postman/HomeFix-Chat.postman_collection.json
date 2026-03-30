@@ -1,0 +1,207 @@
+{
+  "info": {
+    "name": "HomeFix Chat API",
+    "_postman_id": "0d1ee5d2-cf53-4c63-9199-5fb9825fb1af",
+    "description": "Collection for global realtime chat APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get Conversations",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/conversations",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "conversations"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Conversation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Nhóm hỗ trợ mới\",\n  \"participantIds\": [2, 3]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/conversations",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "conversations"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Get Messages",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/messages?page=0&size=30",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "conversations",
+            "{{conversationId}}",
+            "messages"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "30"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Send Message",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"conversationId\": {{conversationId}},\n  \"content\": \"Xin chào realtime\",\n  \"parentMessageId\": null,\n  \"mentionedUserIds\": [],\n  \"attachments\": []\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/messages",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "messages"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Mark Read",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/conversations/{{conversationId}}/read",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "conversations",
+            "{{conversationId}}",
+            "read"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Search Messages",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/chat/messages/search?keyword=đơn&page=0&size=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "chat",
+            "messages",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "keyword",
+              "value": "đơn"
+            },
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "conversationId",
+      "value": "1"
+    }
+  ]
+}

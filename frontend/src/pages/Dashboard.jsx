@@ -1,28 +1,31 @@
 import { useEffect, useState } from 'react';
 import { Tabs, message, Card, Button } from 'antd';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import AdminServiceManager from './AdminServiceManager';
 import AdminDispatch from './AdminDispatch';
 import AdminCategoryManager from './AdminCategoryManager';
 import AdminUserManager from './AdminUserManager';
 import AdminCouponManager from './AdminCouponManager';
 import TechnicianDashboard from './TechnicianDashboard';
+import TechnicianWallet from './TechnicianWallet';
 import OrderHistory from './OrderHistory';
 import AdminCharts from '../components/admin/AdminCharts';
-import { LayoutDashboard, Users, Calendar, Settings, Briefcase, Award, PieChart, Tag as TagIcon, Layers } from 'lucide-react';
+import { LayoutDashboard, Users, Calendar, Settings, Briefcase, Award, PieChart, Tag as TagIcon, Layers, Wallet, MessageSquare } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 const Dashboard = () => {
     const { user } = useAuth();
+    const { darkMode } = useTheme();
+    const navigate = useNavigate();
 
-    // Check role to determine default tab
     const getDefaultTab = () => {
         if (user?.role === 'ADMIN') return 'overview';
         if (user?.role === 'TECHNICIAN') return 'jobs';
         return 'history';
     };
 
-    // Custom tab items with icons
     const adminTabs = [
         {
             key: 'overview',
@@ -34,7 +37,7 @@ const Dashboard = () => {
             ),
             children: (
                 <div>
-                     <h2 className="mb-4 text-xl font-bold text-slate-800">Tổng quan hệ thống</h2>
+                     <h2 className={`mb-4 text-xl font-bold ${darkMode ? 'text-slate-100' : 'text-slate-800'}`}>Tổng quan hệ thống</h2>
                      <AdminCharts />
                 </div>
             )
@@ -101,6 +104,16 @@ const Dashboard = () => {
                 </div>
             ),
             children: <TechnicianDashboard />
+        },
+        {
+            key: 'wallet',
+            label: (
+                <div className="flex gap-2 items-center px-2">
+                    <Wallet size={18}/>
+                    <span className="font-semibold">Ví kỹ thuật viên</span>
+                </div>
+            ),
+            children: <TechnicianWallet />
         }
     ];
 
@@ -114,10 +127,32 @@ const Dashboard = () => {
                 </div>
             ),
             children: <OrderHistory />
+        },
+        {
+            key: 'messages',
+            label: (
+                <div className="flex gap-2 items-center px-2" onClick={(e) => { e.stopPropagation(); navigate('/messages'); }}>
+                    <MessageSquare size={18}/>
+                    <span className="font-semibold">Tin nhắn</span>
+                </div>
+            ),
+            children: (
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                    <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-600/20 to-cyan-500/20 flex items-center justify-center">
+                        <MessageSquare size={36} className="text-blue-500" />
+                    </div>
+                    <div className="text-center">
+                        <div className="text-xl font-bold mb-2">Tin nhắn & Chat</div>
+                        <div className={`mb-4 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Nhắn tin realtime với kỹ thuật viên và quản trị viên</div>
+                        <Button type="primary" size="large" icon={<MessageSquare size={18} />} onClick={() => navigate('/messages')}>
+                            Mở Inbox
+                        </Button>
+                    </div>
+                </div>
+            )
         }
     ];
 
-    // Determine which tabs to show based on user role
     let tabItems = [];
     if (user?.role === 'ADMIN') {
         tabItems = adminTabs;
@@ -166,7 +201,7 @@ const Dashboard = () => {
                     size="large"
                     className="dashboard-tabs"
                     tabBarStyle={{
-                        borderBottom: '2px solid #e2e8f0',
+                        borderBottom: darkMode ? '2px solid #1e293b' : '2px solid #e2e8f0',
                         marginBottom: '2rem'
                     }}
                 />

@@ -7,6 +7,8 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "bookings")
@@ -15,6 +17,9 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    private Long version;
+
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)
     private User customer;
@@ -22,6 +27,10 @@ public class Booking {
     @ManyToOne
     @JoinColumn(name = "technician_id")
     private User technician;
+
+    @ManyToMany
+    @JoinTable(name = "booking_assistants", joinColumns = @JoinColumn(name = "booking_id"), inverseJoinColumns = @JoinColumn(name = "assistant_id"))
+    private Set<User> assistantTechnicians = new LinkedHashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "service_package_id", nullable = false)
@@ -59,6 +68,8 @@ public class Booking {
     private String rejectionReason;
 
     private LocalDateTime completedAt;
+    private BigDecimal technicianEarning = BigDecimal.ZERO;
+    private BigDecimal platformProfit = BigDecimal.ZERO;
 
     public Booking() {
     }
@@ -85,6 +96,14 @@ public class Booking {
         this.id = id;
     }
 
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
     public User getCustomer() {
         return customer;
     }
@@ -99,6 +118,14 @@ public class Booking {
 
     public void setTechnician(User technician) {
         this.technician = technician;
+    }
+
+    public Set<User> getAssistantTechnicians() {
+        return assistantTechnicians;
+    }
+
+    public void setAssistantTechnicians(Set<User> assistantTechnicians) {
+        this.assistantTechnicians = assistantTechnicians;
     }
 
     public ServicePackage getServicePackage() {
@@ -195,5 +222,21 @@ public class Booking {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public BigDecimal getTechnicianEarning() {
+        return technicianEarning;
+    }
+
+    public void setTechnicianEarning(BigDecimal technicianEarning) {
+        this.technicianEarning = technicianEarning;
+    }
+
+    public BigDecimal getPlatformProfit() {
+        return platformProfit;
+    }
+
+    public void setPlatformProfit(BigDecimal platformProfit) {
+        this.platformProfit = platformProfit;
     }
 }
