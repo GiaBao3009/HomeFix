@@ -2,6 +2,10 @@ CREATE DATABASE IF NOT EXISTS homefix;
 USE homefix;
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS message_attachments;
+DROP TABLE IF EXISTS conversation_messages;
+DROP TABLE IF EXISTS conversation_participants;
+DROP TABLE IF EXISTS conversations;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS password_reset_tokens;
 DROP TABLE IF EXISTS service_images;
@@ -173,70 +177,3 @@ CREATE TABLE booking_chat_messages (
 
 CREATE TABLE technician_interaction_logs (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  technician_id BIGINT NOT NULL,
-  customer_id BIGINT NULL,
-  booking_id BIGINT NULL,
-  interaction_type VARCHAR(100) NOT NULL,
-  detail TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_technician_interaction_technician FOREIGN KEY (technician_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_technician_interaction_customer FOREIGN KEY (customer_id) REFERENCES users(id) ON DELETE SET NULL,
-  CONSTRAINT fk_technician_interaction_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL
-);
-
-CREATE INDEX idx_bookings_customer ON bookings(customer_id);
-CREATE INDEX idx_bookings_technician ON bookings(technician_id);
-CREATE INDEX idx_bookings_status ON bookings(status);
-CREATE INDEX idx_bookings_booking_time ON bookings(booking_time);
-CREATE INDEX idx_bookings_service_package ON bookings(service_package_id);
-CREATE INDEX idx_support_tickets_technician_status ON support_tickets(technician_id, status);
-CREATE INDEX idx_booking_chat_booking_expired ON booking_chat_messages(booking_id, deleted, expires_at);
-CREATE INDEX idx_interaction_technician_created ON technician_interaction_logs(technician_id, created_at);
-
-CREATE TABLE reviews (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  booking_id BIGINT NOT NULL UNIQUE,
-  rating INT NOT NULL,
-  comment TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT chk_reviews_rating CHECK (rating >= 1 AND rating <= 5),
-  CONSTRAINT fk_reviews_booking FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE
-);
-
-CREATE TABLE website_content (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  section VARCHAR(255) NOT NULL,
-  content_key VARCHAR(255) NOT NULL,
-  title VARCHAR(255),
-  content TEXT,
-  image_url VARCHAR(255),
-  link_url VARCHAR(255),
-  display_order INT,
-  CONSTRAINT uq_website_content_order UNIQUE (section, content_key, display_order)
-);
-
-CREATE TABLE notifications (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  user_id BIGINT NOT NULL,
-  title VARCHAR(255),
-  message TEXT,
-  is_read BIT(1) NOT NULL DEFAULT b'0',
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  type VARCHAR(50),
-  related_id BIGINT,
-  CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at);
-CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read);
-
-CREATE TABLE password_reset_tokens (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  token VARCHAR(255) NOT NULL UNIQUE,
-  user_id BIGINT NOT NULL,
-  expires_at DATETIME NOT NULL,
-  used BIT(1) NOT NULL DEFAULT b'0',
-  CONSTRAINT fk_password_reset_tokens_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_password_reset_tokens_user ON password_reset_tokens(user_id);

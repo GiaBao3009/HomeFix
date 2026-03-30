@@ -2,8 +2,15 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- Drop tables if they exist
+
+DROP TABLE IF EXISTS message_attachments;
+DROP TABLE IF EXISTS conversation_messages;
+DROP TABLE IF EXISTS conversation_participants;
+DROP TABLE IF EXISTS conversations;
+
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS password_reset_tokens;
+
 DROP TABLE IF EXISTS website_content;
 DROP TABLE IF EXISTS service_images;
 DROP TABLE IF EXISTS reviews;
@@ -239,6 +246,67 @@ CREATE TABLE notifications (
     CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+
+-- =============================================
+-- Global Chat / Messenger Tables (Phase 1)
+-- =============================================
+
+CREATE TABLE conversations (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(120) NOT NULL,
+    created_by_id BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_message_at DATETIME NULL,
+    FOREIGN KEY (created_by_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE conversation_participants (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    conversation_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_read_at DATETIME NULL,
+    archived BOOLEAN NOT NULL DEFAULT FALSE,
+    muted BOOLEAN NOT NULL DEFAULT FALSE,
+    UNIQUE (conversation_id, user_id),
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE conversation_messages (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    conversation_id BIGINT NOT NULL,
+    sender_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    parent_message_id BIGINT NULL,
+    mentioned_user_ids VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    edited_at DATETIME NULL,
+    deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_message_id) REFERENCES conversation_messages(id) ON DELETE SET NULL
+);
+
+CREATE TABLE message_attachments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    message_id BIGINT NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_url VARCHAR(500) NOT NULL,
+    content_type VARCHAR(120) NOT NULL,
+    size_bytes BIGINT NOT NULL,
+    FOREIGN KEY (message_id) REFERENCES conversation_messages(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_conversations_created_by ON conversations(created_by_id);
+CREATE INDEX idx_conversations_last_message ON conversations(last_message_at);
+CREATE INDEX idx_conv_participants_user ON conversation_participants(user_id);
+CREATE INDEX idx_conv_participants_conversation ON conversation_participants(conversation_id);
+CREATE INDEX idx_conv_messages_conversation ON conversation_messages(conversation_id, created_at);
+CREATE INDEX idx_conv_messages_sender ON conversation_messages(sender_id);
+CREATE INDEX idx_conv_messages_parent ON conversation_messages(parent_message_id);
+CREATE INDEX idx_msg_attachments_message ON message_attachments(message_id);
 CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at);
 CREATE INDEX idx_notifications_user_unread ON notifications(user_id, is_read);
 

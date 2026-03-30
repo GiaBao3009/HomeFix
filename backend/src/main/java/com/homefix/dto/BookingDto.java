@@ -30,6 +30,8 @@ public class BookingDto {
     private BigDecimal platformProfit;
     private List<Long> assistantTechnicianIds = new ArrayList<>();
     private List<String> assistantTechnicianNames = new ArrayList<>();
+    private boolean dispatchEligible;
+    private String dispatchBlockReason;
 
     public BookingDto() {
     }
@@ -238,5 +240,21 @@ public class BookingDto {
 
     public void setAssistantTechnicianNames(List<String> assistantTechnicianNames) {
         this.assistantTechnicianNames = assistantTechnicianNames;
+    }
+
+    public boolean isDispatchEligible() {
+        return dispatchEligible;
+    }
+
+    public void setDispatchEligible(boolean dispatchEligible) {
+        this.dispatchEligible = dispatchEligible;
+    }
+
+    public String getDispatchBlockReason() {
+        return dispatchBlockReason;
+    }
+
+    public void setDispatchBlockReason(String dispatchBlockReason) {
+        this.dispatchBlockReason = dispatchBlockReason;
     }
 }

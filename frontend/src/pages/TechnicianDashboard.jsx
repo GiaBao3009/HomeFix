@@ -162,6 +162,17 @@ const TechnicianDashboard = () => {
         }
     };
 
+    const handleClaimBooking = async (bookingId) => {
+        try {
+            await api.post(`/bookings/${bookingId}/claim`);
+            message.success('Da nhan don thanh cong');
+            fetchBookings();
+        } catch (error) {
+            console.error(error);
+            message.error(error.response?.data?.message || 'Nhan don that bai');
+        }
+    };
+
     const openRejectionModal = (bookingId) => {
         setSelectedBookingId(bookingId);
         setRejectionModalVisible(true);
@@ -175,6 +186,39 @@ const TechnicianDashboard = () => {
         } catch (error) {
             console.error(error);
             message.error('Cập nhật trạng thái thất bại');
+        }
+    };
+
+    const openAssistantModal = async (booking) => {
+        setAssistantBooking(booking);
+        setSelectedAssistantId(null);
+        setAssistantModalVisible(true);
+        setAssistantLoading(true);
+        try {
+            const res = await api.get(`/users/technician/assistant-candidates?bookingId=${booking.id}`);
+            setAssistantCandidates(res.data || []);
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Khong the tai danh sach tho phu');
+        } finally {
+            setAssistantLoading(false);
+        }
+    };
+
+    const handleAddAssistant = async () => {
+        if (!assistantBooking || !selectedAssistantId) {
+            message.warning('Vui long chon tho phu');
+            return;
+        }
+        try {
+            await api.post(`/bookings/${assistantBooking.id}/assistants?assistantId=${selectedAssistantId}`);
+            message.success('Da them tho phu vao booking');
+            setAssistantModalVisible(false);
+            setAssistantCandidates([]);
+            setAssistantBooking(null);
+            setSelectedAssistantId(null);
+            fetchBookings();
+        } catch (error) {
+            message.error(error.response?.data?.message || 'Them tho phu that bai');
         }
     };
 
@@ -243,12 +287,19 @@ const TechnicianDashboard = () => {
                 baseLocation: values.baseLocation?.trim(),
                 availableFrom: normalizedTime(values.availableFrom),
                 availableTo: normalizedTime(values.availableTo),
+                supervisingTechnicianId: values.technicianType === 'ASSISTANT'
+                    ? Number(values.supervisingTechnicianId)
+                    : null,
                 categoryIds: (Array.isArray(values.categoryIds) ? values.categoryIds : [values.categoryIds])
                     .map((id) => Number(id))
                     .filter((id) => Number.isFinite(id) && id > 0)
             };
             if (!payload.categoryIds.length) {
                 message.error('Vui lòng chọn ít nhất 1 chuyên mục kỹ thuật');
+                return;
+            }
+            if (values.technicianType === 'ASSISTANT' && !payload.supervisingTechnicianId) {
+                message.error('Vui long chon tho chinh phu trach');
                 return;
             }
             await api.put('/users/technician/profile', payload);
@@ -268,7 +319,8 @@ const TechnicianDashboard = () => {
     const isBlockedByProfile = !technicianProfile?.technicianProfileCompleted;
     const isMainPending = technicianProfile?.technicianType === 'MAIN' && technicianProfile?.technicianApprovalStatus === 'PENDING';
     const isMainRejected = technicianProfile?.technicianType === 'MAIN' && technicianProfile?.technicianApprovalStatus === 'REJECTED';
-    const cannotWork = isBlockedByProfile || isMainPending || isMainRejected;
+    const isAssistantMissingSupervisor = technicianProfile?.technicianType === 'ASSISTANT' && !technicianProfile?.supervisingTechnicianId;
+    const cannotWork = isBlockedByProfile || isMainPending || isMainRejected || isAssistantMissingSupervisor;
 
     const columns = [
         {
@@ -375,6 +427,191 @@ const TechnicianDashboard = () => {
         },
     ];
 
+    const renderStatusTag = (status) => {
+        let color = 'default';
+        let text = status;
+        switch (status) {
+            case 'PENDING': color = 'orange'; text = 'Cho xu ly'; break;
+            case 'CONFIRMED': color = 'gold'; text = 'Dang mo'; break;
+            case 'ASSIGNED': color = 'blue'; text = 'Da nhan'; break;
+            case 'IN_PROGRESS': color = 'processing'; text = 'Dang thuc hien'; break;
+            case 'COMPLETED': color = 'success'; text = 'Hoan thanh'; break;
+            case 'CANCELLED': color = 'error'; text = 'Da huy'; break;
+            case 'DECLINED': color = 'error'; text = 'Da tu choi'; break;
+            default: break;
+        }
+        return <Tag color={color}>{text}</Tag>;
+    };
+
+    const openColumns = [
+        {
+            title: 'Ma don',
+            dataIndex: 'id',
+            key: 'id',
+            render: (text) => <Text strong>#{text}</Text>,
+        },
+        {
+            title: 'Dich vu',
+            dataIndex: 'serviceName',
+            key: 'serviceName',
+        },
+        {
+            title: 'Thong tin',
+            key: 'openInfo',
+            render: (_, record) => (
+                <div className="space-y-1">
+                    <div className="flex gap-2 items-center text-slate-600">
+                        <Clock size={14} />
+                        {dayjs(record.bookingTime).format('HH:mm DD/MM/YYYY')}
+                    </div>
+                    <div className="flex gap-2 items-center text-slate-600">
+                        <MapPin size={14} />
+                        {record.address}
+                    </div>
+                    {record.dispatchBlockReason && (
+                        <div className="text-amber-600 text-xs">
+                            {record.dispatchBlockReason}
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            title: 'Trang thai',
+            dataIndex: 'status',
+            key: 'status',
+            render: (_, record) => (
+                <Space direction="vertical" size={4}>
+                    {renderStatusTag(record.status)}
+                    <Tag color={record.dispatchEligible ? 'green' : 'orange'}>
+                        {record.dispatchEligible ? 'Co the nhan' : 'Tam thoi chua nhan duoc'}
+                    </Tag>
+                </Space>
+            ),
+        },
+        {
+            title: 'Hanh dong',
+            key: 'openAction',
+            render: (_, record) => (
+                <div className="space-y-2">
+                    <Button
+                        type="primary"
+                        size="small"
+                        onClick={() => handleClaimBooking(record.id)}
+                        disabled={cannotWork || !record.dispatchEligible}
+                    >
+                        Nhan don
+                    </Button>
+                    {!record.dispatchEligible && record.dispatchBlockReason && (
+                        <div className="text-xs text-slate-500 max-w-40">
+                            {record.dispatchBlockReason}
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+    ];
+
+    const bookingColumns = [
+        {
+            title: 'Ma don',
+            dataIndex: 'id',
+            key: 'id',
+            render: (text) => <Text strong>#{text}</Text>,
+        },
+        {
+            title: 'Khach hang',
+            dataIndex: 'customerName',
+            key: 'customerName',
+            render: (text) => (
+                <div className="flex gap-2 items-center">
+                    <User size={16} className="text-blue-500" />
+                    <span>{text}</span>
+                </div>
+            ),
+        },
+        {
+            title: 'Dich vu',
+            dataIndex: 'serviceName',
+            key: 'serviceName',
+        },
+        {
+            title: 'Thong tin',
+            key: 'info',
+            render: (_, record) => (
+                <div className="space-y-1">
+                    <div className="flex gap-2 items-center text-slate-600">
+                        <Clock size={14} />
+                        {dayjs(record.bookingTime).format('HH:mm DD/MM/YYYY')}
+                    </div>
+                    <div className="flex gap-2 items-center text-slate-600">
+                        <MapPin size={14} />
+                        {record.address}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            title: 'To doi',
+            key: 'team',
+            render: (_, record) => (
+                <div className="space-y-1">
+                    <div className="text-slate-700">Chinh: {record.technicianName || 'Chua co'}</div>
+                    <div className="flex flex-wrap gap-1">
+                        {(record.assistantTechnicianNames || []).length
+                            ? record.assistantTechnicianNames.map((name) => <Tag key={`${record.id}-${name}`}>{name}</Tag>)
+                            : <Text type="secondary">Chua co tho phu</Text>}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            title: 'Trang thai',
+            dataIndex: 'status',
+            key: 'status',
+            render: renderStatusTag,
+        },
+        {
+            title: 'Hanh dong',
+            key: 'action',
+            render: (_, record) => {
+                const isOwner = record.technicianId === user?.id;
+                const isAssistantOnBooking = (record.assistantTechnicianIds || []).includes(user?.id);
+                const canManageAssistants = isOwner && technicianProfile?.technicianType === 'MAIN';
+
+                return (
+                    <Space wrap>
+                        {record.status === 'ASSIGNED' && isOwner && (
+                            <>
+                                <Button type="primary" size="small" onClick={() => handleTechnicianResponse(record.id, true)} disabled={cannotWork}>
+                                    Bat dau
+                                </Button>
+                                <Button danger size="small" onClick={() => openRejectionModal(record.id)} disabled={cannotWork}>
+                                    Tu choi
+                                </Button>
+                            </>
+                        )}
+                        {record.status === 'ASSIGNED' && isAssistantOnBooking && !isOwner && (
+                            <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'IN_PROGRESS')} disabled={cannotWork}>
+                                Bat dau ho tro
+                            </Button>
+                        )}
+                        {record.status === 'IN_PROGRESS' && (isOwner || isAssistantOnBooking) && (
+                            <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'COMPLETED')} disabled={cannotWork}>
+                                Hoan thanh
+                            </Button>
+                        )}
+                        {canManageAssistants && ['ASSIGNED', 'IN_PROGRESS'].includes(record.status) && (
+                            <Button size="small" onClick={() => openAssistantModal(record)} disabled={cannotWork}>
+                                Them tho phu
+                            </Button>
+                        )}
+                    </Space>
+                );
+            },
+        },
+    ];
+
     return (
         <div className="p-6 mx-auto max-w-7xl">
             <div className="flex justify-between items-center mb-8">
@@ -408,6 +645,22 @@ const TechnicianDashboard = () => {
                     className="mb-4"
                     message="Hồ sơ thợ chính chưa được duyệt. Vui lòng cập nhật lại hồ sơ."
                     action={<Button size="small" onClick={() => setProfileModalOpen(true)}>Cập nhật hồ sơ</Button>}
+                />
+            )}
+
+            {isAssistantMissingSupervisor && (
+                <Alert
+                    type="warning"
+                    className="mb-4"
+                    message="Tho phu can duoc gan voi mot tho chinh truoc khi nhan viec."
+                    action={<Button size="small" onClick={() => setProfileModalOpen(true)}>Cap nhat ho so</Button>}
+                />
+            )}
+            {technicianProfile?.technicianType === 'ASSISTANT' && technicianProfile?.supervisingTechnicianName && (
+                <Alert
+                    type="info"
+                    className="mb-4"
+                    message={`Ban dang la tho phu cua ${technicianProfile.supervisingTechnicianName}. ${technicianProfile.assistantPromoteAt ? `He thong se tu len tho chinh vao ${dayjs(technicianProfile.assistantPromoteAt).format('DD/MM/YYYY HH:mm')}.` : ''}`}
                 />
             )}
 
@@ -475,13 +728,61 @@ const TechnicianDashboard = () => {
             </Row>
 
             <Card bordered={false} className="shadow-sm mb-4">
+                <Title level={4}>Don phu hop dang mo</Title>
                 <Table
-                    columns={columns}
+                    columns={openColumns}
+                    dataSource={openBookings}
+                    rowKey="id"
+                    pagination={{ pageSize: 5 }}
+                    loading={loading || profileLoading}
+                    locale={{ emptyText: 'Chua co don mo phu hop' }}
+                />
+            </Card>
+
+            <Card bordered={false} className="shadow-sm mb-4">
+                <Title level={4}>Don cua ban</Title>
+                <Table
+                    columns={bookingColumns}
                     dataSource={bookings}
                     rowKey="id"
                     loading={loading || profileLoading}
                 />
             </Card>
+
+            <Modal
+                title="Them tho phu vao booking"
+                open={assistantModalVisible}
+                onOk={handleAddAssistant}
+                okText="Them"
+                cancelText="Dong"
+                confirmLoading={assistantLoading}
+                onCancel={() => {
+                    setAssistantModalVisible(false);
+                    setAssistantBooking(null);
+                    setAssistantCandidates([]);
+                    setSelectedAssistantId(null);
+                }}
+            >
+                <div className="space-y-4">
+                    <div className="text-slate-600">
+                        Booking #{assistantBooking?.id} - {assistantBooking?.serviceName}
+                    </div>
+                    <Select
+                        className="w-full"
+                        placeholder="Chon tho phu"
+                        loading={assistantLoading}
+                        value={selectedAssistantId}
+                        onChange={setSelectedAssistantId}
+                        options={assistantCandidates.map((candidate) => ({
+                            value: candidate.id,
+                            label: `${candidate.fullName} - ${candidate.categoryNames?.join(', ') || 'Khong co category'}`
+                        }))}
+                    />
+                    {!assistantLoading && !assistantCandidates.length && (
+                        <Text type="secondary">Khong co tho phu ranh trong khung gio nay.</Text>
+                    )}
+                </div>
+            </Modal>
 
             <Tabs
                 className="mb-4"
@@ -738,6 +1039,26 @@ const TechnicianDashboard = () => {
                     <Form.Item name="availableForAutoAssign" label="Nhận phân công tự động" valuePropName="checked">
                         <Switch />
                     </Form.Item>
+                    {selectedTechnicianType === 'ASSISTANT' && (
+                        <Form.Item
+                            name="supervisingTechnicianId"
+                            label="Tho chinh phu trach"
+                            rules={[{ required: true, message: 'Vui long chon tho chinh phu trach' }]}
+                        >
+                            <Select
+                                placeholder="Chon tho chinh"
+                                options={mainTechnicians.map((tech) => ({
+                                    value: tech.id,
+                                    label: `${tech.fullName} - ${tech.categoryNames?.join(', ') || 'Khong co category'}`
+                                }))}
+                            />
+                        </Form.Item>
+                    )}
+                    {selectedTechnicianType === 'ASSISTANT' && (
+                        <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
+                            Tho phu van co the tu nhan don dung category cua minh. Sau 1 thang, he thong se tu dong nang cap len tho chinh.
+                        </div>
+                    )}
                     <Button type="primary" htmlType="submit" className="w-full" loading={savingProfile}>
                         Lưu hồ sơ kỹ thuật viên
                     </Button>
@@ -748,3 +1069,6 @@ const TechnicianDashboard = () => {
 };
 
 export default TechnicianDashboard;
+
+
+

@@ -134,6 +134,46 @@ class BookingFlowIntegrationTest {
     }
 
     @Test
+    void pendingBooking_shouldStillAppearInDispatchFeedAndBeClaimable() {
+        BookingDto created = createBookingForCustomer(LocalDateTime.of(2026, 5, 20, 10, 0));
+        var pendingBooking = bookingRepository.findById(created.getId()).orElseThrow();
+        pendingBooking.setStatus(BookingStatus.PENDING);
+        bookingRepository.save(pendingBooking);
+
+        authenticate(assistantA.getEmail());
+        assertThat(bookingService.getAvailableBookingsForTechnician())
+                .extracting(BookingDto::getId)
+                .contains(created.getId());
+
+        BookingDto claimed = bookingService.claimBooking(created.getId());
+        assertThat(claimed.getStatus()).isEqualTo(BookingStatus.ASSIGNED);
+        assertThat(claimed.getTechnicianId()).isEqualTo(assistantA.getId());
+    }
+
+    @Test
+    void outOfShiftBooking_shouldStillAppearWithBlockReason() {
+        BookingDto created = createBookingForCustomer(LocalDateTime.of(2026, 5, 20, 7, 0));
+
+        authenticate(assistantA.getEmail());
+        List<BookingDto> openBookings = bookingService.getAvailableBookingsForTechnician();
+
+        assertThat(openBookings)
+                .extracting(BookingDto::getId)
+                .contains(created.getId());
+
+        BookingDto booking = openBookings.stream()
+                .filter(item -> item.getId().equals(created.getId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(booking.isDispatchEligible()).isFalse();
+        assertThat(booking.getDispatchBlockReason()).isEqualTo("Đơn nằm ngoài ca làm việc đã cấu hình");
+        assertThatThrownBy(() -> bookingService.claimBooking(created.getId()))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("not eligible");
+    }
+
+    @Test
     void mainTechnician_canAddOwnAssistantAfterClaimingBooking() {
         BookingDto created = createBookingForCustomer(LocalDateTime.of(2026, 5, 21, 9, 0));
 

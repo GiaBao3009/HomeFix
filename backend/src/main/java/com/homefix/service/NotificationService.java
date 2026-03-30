@@ -5,6 +5,7 @@ import com.homefix.entity.Notification;
 import com.homefix.entity.User;
 import com.homefix.repository.NotificationRepository;
 import com.homefix.repository.UserRepository;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +20,9 @@ public class NotificationService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     public List<NotificationDto> getMyNotifications() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -78,6 +82,7 @@ public class NotificationService {
         n.setMessage(message);
         n.setType(type);
         n.setRelatedId(relatedId);
-        notificationRepository.save(n);
+        Notification saved = notificationRepository.save(n);
+        messagingTemplate.convertAndSendToUser(user.getEmail(), "/queue/notifications", mapToDto(saved));
     }
 }
