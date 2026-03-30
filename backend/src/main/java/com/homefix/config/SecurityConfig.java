@@ -57,6 +57,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/coupons/validate/**")
                         .authenticated()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/coupons").hasRole("ADMIN")
+                        .requestMatchers("/ws-chat/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
 
                         // Booking Security
                         .requestMatchers("/api/bookings/*/assign").hasRole("ADMIN")
