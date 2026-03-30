@@ -173,9 +173,9 @@ const Login = () => {
                                         Ghi nhớ đăng nhập
                                     </Checkbox>
                                 </Form.Item>
-                                <a className="font-semibold text-blue-600 transition-colors hover:text-blue-700" href="#">
+                                <Link to="/forgot-password" className="font-semibold text-blue-600 transition-colors hover:text-blue-700">
                                     Quên mật khẩu?
-                                </a>
+                                </Link>
                             </div>
 
                             <Form.Item className="pt-4 mb-4">
