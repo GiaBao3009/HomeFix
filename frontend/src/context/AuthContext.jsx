@@ -22,10 +22,10 @@ export const AuthProvider = ({ children }) => {
     const login = async (email, password) => {
         try {
             const response = await api.post('/auth/login', { email, password });
-            const { token, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus } = response.data;
+            const { token, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus, bankName, bankAccountNumber, bankAccountHolder } = response.data;
             
             localStorage.setItem('token', token);
-            const userData = { email, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus };
+            const userData = { email, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus, bankName, bankAccountNumber, bankAccountHolder };
             localStorage.setItem('user', JSON.stringify(userData));
             
             setUser(userData);
@@ -40,10 +40,10 @@ export const AuthProvider = ({ children }) => {
     const register = async (data) => {
         try {
             const response = await api.post('/auth/register', data);
-            const { token, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus } = response.data;
+            const { token, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus, bankName, bankAccountNumber, bankAccountHolder } = response.data;
             
             localStorage.setItem('token', token);
-            const userData = { email: data.email, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus };
+            const userData = { email: data.email, role, fullName, id, avatarUrl, technicianProfileCompleted, technicianType, technicianApprovalStatus, bankName, bankAccountNumber, bankAccountHolder };
             localStorage.setItem('user', JSON.stringify(userData));
             
             setUser(userData);
@@ -95,7 +95,10 @@ export const AuthProvider = ({ children }) => {
                 avatarUrl: profile.avatarUrl,
                 technicianProfileCompleted: profile.technicianProfileCompleted,
                 technicianType: profile.technicianType,
-                technicianApprovalStatus: profile.technicianApprovalStatus
+                technicianApprovalStatus: profile.technicianApprovalStatus,
+                bankName: profile.bankName,
+                bankAccountNumber: profile.bankAccountNumber,
+                bankAccountHolder: profile.bankAccountHolder
             });
         } catch (error) {
             console.error('Refresh user profile error:', error);

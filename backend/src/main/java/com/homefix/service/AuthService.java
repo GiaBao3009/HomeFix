@@ -106,6 +106,9 @@ public class AuthService {
         response.setTechnicianProfileCompleted(user.isTechnicianProfileCompleted());
         response.setTechnicianType(user.getTechnicianType() != null ? user.getTechnicianType().name() : null);
         response.setTechnicianApprovalStatus(user.getTechnicianApprovalStatus() != null ? user.getTechnicianApprovalStatus().name() : null);
+        response.setBankName(user.getBankName());
+        response.setBankAccountNumber(user.getBankAccountNumber());
+        response.setBankAccountHolder(user.getBankAccountHolder());
         return response;
     }
 }
