@@ -463,6 +463,10 @@ a:hover {
 .dark .text-teal-600 { color: #2dd4bf !important; }
 .dark .text-pink-600 { color: #f472b6 !important; }
 .dark .text-indigo-600 { color: #818cf8 !important; }
+.dark .text-violet-600 { color: #a78bfa !important; }
+.dark .text-violet-700 { color: #c4b5fd !important; }
+.dark .text-amber-600 { color: #f59e0b !important; }
+.dark .text-sky-600 { color: #38bdf8 !important; }
 
 /* --- Borders --- */
 .dark .border-slate-100,

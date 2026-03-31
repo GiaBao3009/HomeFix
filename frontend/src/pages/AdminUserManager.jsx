@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Card, Tag, Button, Space, Typography, message, Modal, Select, Input } from 'antd';
-import { User, Shield, Briefcase, Search, RefreshCw, Edit } from 'lucide-react';
+import { User, Shield, Briefcase, Search, RefreshCw, Edit, Users } from 'lucide-react';
 import api from '../services/api';
 
 const { Option } = Select;
 
+const ROLE_FILTER_ALL = 'ALL';
+
 const AdminUserManager = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [searchText, setSearchText] = useState('');
+    const [globalSearchText, setGlobalSearchText] = useState('');
+    const [roleFilter, setRoleFilter] = useState(ROLE_FILTER_ALL);
     const [isRoleModalVisible, setIsRoleModalVisible] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [selectedRole, setSelectedRole] = useState('');
@@ -54,14 +57,40 @@ const AdminUserManager = () => {
         }
     };
 
-    const getRoleColor = (role) => {
+    const getRoleTagProps = (role) => {
         switch (role) {
-            case 'ADMIN': return 'red';
-            case 'TECHNICIAN': return 'blue';
-            case 'CUSTOMER': return 'green';
-            default: return 'default';
+            case 'ADMIN':
+                return { color: '#7c3aed', label: 'Quản trị viên' };
+            case 'TECHNICIAN':
+                return { color: '#0ea5e9', label: 'Kỹ thuật viên' };
+            case 'CUSTOMER':
+                return { color: '#16a34a', label: 'Khách hàng' };
+            default:
+                return { color: 'default', label: 'Chưa xác định' };
         }
     };
+
+    const summary = useMemo(() => {
+        const total = users.length;
+        const technicians = users.filter((u) => u.role === 'TECHNICIAN').length;
+        const admins = users.filter((u) => u.role === 'ADMIN').length;
+        return { total, technicians, admins };
+    }, [users]);
+
+    const filteredUsers = useMemo(() => {
+        let list = users;
+        if (roleFilter !== ROLE_FILTER_ALL) {
+            list = list.filter((u) => u.role === roleFilter);
+        }
+        const q = globalSearchText.trim().toLowerCase();
+        if (!q) return list;
+        return list.filter((u) => {
+            const name = (u.fullName || '').toLowerCase();
+            const email = (u.email || '').toLowerCase();
+            const phone = (u.phone || '').toLowerCase();
+            return name.includes(q) || email.includes(q) || phone.includes(q);
+        });
+    }, [users, roleFilter, globalSearchText]);
 
     const columns = [
         {
@@ -79,7 +108,7 @@ const AdminUserManager = () => {
                     <Input
                         placeholder="Tìm theo tên"
                         value={selectedKeys[0]}
-                        onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+                        onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
                         onPressEnter={() => confirm()}
                         className="mb-2 block"
                     />
@@ -93,7 +122,7 @@ const AdminUserManager = () => {
                     </Space>
                 </div>
             ),
-            onFilter: (value, record) => record.fullName.toLowerCase().includes(value.toLowerCase()),
+            onFilter: (value, record) => (record.fullName || '').toLowerCase().includes(String(value).toLowerCase()),
         },
         {
             title: 'Email',
@@ -109,11 +138,14 @@ const AdminUserManager = () => {
             title: 'Vai trò',
             dataIndex: 'role',
             key: 'role',
-            render: (role) => (
-                <Tag color={getRoleColor(role)} className="px-3 py-1 text-sm font-medium">
-                    {role === 'CUSTOMER' ? 'Khách hàng' : role === 'TECHNICIAN' ? 'Kỹ thuật viên' : 'Quản trị viên'}
-                </Tag>
-            ),
+            render: (role) => {
+                const { color, label } = getRoleTagProps(role);
+                return (
+                    <Tag color={color} className="m-0 rounded-full border-0 px-3 py-0.5 text-xs font-semibold">
+                        {label}
+                    </Tag>
+                );
+            },
         },
         {
             title: 'Loại thợ',
@@ -121,8 +153,12 @@ const AdminUserManager = () => {
             key: 'technicianType',
             render: (_, record) => {
                 if (record.role !== 'TECHNICIAN') return '-';
-                return record.technicianType === 'MAIN' ? 'Thợ chính' : record.technicianType === 'ASSISTANT' ? 'Thợ phụ' : 'Chưa chọn';
-            }
+                return record.technicianType === 'MAIN'
+                    ? 'Thợ chính'
+                    : record.technicianType === 'ASSISTANT'
+                      ? 'Thợ phụ'
+                      : 'Chưa chọn';
+            },
         },
         {
             title: 'Duyệt thợ',
@@ -137,20 +173,24 @@ const AdminUserManager = () => {
                     return (
                         <Space>
                             <Tag color="gold">Chờ duyệt</Tag>
-                            <Button size="small" type="primary" onClick={() => handleTechnicianApproval(record.id, true)}>Duyệt</Button>
-                            <Button size="small" danger onClick={() => handleTechnicianApproval(record.id, false)}>Từ chối</Button>
+                            <Button size="small" type="primary" onClick={() => handleTechnicianApproval(record.id, true)}>
+                                Duyệt
+                            </Button>
+                            <Button size="small" danger onClick={() => handleTechnicianApproval(record.id, false)}>
+                                Từ chối
+                            </Button>
                         </Space>
                     );
                 }
                 return '-';
-            }
+            },
         },
         {
             title: 'Hành động',
             key: 'actions',
             render: (_, record) => (
-                <Button 
-                    icon={<Edit size={16} />} 
+                <Button
+                    icon={<Edit size={16} />}
                     onClick={() => {
                         setSelectedUser(record);
                         setSelectedRole(record.role);
@@ -165,9 +205,9 @@ const AdminUserManager = () => {
 
     return (
         <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <User className="w-8 h-8 text-blue-600" />
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <h1 className="flex items-center gap-2 text-2xl font-bold">
+                    <User className="h-8 w-8 text-blue-600" />
                     Quản lý Người dùng
                 </h1>
                 <Button icon={<RefreshCw size={16} />} onClick={fetchUsers}>
@@ -175,11 +215,49 @@ const AdminUserManager = () => {
                 </Button>
             </div>
 
-            <Card className="shadow-lg rounded-xl border-none">
-                <Table 
-                    columns={columns} 
-                    dataSource={users} 
-                    rowKey="id" 
+            <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                        <Users size={14} className="text-slate-500" />
+                        Tổng: {summary.total}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-3 py-1 text-xs font-medium text-sky-800">
+                        <Briefcase size={14} className="text-sky-600" />
+                        Thợ: {summary.technicians}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-3 py-1 text-xs font-medium text-violet-800">
+                        <Shield size={14} className="text-violet-600" />
+                        Quản trị: {summary.admins}
+                    </span>
+                </div>
+                <Space wrap className="w-full lg:w-auto">
+                    <Input
+                        allowClear
+                        prefix={<Search size={16} className="text-slate-400" />}
+                        placeholder="Tìm theo tên, email hoặc số điện thoại…"
+                        value={globalSearchText}
+                        onChange={(e) => setGlobalSearchText(e.target.value)}
+                        className="min-w-[220px] flex-1 lg:max-w-md"
+                    />
+                    <Select
+                        value={roleFilter}
+                        onChange={setRoleFilter}
+                        className="min-w-[180px]"
+                        placeholder="Lọc vai trò"
+                    >
+                        <Option value={ROLE_FILTER_ALL}>Tất cả vai trò</Option>
+                        <Option value="CUSTOMER">Khách hàng</Option>
+                        <Option value="TECHNICIAN">Kỹ thuật viên</Option>
+                        <Option value="ADMIN">Quản trị viên</Option>
+                    </Select>
+                </Space>
+            </div>
+
+            <Card className="rounded-xl border border-slate-200/80 shadow-sm">
+                <Table
+                    columns={columns}
+                    dataSource={filteredUsers}
+                    rowKey="id"
                     loading={loading}
                     pagination={{ pageSize: 10 }}
                 />
@@ -191,12 +269,10 @@ const AdminUserManager = () => {
                 onOk={handleRoleUpdate}
                 onCancel={() => setIsRoleModalVisible(false)}
             >
-                <p>Chọn vai trò mới cho <strong>{selectedUser?.fullName}</strong>:</p>
-                <Select 
-                    className="w-full mt-2" 
-                    value={selectedRole} 
-                    onChange={setSelectedRole}
-                >
+                <p>
+                    Chọn vai trò mới cho <strong>{selectedUser?.fullName}</strong>:
+                </p>
+                <Select className="mt-2 w-full" value={selectedRole} onChange={setSelectedRole}>
                     <Option value="CUSTOMER">Khách hàng</Option>
                     <Option value="TECHNICIAN">Kỹ thuật viên</Option>
                     <Option value="ADMIN">Quản trị viên</Option>

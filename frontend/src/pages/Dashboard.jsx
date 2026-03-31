@@ -20,6 +20,16 @@ const Dashboard = () => {
     const { user } = useAuth();
     const { darkMode } = useTheme();
     const navigate = useNavigate();
+    const [adminTabPosition, setAdminTabPosition] = useState('top');
+
+    useEffect(() => {
+        if (user?.role !== 'ADMIN') return;
+        const mq = window.matchMedia('(min-width: 768px)');
+        const update = () => setAdminTabPosition(mq.matches ? 'left' : 'top');
+        update();
+        mq.addEventListener('change', update);
+        return () => mq.removeEventListener('change', update);
+    }, [user?.role]);
 
     const getDefaultTab = () => {
         if (user?.role === 'ADMIN') return 'overview';
@@ -173,45 +183,96 @@ const Dashboard = () => {
         tabItems = customerTabs;
     }
 
+    const isAdmin = user?.role === 'ADMIN';
+    const tabPosition = isAdmin ? adminTabPosition : 'top';
+
+    const tabBarStyle =
+        isAdmin && adminTabPosition === 'left'
+            ? {
+                  minWidth: 180,
+                  marginBottom: 0,
+                  marginRight: 24,
+                  borderBottom: 'none',
+                  borderRight: darkMode ? '1px solid #1e293b' : '1px solid #e2e8f0',
+              }
+            : {
+                  borderBottom: darkMode ? '2px solid #1e293b' : '2px solid #e2e8f0',
+                  marginBottom: '2rem',
+              };
+
     return (
         <div className="min-h-[80vh] pb-12">
-            <div className="overflow-hidden relative py-12 mb-8 text-white bg-gradient-to-br via-blue-900 rounded-3xl shadow-2xl from-slate-900 to-slate-900">
-                <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl bg-blue-500/10"></div>
-                <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full blur-3xl bg-cyan-500/10"></div>
-                
-                <div className="relative px-6 mx-auto max-w-7xl">
-                    <div className="flex gap-4 items-center mb-4">
-                        <div className="flex justify-center items-center w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl shadow-lg">
-                            <LayoutDashboard size={32} />
+            <div className="px-6 mx-auto max-w-7xl mb-6">
+                <div
+                    className={[
+                        'relative flex h-20 max-h-[80px] min-h-[80px] items-center justify-between gap-4 overflow-hidden rounded-xl px-5 shadow-sm',
+                        darkMode
+                            ? 'bg-gradient-to-r from-slate-800/95 via-slate-800 to-slate-900 text-white'
+                            : 'bg-gradient-to-r from-slate-50 via-blue-50/50 to-slate-100 text-slate-800',
+                    ].join(' ')}
+                >
+                    <div
+                        className={[
+                            'pointer-events-none absolute inset-0 opacity-60',
+                            darkMode
+                                ? 'bg-gradient-to-r from-blue-600/15 via-transparent to-cyan-500/10'
+                                : 'bg-gradient-to-r from-blue-500/10 via-transparent to-cyan-400/10',
+                        ].join(' ')}
+                        aria-hidden
+                    />
+                    <div className="relative z-[1] flex min-w-0 flex-1 items-center gap-3">
+                        <div
+                            className={[
+                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-sm',
+                                darkMode
+                                    ? 'bg-gradient-to-br from-blue-500/40 to-cyan-500/30 text-white'
+                                    : 'bg-gradient-to-br from-blue-500 to-cyan-500 text-white',
+                            ].join(' ')}
+                        >
+                            <LayoutDashboard size={18} />
                         </div>
-                        <div>
-                            <h1 className="mb-1 text-4xl font-black">Dashboard</h1>
-                            <p className="text-lg text-blue-200">
-                                Chào mừng trở lại, <span className="font-bold text-white">{user?.fullName || 'User'}</span>
+                        <div className="min-w-0">
+                            <p
+                                className={[
+                                    'truncate text-xs font-medium',
+                                    darkMode ? 'text-slate-300' : 'text-slate-600',
+                                ].join(' ')}
+                            >
+                                Chào mừng trở lại
+                            </p>
+                            <p className="truncate text-sm font-bold sm:text-base">
+                                <span className={darkMode ? 'text-white' : 'text-slate-900'}>{user?.fullName || 'User'}</span>
                             </p>
                         </div>
                     </div>
-                    
-                    <div className="inline-flex gap-2 items-center px-4 py-2 mt-4 rounded-full border backdrop-blur-sm bg-white/10 border-white/20">
-                        <Award size={16} />
-                        <span className="text-sm font-semibold">
-                            {user?.role === 'ADMIN' ? 'Quản trị viên' : 
-                             user?.role === 'TECHNICIAN' ? 'Kỹ thuật viên' : 'Khách hàng'}
+                    <div
+                        className={[
+                            'relative z-[1] inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold backdrop-blur-sm sm:text-sm',
+                            darkMode
+                                ? 'border-white/15 bg-white/10 text-slate-100'
+                                : 'border-slate-200/80 bg-white/70 text-slate-700',
+                        ].join(' ')}
+                    >
+                        <Award size={14} className="shrink-0 opacity-90" />
+                        <span>
+                            {user?.role === 'ADMIN'
+                                ? 'Quản trị viên'
+                                : user?.role === 'TECHNICIAN'
+                                  ? 'Kỹ thuật viên'
+                                  : 'Khách hàng'}
                         </span>
                     </div>
                 </div>
             </div>
-            
+
             <div className="px-6 mx-auto max-w-7xl">
-                <Tabs 
+                <Tabs
                     defaultActiveKey={getDefaultTab()}
                     items={tabItems}
                     size="large"
-                    className="dashboard-tabs"
-                    tabBarStyle={{
-                        borderBottom: darkMode ? '2px solid #1e293b' : '2px solid #e2e8f0',
-                        marginBottom: '2rem'
-                    }}
+                    tabPosition={tabPosition}
+                    className={isAdmin ? 'dashboard-tabs dashboard-tabs-admin' : 'dashboard-tabs'}
+                    tabBarStyle={tabBarStyle}
                 />
             </div>
 
@@ -225,21 +286,21 @@ const Dashboard = () => {
                 :global(.dark .dashboard-tabs .ant-tabs-tab) {
                     color: #94a3b8;
                 }
-                
+
                 :global(.dashboard-tabs .ant-tabs-tab:hover) {
                     color: #3b82f6;
                 }
                 :global(.dark .dashboard-tabs .ant-tabs-tab:hover) {
                     color: #60a5fa;
                 }
-                
+
                 :global(.dashboard-tabs .ant-tabs-tab-active) {
                     color: #2563eb !important;
                 }
                 :global(.dark .dashboard-tabs .ant-tabs-tab-active) {
                     color: #60a5fa !important;
                 }
-                
+
                 :global(.dashboard-tabs .ant-tabs-ink-bar) {
                     background: linear-gradient(to right, #3b82f6, #06b6d4);
                     height: 3px;
@@ -247,6 +308,53 @@ const Dashboard = () => {
                 }
                 :global(.dark .dashboard-tabs .ant-tabs-ink-bar) {
                     background: linear-gradient(to right, #60a5fa, #22d3ee);
+                }
+
+                :global(.dashboard-tabs-admin.ant-tabs-left .ant-tabs-nav-wrap) {
+                    min-width: 180px;
+                }
+                :global(.dashboard-tabs-admin.ant-tabs-left .ant-tabs-nav) {
+                    min-width: 180px;
+                    padding: 8px 0;
+                }
+                :global(.dashboard-tabs-admin.ant-tabs-left .ant-tabs-tab) {
+                    margin: 4px 8px 4px 0 !important;
+                    padding: 10px 12px !important;
+                    border-radius: 10px;
+                    justify-content: flex-start;
+                }
+                :global(.dashboard-tabs-admin.ant-tabs-left .ant-tabs-tab:hover) {
+                    background: rgba(59, 130, 246, 0.08);
+                }
+                :global(.dark .dashboard-tabs-admin.ant-tabs-left .ant-tabs-tab:hover) {
+                    background: rgba(96, 165, 250, 0.12);
+                }
+                :global(.dashboard-tabs-admin.ant-tabs-left .ant-tabs-tab-active) {
+                    background: rgba(59, 130, 246, 0.12) !important;
+                }
+                :global(.dark .dashboard-tabs-admin.ant-tabs-left .ant-tabs-tab-active) {
+                    background: rgba(96, 165, 250, 0.15) !important;
+                }
+                :global(.dashboard-tabs-admin.ant-tabs-left .ant-tabs-ink-bar) {
+                    width: 3px !important;
+                    height: auto !important;
+                    border-radius: 3px 0 0 3px;
+                    background: linear-gradient(to bottom, #3b82f6, #06b6d4);
+                }
+                :global(.dark .dashboard-tabs-admin.ant-tabs-left .ant-tabs-ink-bar) {
+                    background: linear-gradient(to bottom, #60a5fa, #22d3ee);
+                }
+                :global(.dashboard-tabs-admin.ant-tabs-left .ant-tabs-content-holder) {
+                    border-left: none;
+                }
+                :global(.dashboard-tabs-admin.ant-tabs-left > .ant-tabs-content-holder) {
+                    padding-left: 0;
+                }
+                :global(.dark .dashboard-tabs-admin.ant-tabs-left .ant-tabs-nav::before) {
+                    border-color: #1e293b;
+                }
+                :global(.dashboard-tabs-admin.ant-tabs-left .ant-tabs-nav::before) {
+                    border-color: #e2e8f0;
                 }
             `}</style>
         </div>
