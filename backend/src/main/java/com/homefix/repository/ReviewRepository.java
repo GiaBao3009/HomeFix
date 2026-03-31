@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
+    boolean existsByBooking_Id(Long bookingId);
+
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.booking.technician.id = :technicianId")
     Double findAverageRatingByTechnicianId(@Param("technicianId") Long technicianId);
 

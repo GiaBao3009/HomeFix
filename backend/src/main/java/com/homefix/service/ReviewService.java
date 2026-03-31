@@ -4,10 +4,15 @@ import com.homefix.common.BookingStatus;
 import com.homefix.dto.ReviewDto;
 import com.homefix.entity.Booking;
 import com.homefix.entity.Review;
+import com.homefix.entity.User;
 import com.homefix.repository.BookingRepository;
 import com.homefix.repository.ReviewRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,28 +31,56 @@ public class ReviewService {
         this.notificationService = notificationService;
     }
 
+    @Transactional
     public ReviewDto createReview(ReviewDto dto) {
         Booking booking = bookingRepository.findById(dto.getBookingId())
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
+        ensureBookingBelongsToCurrentCustomer(booking);
+        return createReviewForBooking(booking, dto);
+    }
 
+    @Transactional
+    public ReviewDto createReviewByToken(String token, ReviewDto dto) {
+        Booking booking = bookingRepository.findByReviewToken(token)
+                .orElseThrow(() -> new RuntimeException("Link đánh giá không hợp lệ hoặc đã hết hạn"));
+        dto.setBookingId(booking.getId());
+        return createReviewForBooking(booking, dto);
+    }
+
+    private ReviewDto createReviewForBooking(Booking booking, ReviewDto dto) {
         if (booking.getStatus() != BookingStatus.COMPLETED) {
             throw new RuntimeException("Only completed bookings can be reviewed");
         }
-        
+        if (reviewRepository.existsByBooking_Id(booking.getId())) {
+            throw new RuntimeException("Booking already reviewed");
+        }
+
+        Integer rating = dto.getRating();
+        if (rating == null || rating < 1 || rating > 5) {
+            throw new RuntimeException("Rating must be from 1 to 5");
+        }
+        BigDecimal tipAmount = normalizeTip(dto.getTipAmount());
+
         Review review = new Review();
         review.setBooking(booking);
-        review.setRating(dto.getRating());
+        review.setRating(rating);
         review.setComment(dto.getComment());
 
         Review saved = reviewRepository.save(review);
-        String autoReply = dto.getRating() >= 4
+        applyTipToBooking(booking, tipAmount);
+
+        String autoReply = rating >= 4
                 ? "Cảm ơn bạn đã đánh giá tích cực. Kỹ thuật viên sẽ tiếp tục giữ chất lượng phục vụ tốt."
                 : "Cảm ơn phản hồi của bạn. Hệ thống đã ghi nhận và sẽ cải thiện chất lượng dịch vụ.";
         if (booking.getTechnician() != null) {
+            String technicianMessage = autoReply + " Điểm: " + rating + "/5";
+            if (tipAmount.compareTo(BigDecimal.ZERO) > 0) {
+                technicianMessage += ". Tip: " + tipAmount.toPlainString() + " VND";
+            }
             notificationService.createNotification(
                     booking.getTechnician(),
                     "Bạn có đánh giá mới",
-                    autoReply + " Điểm: " + dto.getRating() + "/5",
+                    technicianMessage,
                     "REVIEW",
                     booking.getId());
         }
@@ -79,8 +112,7 @@ public class ReviewService {
         if (booking.getStatus() != BookingStatus.COMPLETED) {
             throw new RuntimeException("Đơn hàng chưa hoàn thành");
         }
-        boolean alreadyReviewed = reviewRepository.findAll().stream()
-                .anyMatch(r -> r.getBooking().getId().equals(booking.getId()));
+        boolean alreadyReviewed = reviewRepository.existsByBooking_Id(booking.getId());
         Map<String, Object> info = new HashMap<>();
         info.put("bookingId", booking.getId());
         info.put("serviceName", booking.getServicePackage().getName());
@@ -90,30 +122,53 @@ public class ReviewService {
         return info;
     }
 
-    public ReviewDto createReviewByToken(String token, ReviewDto dto) {
-        Booking booking = bookingRepository.findByReviewToken(token)
-                .orElseThrow(() -> new RuntimeException("Link đánh giá không hợp lệ hoặc đã hết hạn"));
-        if (booking.getStatus() != BookingStatus.COMPLETED) {
-            throw new RuntimeException("Đơn hàng chưa hoàn thành");
+    private void ensureBookingBelongsToCurrentCustomer(Booking booking) {
+        String email = SecurityContextHolder.getContext().getAuthentication() != null
+                ? SecurityContextHolder.getContext().getAuthentication().getName()
+                : null;
+        if (email == null || booking.getCustomer() == null || !email.equalsIgnoreCase(booking.getCustomer().getEmail())) {
+            throw new RuntimeException("You can only review your own completed booking");
         }
-        boolean alreadyReviewed = reviewRepository.findAll().stream()
-                .anyMatch(r -> r.getBooking().getId().equals(booking.getId()));
-        if (alreadyReviewed) {
-            throw new RuntimeException("Đơn hàng này đã được đánh giá rồi");
+    }
+
+    private BigDecimal normalizeTip(BigDecimal tipAmount) {
+        if (tipAmount == null) {
+            return BigDecimal.ZERO;
         }
-        dto.setBookingId(booking.getId());
-        return createReview(dto);
+        if (tipAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new RuntimeException("Tip amount must be positive");
+        }
+        return tipAmount.setScale(0, RoundingMode.HALF_UP);
+    }
+
+    private void applyTipToBooking(Booking booking, BigDecimal tipAmount) {
+        if (tipAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return;
+        }
+
+        User technician = booking.getTechnician();
+        if (technician == null) {
+            throw new RuntimeException("Booking has no technician to receive tip");
+        }
+
+        booking.setTipAmount(tipAmount);
+        BigDecimal currentEarning = booking.getTechnicianEarning() == null ? BigDecimal.ZERO : booking.getTechnicianEarning();
+        booking.setTechnicianEarning(currentEarning.add(tipAmount));
+        BigDecimal currentBalance = technician.getWalletBalance() == null ? BigDecimal.ZERO : technician.getWalletBalance();
+        technician.setWalletBalance(currentBalance.add(tipAmount));
+        bookingRepository.save(booking);
     }
 
     private ReviewDto mapToDto(Review entity) {
-        return new ReviewDto(
+        ReviewDto dto = new ReviewDto(
                 entity.getId(),
                 entity.getBooking().getId(),
                 entity.getBooking().getServicePackage().getName(),
                 entity.getBooking().getCustomer().getFullName(),
                 entity.getRating(),
                 entity.getComment(),
-                entity.getCreatedAt()
-        );
+                entity.getCreatedAt());
+        dto.setTipAmount(entity.getBooking().getTipAmount());
+        return dto;
     }
 }

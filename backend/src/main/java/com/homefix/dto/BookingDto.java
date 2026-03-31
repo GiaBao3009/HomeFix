@@ -26,11 +26,14 @@ public class BookingDto {
     private String couponCode;
     private String rejectionReason;
     private Long couponId;
+    private LocalDateTime completedAt;
+    private BigDecimal tipAmount;
     private BigDecimal technicianEarning;
     private BigDecimal platformProfit;
     private List<Long> assistantTechnicianIds = new ArrayList<>();
     private List<String> assistantTechnicianNames = new ArrayList<>();
     private boolean dispatchEligible;
+    private boolean reviewed;
     private String dispatchBlockReason;
     private String cancellationReason;
 
@@ -203,6 +206,22 @@ public class BookingDto {
         this.couponId = couponId;
     }
 
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(LocalDateTime completedAt) {
+        this.completedAt = completedAt;
+    }
+
+    public BigDecimal getTipAmount() {
+        return tipAmount;
+    }
+
+    public void setTipAmount(BigDecimal tipAmount) {
+        this.tipAmount = tipAmount;
+    }
+
     public String getRejectionReason() {
         return rejectionReason;
     }
@@ -249,6 +268,14 @@ public class BookingDto {
 
     public void setDispatchEligible(boolean dispatchEligible) {
         this.dispatchEligible = dispatchEligible;
+    }
+
+    public boolean isReviewed() {
+        return reviewed;
+    }
+
+    public void setReviewed(boolean reviewed) {
+        this.reviewed = reviewed;
     }
 
     public String getDispatchBlockReason() {

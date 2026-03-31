@@ -11,6 +11,7 @@ import com.homefix.entity.ServicePackage;
 import com.homefix.entity.User;
 import com.homefix.repository.BookingRepository;
 import com.homefix.repository.CouponRepository;
+import com.homefix.repository.ReviewRepository;
 import com.homefix.repository.ServicePackageRepository;
 import com.homefix.repository.UserRepository;
 import jakarta.mail.MessagingException;
@@ -47,6 +48,7 @@ public class BookingService {
     private final UserRepository userRepository;
     private final ServicePackageRepository servicePackageRepository;
     private final CouponRepository couponRepository;
+    private final ReviewRepository reviewRepository;
     private final NotificationService notificationService;
     private final TechnicianMatchingService technicianMatchingService;
     private final TechnicianEngagementService technicianEngagementService;
@@ -58,6 +60,7 @@ public class BookingService {
 
     public BookingService(BookingRepository bookingRepository, UserRepository userRepository,
             ServicePackageRepository servicePackageRepository, CouponRepository couponRepository,
+            ReviewRepository reviewRepository,
             NotificationService notificationService, TechnicianMatchingService technicianMatchingService,
             TechnicianEngagementService technicianEngagementService, EmailService emailService,
             JavaMailSender mailSender) {
@@ -65,6 +68,7 @@ public class BookingService {
         this.userRepository = userRepository;
         this.servicePackageRepository = servicePackageRepository;
         this.couponRepository = couponRepository;
+        this.reviewRepository = reviewRepository;
         this.notificationService = notificationService;
         this.technicianMatchingService = technicianMatchingService;
         this.technicianEngagementService = technicianEngagementService;
@@ -238,14 +242,10 @@ public class BookingService {
             notificationService.createNotification(
                     booking.getCustomer(),
                     "Booking completed",
-                    "Booking #" + booking.getId() + " is completed. Please leave a review.",
+                    "Booking #" + booking.getId() + " is completed. Please leave a review in your order history.",
                     "ORDER_COMPLETED",
                     booking.getId());
             technicianEngagementService.notifyChatRetentionAfterCompletion(booking);
-            try {
-                emailService.sendCompletionEmail(booking, token);
-            } catch (RuntimeException ignored) {
-            }
         } else {
             booking.setCompletedAt(null);
             notificationService.createNotification(
@@ -794,6 +794,9 @@ public class BookingService {
         }
         dto.setTechnicianEarning(entity.getTechnicianEarning());
         dto.setPlatformProfit(entity.getPlatformProfit());
+        dto.setCompletedAt(entity.getCompletedAt());
+        dto.setTipAmount(entity.getTipAmount());
+        dto.setReviewed(reviewRepository.existsByBooking_Id(entity.getId()));
         dto.setAssistantTechnicianIds(entity.getAssistantTechnicians().stream().map(User::getId).toList());
         dto.setAssistantTechnicianNames(entity.getAssistantTechnicians().stream().map(User::getFullName).toList());
         dto.setCancellationReason(entity.getCancellationReason());

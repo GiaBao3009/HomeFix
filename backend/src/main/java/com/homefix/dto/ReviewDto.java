@@ -1,5 +1,6 @@
 package com.homefix.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class ReviewDto {
@@ -9,6 +10,7 @@ public class ReviewDto {
     private String customerName;
     private Integer rating;
     private String comment;
+    private BigDecimal tipAmount;
     private LocalDateTime createdAt;
 
     public ReviewDto() {}
@@ -35,6 +37,8 @@ public class ReviewDto {
     public void setRating(Integer rating) { this.rating = rating; }
     public String getComment() { return comment; }
     public void setComment(String comment) { this.comment = comment; }
+    public BigDecimal getTipAmount() { return tipAmount; }
+    public void setTipAmount(BigDecimal tipAmount) { this.tipAmount = tipAmount; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

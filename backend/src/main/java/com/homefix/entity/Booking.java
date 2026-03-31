@@ -73,6 +73,7 @@ public class Booking {
     private String reviewToken;
 
     private LocalDateTime completedAt;
+    private BigDecimal tipAmount = BigDecimal.ZERO;
     private BigDecimal technicianEarning = BigDecimal.ZERO;
     private BigDecimal platformProfit = BigDecimal.ZERO;
 
@@ -195,6 +196,14 @@ public class Booking {
 
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public BigDecimal getTipAmount() {
+        return tipAmount;
+    }
+
+    public void setTipAmount(BigDecimal tipAmount) {
+        this.tipAmount = tipAmount;
     }
 
     public String getRejectionReason() {
