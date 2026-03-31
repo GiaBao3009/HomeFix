@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Table, Card, Tag, Button, Space, Typography, message, Modal, Select, Alert, Form, Input, InputNumber, Switch, Row, Col, Statistic, Rate, List, Tabs } from 'antd';
-import { Clock, MapPin, User, Wrench, RefreshCw, Star, Trophy, MessageSquare, AlertTriangle } from 'lucide-react';
+import { Table, Card, Tag, Button, Space, Typography, message, Modal, Select, Alert, Form, Input, InputNumber, Switch, Row, Col, Statistic, Rate, List, Tabs, Empty, Badge } from 'antd';
+import { Clock, MapPin, User, Wrench, RefreshCw, Star, Trophy, Briefcase, CheckCircle, AlertTriangle, TrendingUp, Wallet } from 'lucide-react';
 import api from '../services/api';
 import dayjs from 'dayjs';
 import { useAuth } from '../context/AuthContext';
@@ -16,16 +16,8 @@ const TechnicianDashboard = () => {
     const [dashboard, setDashboard] = useState({});
     const [advancedAnalytics, setAdvancedAnalytics] = useState({});
     const [leaderboard, setLeaderboard] = useState([]);
-    const [tickets, setTickets] = useState([]);
-    const [alerts, setAlerts] = useState([]);
-    const [interactions, setInteractions] = useState([]);
-    const [autoReport, setAutoReport] = useState({});
     const [categories, setCategories] = useState([]);
     const [mainTechnicians, setMainTechnicians] = useState([]);
-    const [chatBookingId, setChatBookingId] = useState(null);
-    const [chatMessages, setChatMessages] = useState([]);
-    const [chatInput, setChatInput] = useState('');
-    const [ticketForm] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [profileLoading, setProfileLoading] = useState(false);
     const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -44,20 +36,14 @@ const TechnicianDashboard = () => {
     const selectedTechnicianType = Form.useWatch('technicianType', profileForm);
 
     const fetchBookings = async (silent = false) => {
-        if (!silent) {
-            setLoading(true);
-        }
-        const [bookingsRes, openBookingsRes, dashboardRes, reviewsRes, leaderboardRes, analyticsRes, ticketsRes, alertsRes, interactionsRes, reportRes] = await Promise.allSettled([
+        if (!silent) setLoading(true);
+        const [bookingsRes, openBookingsRes, dashboardRes, reviewsRes, leaderboardRes, analyticsRes] = await Promise.allSettled([
             api.get('/users/technician/history'),
             api.get('/bookings/available'),
             api.get('/users/technician/dashboard'),
             api.get('/users/technician/reviews'),
             api.get('/technician/leaderboard'),
-            api.get('/technician/analytics'),
-            api.get('/technician/tickets'),
-            api.get('/technician/alerts'),
-            api.get('/technician/interactions'),
-            api.get('/technician/report')
+            api.get('/technician/analytics')
         ]);
         try {
             let bookingData = [];
@@ -65,17 +51,14 @@ const TechnicianDashboard = () => {
                 bookingData = bookingsRes.value.data || [];
             } else {
                 const backendMessage = bookingsRes.reason?.response?.data?.message || '';
-                const isBlockedMessage = backendMessage.includes('hoàn tất hồ sơ trước khi nhận việc');
-                if (!isBlockedMessage && !silent) {
-                    message.error('Không thể tải lịch sử công việc kỹ thuật viên');
+                if (!backendMessage.includes('hoàn tất hồ sơ trước khi nhận việc') && !silent) {
+                    message.error('Không thể tải lịch sử công việc');
                 }
             }
-            const assignedIds = new Set(bookingData.filter(item => item.status === 'ASSIGNED').map(item => item.id));
+            const assignedIds = new Set(bookingData.filter(i => i.status === 'ASSIGNED').map(i => i.id));
             if (assignedIdsRef.current.size > 0) {
                 assignedIds.forEach((id) => {
-                    if (!assignedIdsRef.current.has(id)) {
-                        message.info(`Bạn vừa nhận booking mới #${id}`);
-                    }
+                    if (!assignedIdsRef.current.has(id)) message.info(`Bạn vừa nhận đơn mới #${id}`);
                 });
             }
             assignedIdsRef.current = assignedIds;
@@ -85,19 +68,11 @@ const TechnicianDashboard = () => {
             setReviews(reviewsRes.status === 'fulfilled' ? (reviewsRes.value.data || []) : []);
             setLeaderboard(leaderboardRes.status === 'fulfilled' ? (leaderboardRes.value.data || []) : []);
             setAdvancedAnalytics(analyticsRes.status === 'fulfilled' ? (analyticsRes.value.data || {}) : {});
-            setTickets(ticketsRes.status === 'fulfilled' ? (ticketsRes.value.data || []) : []);
-            setAlerts(alertsRes.status === 'fulfilled' ? (alertsRes.value.data || []) : []);
-            setInteractions(interactionsRes.status === 'fulfilled' ? (interactionsRes.value.data || []) : []);
-            setAutoReport(reportRes.status === 'fulfilled' ? (reportRes.value.data || {}) : {});
         } catch (error) {
             console.error(error);
-            if (!silent) {
-                message.error('Không thể tải dữ liệu kỹ thuật viên');
-            }
+            if (!silent) message.error('Không thể tải dữ liệu');
         } finally {
-            if (!silent) {
-                setLoading(false);
-            }
+            if (!silent) setLoading(false);
         }
     };
 
@@ -111,11 +86,9 @@ const TechnicianDashboard = () => {
             ]);
             const profile = profileRes.data || {};
             setCategories(categoriesRes.data || []);
-            setMainTechnicians((techniciansRes.data || []).filter((tech) => tech.technicianType === 'MAIN' && tech.id !== profile.id));
+            setMainTechnicians((techniciansRes.data || []).filter((t) => t.technicianType === 'MAIN' && t.id !== profile.id));
             setTechnicianProfile(profile);
-            if (!profile.technicianProfileCompleted) {
-                setProfileModalOpen(true);
-            }
+            if (!profile.technicianProfileCompleted) setProfileModalOpen(true);
         } catch (error) {
             console.error(error);
             message.error('Không thể tải hồ sơ kỹ thuật viên');
@@ -152,30 +125,23 @@ const TechnicianDashboard = () => {
     const handleTechnicianResponse = async (bookingId, accepted, reason = '') => {
         try {
             await api.post(`/bookings/${bookingId}/technician-response?accepted=${accepted}&reason=${reason}`);
-            message.success(accepted ? 'Đã nhận việc thành công' : 'Đã gửi từ chối, hệ thống sẽ tự điều phối lại');
+            message.success(accepted ? 'Đã nhận việc thành công' : 'Đã từ chối, hệ thống sẽ điều phối lại');
             setRejectionModalVisible(false);
             setRejectionReason('');
             fetchBookings();
         } catch (error) {
-            console.error(error);
-            message.error('Thao tác thất bại: ' + (error.response?.data?.message || error.message));
+            message.error(error.response?.data?.message || error.message);
         }
     };
 
     const handleClaimBooking = async (bookingId) => {
         try {
             await api.post(`/bookings/${bookingId}/claim`);
-            message.success('Da nhan don thanh cong');
+            message.success('Đã nhận đơn thành công');
             fetchBookings();
         } catch (error) {
-            console.error(error);
-            message.error(error.response?.data?.message || 'Nhan don that bai');
+            message.error(error.response?.data?.message || 'Nhận đơn thất bại');
         }
-    };
-
-    const openRejectionModal = (bookingId) => {
-        setSelectedBookingId(bookingId);
-        setRejectionModalVisible(true);
     };
 
     const handleStatusUpdate = async (bookingId, newStatus) => {
@@ -184,8 +150,7 @@ const TechnicianDashboard = () => {
             message.success('Cập nhật trạng thái thành công');
             fetchBookings();
         } catch (error) {
-            console.error(error);
-            message.error('Cập nhật trạng thái thất bại');
+            message.error(error.response?.data?.message || 'Cập nhật thất bại');
         }
     };
 
@@ -198,119 +163,47 @@ const TechnicianDashboard = () => {
             const res = await api.get(`/users/technician/assistant-candidates?bookingId=${booking.id}`);
             setAssistantCandidates(res.data || []);
         } catch (error) {
-            message.error(error.response?.data?.message || 'Khong the tai danh sach tho phu');
+            message.error(error.response?.data?.message || 'Không thể tải danh sách thợ phụ');
         } finally {
             setAssistantLoading(false);
         }
     };
 
     const handleAddAssistant = async () => {
-        if (!assistantBooking || !selectedAssistantId) {
-            message.warning('Vui long chon tho phu');
-            return;
-        }
+        if (!assistantBooking || !selectedAssistantId) { message.warning('Vui lòng chọn thợ phụ'); return; }
         try {
             await api.post(`/bookings/${assistantBooking.id}/assistants?assistantId=${selectedAssistantId}`);
-            message.success('Da them tho phu vao booking');
+            message.success('Đã thêm thợ phụ');
             setAssistantModalVisible(false);
-            setAssistantCandidates([]);
-            setAssistantBooking(null);
-            setSelectedAssistantId(null);
             fetchBookings();
         } catch (error) {
-            message.error(error.response?.data?.message || 'Them tho phu that bai');
-        }
-    };
-
-    const createTicket = async (values) => {
-        try {
-            const payload = {
-                ...values,
-                bookingId: values.bookingId ? Number(values.bookingId) : null,
-                customerId: Number(values.customerId)
-            };
-            await api.post('/technician/tickets', payload);
-            message.success('Đã tạo ticket hỗ trợ');
-            ticketForm.resetFields();
-            fetchBookings();
-        } catch (error) {
-            message.error(error.response?.data?.message || 'Không thể tạo ticket');
-        }
-    };
-
-    const updateTicketStatus = async (ticketId, status) => {
-        try {
-            await api.patch(`/technician/tickets/${ticketId}/status?status=${status}`);
-            message.success('Đã cập nhật ticket');
-            fetchBookings(true);
-        } catch (error) {
-            message.error(error.response?.data?.message || 'Cập nhật ticket thất bại');
-        }
-    };
-
-    const openChat = async (bookingId) => {
-        setChatBookingId(bookingId);
-        try {
-            const res = await api.get(`/technician/chat/${bookingId}/messages`);
-            setChatMessages(res.data || []);
-        } catch (error) {
-            message.error(error.response?.data?.message || 'Không tải được đoạn chat');
-        }
-    };
-
-    const sendChat = async () => {
-        if (!chatBookingId || !chatInput.trim()) {
-            return;
-        }
-        try {
-            await api.post(`/technician/chat/${chatBookingId}/messages`, { content: chatInput.trim() });
-            setChatInput('');
-            const res = await api.get(`/technician/chat/${chatBookingId}/messages`);
-            setChatMessages(res.data || []);
-        } catch (error) {
-            message.error(error.response?.data?.message || 'Không gửi được tin nhắn');
+            message.error(error.response?.data?.message || 'Thêm thợ phụ thất bại');
         }
     };
 
     const submitTechnicianProfile = async (values) => {
         setSavingProfile(true);
         try {
-            const normalizedTime = (value) => {
-                if (!value) return null;
-                if (/^\d{2}:\d{2}$/.test(value)) {
-                    return `${value}:00`;
-                }
-                return value;
-            };
+            const normalizedTime = (v) => (!v ? null : /^\d{2}:\d{2}$/.test(v) ? `${v}:00` : v);
             const payload = {
                 ...values,
                 baseLocation: values.baseLocation?.trim(),
                 availableFrom: normalizedTime(values.availableFrom),
                 availableTo: normalizedTime(values.availableTo),
-                supervisingTechnicianId: values.technicianType === 'ASSISTANT'
-                    ? Number(values.supervisingTechnicianId)
-                    : null,
+                supervisingTechnicianId: values.technicianType === 'ASSISTANT' ? Number(values.supervisingTechnicianId) : null,
                 categoryIds: (Array.isArray(values.categoryIds) ? values.categoryIds : [values.categoryIds])
-                    .map((id) => Number(id))
-                    .filter((id) => Number.isFinite(id) && id > 0)
+                    .map(Number).filter((id) => Number.isFinite(id) && id > 0)
             };
-            if (!payload.categoryIds.length) {
-                message.error('Vui lòng chọn ít nhất 1 chuyên mục kỹ thuật');
-                return;
-            }
-            if (values.technicianType === 'ASSISTANT' && !payload.supervisingTechnicianId) {
-                message.error('Vui long chon tho chinh phu trach');
-                return;
-            }
+            if (!payload.categoryIds.length) { message.error('Vui lòng chọn ít nhất 1 chuyên mục'); return; }
+            if (values.technicianType === 'ASSISTANT' && !payload.supervisingTechnicianId) { message.error('Vui lòng chọn thợ chính phụ trách'); return; }
             await api.put('/users/technician/profile', payload);
-            message.success('Cập nhật hồ sơ kỹ thuật viên thành công');
+            message.success('Cập nhật hồ sơ thành công');
             setProfileModalOpen(false);
             await refreshUserProfile();
             fetchTechnicianProfile();
             fetchBookings();
         } catch (error) {
-            console.error(error);
-            message.error(error.response?.data?.message || 'Cập nhật hồ sơ thất bại');
+            message.error(error.response?.data?.message || 'Cập nhật thất bại');
         } finally {
             setSavingProfile(false);
         }
@@ -322,764 +215,356 @@ const TechnicianDashboard = () => {
     const isAssistantMissingSupervisor = technicianProfile?.technicianType === 'ASSISTANT' && !technicianProfile?.supervisingTechnicianId;
     const cannotWork = isBlockedByProfile || isMainPending || isMainRejected || isAssistantMissingSupervisor;
 
-    const columns = [
-        {
-            title: 'Mã đơn',
-            dataIndex: 'id',
-            key: 'id',
-            render: (text) => <Text strong>#{text}</Text>,
-        },
-        {
-            title: 'Khách hàng',
-            dataIndex: 'customerName',
-            key: 'customerName',
-            render: (text) => (
-                <div className="flex gap-2 items-center">
-                    <User size={16} className="text-blue-500" />
-                    <span>{text}</span>
-                </div>
-            ),
-        },
-        {
-            title: 'Dịch vụ',
-            dataIndex: 'serviceName',
-            key: 'serviceName',
-            render: (text) => (
-                <div className="flex gap-2 items-center">
-                    <Wrench size={16} className="text-orange-500" />
-                    <span className="font-medium">{text}</span>
-                </div>
-            ),
-        },
-        {
-            title: 'Thời gian & Địa điểm',
-            key: 'info',
-            render: (_, record) => (
-                <div className="space-y-1">
-                    <div className="flex gap-2 items-center text-slate-600">
-                        <Clock size={14} />
-                        {dayjs(record.bookingTime).format('HH:mm DD/MM/YYYY')}
-                    </div>
-                    <div className="flex gap-2 items-center text-slate-600">
-                        <MapPin size={14} />
-                        {record.address}
-                    </div>
-                </div>
-            ),
-        },
-        {
-            title: 'Trạng thái',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status) => {
-                let color = 'default';
-                let text = status;
-                switch (status) {
-                    case 'PENDING': color = 'orange'; text = 'Chờ xử lý'; break;
-                    case 'ASSIGNED': color = 'blue'; text = 'Chờ xác nhận'; break;
-                    case 'ARRIVED': color = 'geekblue'; text = 'Đã đến nơi'; break;
-                    case 'WORKING': color = 'purple'; text = 'Đang làm việc'; break;
-                    case 'IN_PROGRESS': color = 'processing'; text = 'Đang thực hiện'; break;
-                    case 'COMPLETED': color = 'success'; text = 'Hoàn thành'; break;
-                    case 'CANCELLED': color = 'error'; text = 'Đã hủy'; break;
-                    case 'DECLINED': color = 'error'; text = 'Đã từ chối'; break;
-                }
-                return <Tag color={color}>{text}</Tag>;
-            },
-        },
-        {
-            title: 'Hành động',
-            key: 'action',
-            render: (_, record) => (
-                <Space>
-                    {record.status === 'ASSIGNED' && (
-                        <>
-                            <Button
-                                type="primary"
-                                size="small"
-                                onClick={() => handleStatusUpdate(record.id, 'ARRIVED')}
-                                className="bg-blue-600"
-                                disabled={cannotWork}
-                            >
-                                Đã đến nơi
-                            </Button>
-                            <Button
-                                danger
-                                size="small"
-                                onClick={() => openRejectionModal(record.id)}
-                                disabled={cannotWork}
-                            >
-                                Từ chối
-                            </Button>
-                        </>
-                    )}
-                    {record.status === 'IN_PROGRESS' && (
-                        <Button type="primary" size="small" className="bg-green-600" onClick={() => handleStatusUpdate(record.id, 'COMPLETED')} disabled={cannotWork}>
-                            Hoàn thành
-                        </Button>
-                    )}
-                    {record.status === 'ARRIVED' && (
-                        <Button type="primary" size="small" className="bg-purple-600" onClick={() => handleStatusUpdate(record.id, 'WORKING')} disabled={cannotWork}>
-                            Bắt đầu làm việc
-                        </Button>
-                    )}
-                    {record.status === 'WORKING' && (
-                        <Button type="primary" size="small" className="bg-green-600" onClick={() => handleStatusUpdate(record.id, 'COMPLETED')} disabled={cannotWork}>
-                            Hoàn thành
-                        </Button>
-                    )}
-                </Space>
-            ),
-        },
-    ];
+    const activeStatuses = ['ASSIGNED', 'IN_PROGRESS', 'ARRIVED', 'WORKING'];
+    const activeBookings = bookings.filter(b => activeStatuses.includes(b.status));
 
     const renderStatusTag = (status) => {
-        let color = 'default';
-        let text = status;
-        switch (status) {
-            case 'PENDING': color = 'orange'; text = 'Chờ xử lý'; break;
-            case 'CONFIRMED': color = 'gold'; text = 'Đang mở'; break;
-            case 'ASSIGNED': color = 'blue'; text = 'Đã nhận'; break;
-            case 'ARRIVED': color = 'geekblue'; text = 'Đã đến nơi'; break;
-            case 'WORKING': color = 'purple'; text = 'Đang làm việc'; break;
-            case 'IN_PROGRESS': color = 'processing'; text = 'Đang thực hiện'; break;
-            case 'COMPLETED': color = 'success'; text = 'Hoàn thành'; break;
-            case 'CANCELLED': color = 'error'; text = 'Đã hủy'; break;
-            case 'DECLINED': color = 'error'; text = 'Đã từ chối'; break;
-            default: break;
-        }
+        const map = {
+            PENDING: ['orange', 'Chờ xử lý'], CONFIRMED: ['gold', 'Đang mở'], ASSIGNED: ['blue', 'Chờ xác nhận'],
+            ARRIVED: ['geekblue', 'Đã đến nơi'], WORKING: ['purple', 'Đang làm việc'],
+            IN_PROGRESS: ['processing', 'Đang thực hiện'], COMPLETED: ['success', 'Hoàn thành'],
+            CANCELLED: ['error', 'Đã hủy'], DECLINED: ['error', 'Đã từ chối']
+        };
+        const [color, text] = map[status] || ['default', status];
         return <Tag color={color}>{text}</Tag>;
     };
 
-    const openColumns = [
+    const renderActions = (record) => {
+        const isOwner = record.technicianId === user?.id;
+        const isAssistant = (record.assistantTechnicianIds || []).includes(user?.id);
+        const canManage = isOwner && technicianProfile?.technicianType === 'MAIN';
+
+        return (
+            <Space wrap size={4}>
+                {record.status === 'ASSIGNED' && isOwner && (
+                    <>
+                        <Button type="primary" size="small" onClick={() => handleTechnicianResponse(record.id, true)} disabled={cannotWork}>Nhận việc</Button>
+                        <Button danger size="small" onClick={() => { setSelectedBookingId(record.id); setRejectionModalVisible(true); }} disabled={cannotWork}>Từ chối</Button>
+                    </>
+                )}
+                {record.status === 'ASSIGNED' && isAssistant && !isOwner && (
+                    <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'IN_PROGRESS')} disabled={cannotWork}>Bắt đầu hỗ trợ</Button>
+                )}
+                {record.status === 'IN_PROGRESS' && (isOwner || isAssistant) && (
+                    <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'ARRIVED')} disabled={cannotWork}>Đã đến nơi</Button>
+                )}
+                {record.status === 'ARRIVED' && (isOwner || isAssistant) && (
+                    <Button size="small" className="bg-purple-600 text-white border-purple-600 hover:bg-purple-700" onClick={() => handleStatusUpdate(record.id, 'WORKING')} disabled={cannotWork}>Bắt đầu làm</Button>
+                )}
+                {record.status === 'WORKING' && (isOwner || isAssistant) && (
+                    <Button size="small" className="bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700" onClick={() => handleStatusUpdate(record.id, 'COMPLETED')} disabled={cannotWork}>Hoàn thành</Button>
+                )}
+                {canManage && ['ASSIGNED', 'ARRIVED', 'WORKING', 'IN_PROGRESS'].includes(record.status) && (
+                    <Button size="small" onClick={() => openAssistantModal(record)} disabled={cannotWork}>+ Thợ phụ</Button>
+                )}
+            </Space>
+        );
+    };
+
+    const activeColumns = [
         {
-            title: 'Ma don',
-            dataIndex: 'id',
-            key: 'id',
-            render: (text) => <Text strong>#{text}</Text>,
+            title: 'Đơn hàng', key: 'order', width: 200,
+            render: (_, r) => (
+                <div>
+                    <Text strong className="text-blue-600">#{r.id}</Text>
+                    <div className="flex items-center gap-1 mt-1"><Wrench size={13} className="text-slate-400" /><span className="text-sm">{r.serviceName}</span></div>
+                </div>
+            )
         },
         {
-            title: 'Dich vu',
-            dataIndex: 'serviceName',
-            key: 'serviceName',
+            title: 'Khách hàng', dataIndex: 'customerName', key: 'customer', width: 140,
+            render: (t) => <div className="flex items-center gap-1.5"><User size={14} className="text-blue-400" /><span>{t}</span></div>
         },
         {
-            title: 'Thong tin',
-            key: 'openInfo',
-            render: (_, record) => (
+            title: 'Thời gian', key: 'time', width: 160,
+            render: (_, r) => (
+                <div className="space-y-0.5">
+                    <div className="flex items-center gap-1 text-sm"><Clock size={13} className="text-slate-400" />{dayjs(r.bookingTime).format('HH:mm DD/MM')}</div>
+                    <div className="flex items-center gap-1 text-sm text-slate-500"><MapPin size={13} />{r.address}</div>
+                </div>
+            )
+        },
+        {
+            title: 'Đội', key: 'team', width: 150,
+            render: (_, r) => (
                 <div className="space-y-1">
-                    <div className="flex gap-2 items-center text-slate-600">
-                        <Clock size={14} />
-                        {dayjs(record.bookingTime).format('HH:mm DD/MM/YYYY')}
+                    <div className="text-sm">Chính: <Text strong>{r.technicianName || '—'}</Text></div>
+                    <div className="flex flex-wrap gap-1">
+                        {(r.assistantTechnicianNames || []).map((n) => <Tag key={n} className="!text-xs">{n}</Tag>)}
                     </div>
-                    <div className="flex gap-2 items-center text-slate-600">
-                        <MapPin size={14} />
-                        {record.address}
-                    </div>
-                    {record.dispatchBlockReason && (
-                        <div className="text-amber-600 text-xs">
-                            {record.dispatchBlockReason}
-                        </div>
-                    )}
                 </div>
-            ),
+            )
         },
-        {
-            title: 'Trang thai',
-            dataIndex: 'status',
-            key: 'status',
-            render: (_, record) => (
-                <Space direction="vertical" size={4}>
-                    {renderStatusTag(record.status)}
-                    <Tag color={record.dispatchEligible ? 'green' : 'orange'}>
-                        {record.dispatchEligible ? 'Co the nhan' : 'Tam thoi chua nhan duoc'}
-                    </Tag>
-                </Space>
-            ),
-        },
-        {
-            title: 'Hanh dong',
-            key: 'openAction',
-            render: (_, record) => (
-                <div className="space-y-2">
-                    <Button
-                        type="primary"
-                        size="small"
-                        onClick={() => handleClaimBooking(record.id)}
-                        disabled={cannotWork || !record.dispatchEligible}
-                    >
-                        Nhan don
-                    </Button>
-                    {!record.dispatchEligible && record.dispatchBlockReason && (
-                        <div className="text-xs text-slate-500 max-w-40">
-                            {record.dispatchBlockReason}
-                        </div>
-                    )}
-                </div>
-            ),
-        },
+        { title: 'Trạng thái', dataIndex: 'status', key: 'status', width: 120, render: renderStatusTag },
+        { title: 'Hành động', key: 'action', width: 200, render: (_, r) => renderActions(r) }
     ];
 
-    const bookingColumns = [
+    const openColumns = [
         {
-            title: 'Ma don',
-            dataIndex: 'id',
-            key: 'id',
-            render: (text) => <Text strong>#{text}</Text>,
-        },
-        {
-            title: 'Khach hang',
-            dataIndex: 'customerName',
-            key: 'customerName',
-            render: (text) => (
-                <div className="flex gap-2 items-center">
-                    <User size={16} className="text-blue-500" />
-                    <span>{text}</span>
+            title: 'Đơn hàng', key: 'order',
+            render: (_, r) => (
+                <div>
+                    <Text strong>#{r.id}</Text>
+                    <div className="text-sm text-slate-500">{r.serviceName}</div>
                 </div>
-            ),
+            )
         },
         {
-            title: 'Dich vu',
-            dataIndex: 'serviceName',
-            key: 'serviceName',
-        },
-        {
-            title: 'Thong tin',
-            key: 'info',
-            render: (_, record) => (
-                <div className="space-y-1">
-                    <div className="flex gap-2 items-center text-slate-600">
-                        <Clock size={14} />
-                        {dayjs(record.bookingTime).format('HH:mm DD/MM/YYYY')}
-                    </div>
-                    <div className="flex gap-2 items-center text-slate-600">
-                        <MapPin size={14} />
-                        {record.address}
-                    </div>
+            title: 'Thông tin', key: 'info',
+            render: (_, r) => (
+                <div className="space-y-0.5">
+                    <div className="flex items-center gap-1 text-sm"><Clock size={13} className="text-slate-400" />{dayjs(r.bookingTime).format('HH:mm DD/MM/YYYY')}</div>
+                    <div className="flex items-center gap-1 text-sm text-slate-500"><MapPin size={13} />{r.address}</div>
                 </div>
-            ),
+            )
         },
         {
-            title: 'To doi',
-            key: 'team',
-            render: (_, record) => (
-                <div className="space-y-1">
-                    <div className="text-slate-700">Chinh: {record.technicianName || 'Chua co'}</div>
-                    <div className="flex flex-wrap gap-1">
-                        {(record.assistantTechnicianNames || []).length
-                            ? record.assistantTechnicianNames.map((name) => <Tag key={`${record.id}-${name}`}>{name}</Tag>)
-                            : <Text type="secondary">Chua co tho phu</Text>}
-                    </div>
-                </div>
-            ),
+            title: 'Trạng thái', key: 'status',
+            render: (_, r) => (
+                <Space direction="vertical" size={2}>
+                    {renderStatusTag(r.status)}
+                    <Tag color={r.dispatchEligible ? 'green' : 'orange'} className="!text-xs">
+                        {r.dispatchEligible ? 'Có thể nhận' : 'Chưa nhận được'}
+                    </Tag>
+                </Space>
+            )
         },
         {
-            title: 'Trang thai',
-            dataIndex: 'status',
-            key: 'status',
-            render: renderStatusTag,
-        },
-        {
-            title: 'Hanh dong',
-            key: 'action',
-            render: (_, record) => {
-                const isOwner = record.technicianId === user?.id;
-                const isAssistantOnBooking = (record.assistantTechnicianIds || []).includes(user?.id);
-                const canManageAssistants = isOwner && technicianProfile?.technicianType === 'MAIN';
+            title: '', key: 'action', width: 100,
+            render: (_, r) => (
+                <Button type="primary" size="small" onClick={() => handleClaimBooking(r.id)} disabled={cannotWork || !r.dispatchEligible}>
+                    Nhận đơn
+                </Button>
+            )
+        }
+    ];
 
-                return (
-                    <Space wrap>
-                        {record.status === 'ASSIGNED' && isOwner && (
-                            <>
-                                <Button type="primary" size="small" onClick={() => handleTechnicianResponse(record.id, true)} disabled={cannotWork}>
-                                    Bat dau
-                                </Button>
-                                <Button danger size="small" onClick={() => openRejectionModal(record.id)} disabled={cannotWork}>
-                                    Tu choi
-                                </Button>
-                            </>
-                        )}
-                        {record.status === 'ASSIGNED' && (isOwner || isAssistantOnBooking) && (
-                            <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'ARRIVED')} disabled={cannotWork}>
-                                Đã đến nơi
-                            </Button>
-                        )}
-                        {record.status === 'ARRIVED' && (isOwner || isAssistantOnBooking) && (
-                            <Button type="primary" size="small" className="bg-purple-600" onClick={() => handleStatusUpdate(record.id, 'WORKING')} disabled={cannotWork}>
-                                Bắt đầu làm việc
-                            </Button>
-                        )}
-                        {record.status === 'WORKING' && (isOwner || isAssistantOnBooking) && (
-                            <Button type="primary" size="small" className="bg-green-600" onClick={() => handleStatusUpdate(record.id, 'COMPLETED')} disabled={cannotWork}>
-                                Hoàn thành
-                            </Button>
-                        )}
-                        {record.status === 'IN_PROGRESS' && (isOwner || isAssistantOnBooking) && (
-                            <Button type="primary" size="small" className="bg-green-600" onClick={() => handleStatusUpdate(record.id, 'COMPLETED')} disabled={cannotWork}>
-                                Hoàn thành
-                            </Button>
-                        )}
-                        {canManageAssistants && ['ASSIGNED', 'ARRIVED', 'WORKING', 'IN_PROGRESS'].includes(record.status) && (
-                            <Button size="small" onClick={() => openAssistantModal(record)} disabled={cannotWork}>
-                                Them tho phu
-                            </Button>
-                        )}
-                    </Space>
-                );
-            },
+    const historyColumns = [
+        { title: '#', dataIndex: 'id', key: 'id', width: 70, render: (t) => <Text strong>#{t}</Text> },
+        { title: 'Dịch vụ', dataIndex: 'serviceName', key: 'service' },
+        { title: 'Khách hàng', dataIndex: 'customerName', key: 'customer' },
+        { title: 'Ngày', dataIndex: 'bookingTime', key: 'time', render: (t) => dayjs(t).format('DD/MM/YYYY HH:mm') },
+        { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: renderStatusTag }
+    ];
+
+    const alertContent = (
+        <>
+            {isBlockedByProfile && <Alert type="warning" className="mb-3" message="Bạn cần hoàn tất hồ sơ kỹ thuật viên trước khi nhận việc." action={<Button size="small" onClick={() => setProfileModalOpen(true)}>Hoàn tất hồ sơ</Button>} />}
+            {isMainPending && <Alert type="info" className="mb-3" message="Thợ chính đang chờ admin duyệt. Bạn chưa thể nhận việc." />}
+            {isMainRejected && <Alert type="error" className="mb-3" message="Hồ sơ thợ chính chưa được duyệt. Vui lòng cập nhật lại." action={<Button size="small" onClick={() => setProfileModalOpen(true)}>Cập nhật hồ sơ</Button>} />}
+            {isAssistantMissingSupervisor && <Alert type="warning" className="mb-3" message="Thợ phụ cần được gán với một thợ chính trước khi nhận việc." action={<Button size="small" onClick={() => setProfileModalOpen(true)}>Cập nhật hồ sơ</Button>} />}
+            {technicianProfile?.technicianType === 'ASSISTANT' && technicianProfile?.supervisingTechnicianName && (
+                <Alert type="info" className="mb-3" message={`Bạn đang là thợ phụ của ${technicianProfile.supervisingTechnicianName}.${technicianProfile.assistantPromoteAt ? ` Sẽ lên thợ chính vào ${dayjs(technicianProfile.assistantPromoteAt).format('DD/MM/YYYY')}.` : ''}`} />
+            )}
+        </>
+    );
+
+    const statCards = [
+        { icon: <Briefcase size={20} className="text-blue-500" />, title: 'Đơn đang làm', value: activeBookings.length, color: 'text-blue-600' },
+        { icon: <CheckCircle size={20} className="text-emerald-500" />, title: 'Hoàn thành', value: dashboard.completedJobs || 0, color: 'text-emerald-600' },
+        { icon: <Star size={20} className="text-amber-500" />, title: 'Đánh giá', value: `${(dashboard.averageRating || 0).toFixed(1)}/5`, suffix: <span className="text-xs text-slate-500 ml-1">({dashboard.totalReviews || 0})</span>, color: 'text-amber-600' },
+        { icon: <Wallet size={20} className="text-violet-500" />, title: 'Số dư ví', value: `${Number(dashboard.walletBalance || 0).toLocaleString('vi-VN')}đ`, color: 'text-violet-600' }
+    ];
+
+    const tabItems = [
+        {
+            key: 'active',
+            label: <Badge count={activeBookings.length} size="small" offset={[8, 0]}><span className="font-semibold">Việc đang làm</span></Badge>,
+            children: (
+                <Table columns={activeColumns} dataSource={activeBookings} rowKey="id" loading={loading || profileLoading}
+                    pagination={false} scroll={{ x: 900 }}
+                    locale={{ emptyText: <Empty description="Chưa có đơn nào đang thực hiện" /> }} />
+            )
         },
+        {
+            key: 'open',
+            label: <Badge count={openBookings.length} size="small" offset={[8, 0]}><span className="font-semibold">Đơn mở</span></Badge>,
+            children: (
+                <Table columns={openColumns} dataSource={openBookings} rowKey="id" loading={loading || profileLoading}
+                    pagination={{ pageSize: 5, size: 'small' }}
+                    locale={{ emptyText: <Empty description="Chưa có đơn mở phù hợp" /> }} />
+            )
+        },
+        {
+            key: 'history',
+            label: <span className="font-semibold">Lịch sử</span>,
+            children: (
+                <Table columns={historyColumns} dataSource={bookings} rowKey="id" loading={loading || profileLoading}
+                    pagination={{ pageSize: 8, size: 'small' }} />
+            )
+        },
+        {
+            key: 'reviews',
+            label: <span className="font-semibold">Đánh giá ({reviews.length})</span>,
+            children: reviews.length > 0 ? (
+                <List dataSource={reviews} renderItem={(item) => (
+                    <List.Item>
+                        <div className="w-full">
+                            <div className="flex justify-between items-start flex-wrap gap-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center"><User size={14} className="text-blue-600" /></div>
+                                    <div>
+                                        <Text strong>{item.customerName}</Text>
+                                        <div className="text-xs text-slate-500">{item.serviceName}</div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <Rate disabled value={item.rating} className="!text-sm" />
+                                    <div className="text-xs text-slate-400">{dayjs(item.createdAt).format('DD/MM/YYYY')}</div>
+                                </div>
+                            </div>
+                            {item.comment && <div className="mt-2 text-sm text-slate-600 pl-10">{item.comment}</div>}
+                        </div>
+                    </List.Item>
+                )} />
+            ) : <Empty description="Chưa có đánh giá nào" />
+        },
+        {
+            key: 'leaderboard',
+            label: <span className="font-semibold">Xếp hạng</span>,
+            children: leaderboard.length > 0 ? (
+                <List dataSource={leaderboard} renderItem={(item, idx) => (
+                    <List.Item>
+                        <div className="flex items-center justify-between w-full">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${idx < 3 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                                    {item.rank || idx + 1}
+                                </div>
+                                <Text strong className={item.technicianName === user?.fullName ? '!text-blue-600' : ''}>{item.technicianName}</Text>
+                            </div>
+                            <Space size={4}>
+                                <Tag color="blue">{item.averageRating} ★</Tag>
+                                <Tag color="green">{item.completedJobs} đơn</Tag>
+                            </Space>
+                        </div>
+                    </List.Item>
+                )} />
+            ) : <Empty description="Chưa có dữ liệu xếp hạng" />
+        }
     ];
 
     return (
-        <div className="p-6 mx-auto max-w-7xl">
-            <div className="flex justify-between items-center mb-8">
+        <div className="space-y-5">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
-                    <Title level={2}>Bảng công việc kỹ thuật viên</Title>
-                    <Text type="secondary">Luồng mới: hệ thống tự động điều phối công việc theo chuyên mục</Text>
+                    <Title level={3} className="!mb-0">Bảng công việc</Title>
+                    <Text type="secondary" className="text-sm">Hệ thống tự động điều phối theo chuyên mục</Text>
                 </div>
-                <Button icon={<RefreshCw size={16} />} onClick={() => { fetchTechnicianProfile(); fetchBookings(); }}>
+                <Button icon={<RefreshCw size={14} />} onClick={() => { fetchTechnicianProfile(); fetchBookings(); }} loading={loading}>
                     Làm mới
                 </Button>
             </div>
 
-            {isBlockedByProfile && (
-                <Alert
-                    type="warning"
-                    className="mb-4"
-                    message="Bạn cần hoàn tất hồ sơ kỹ thuật viên trước khi nhận việc."
-                    action={<Button size="small" onClick={() => setProfileModalOpen(true)}>Hoàn tất hồ sơ</Button>}
-                />
-            )}
-            {isMainPending && (
-                <Alert
-                    type="info"
-                    className="mb-4"
-                    message="Thợ chính đang chờ admin duyệt kỹ năng. Bạn chưa thể nhận việc."
-                />
-            )}
-            {isMainRejected && (
-                <Alert
-                    type="error"
-                    className="mb-4"
-                    message="Hồ sơ thợ chính chưa được duyệt. Vui lòng cập nhật lại hồ sơ."
-                    action={<Button size="small" onClick={() => setProfileModalOpen(true)}>Cập nhật hồ sơ</Button>}
-                />
-            )}
+            {/* Alerts */}
+            {alertContent}
 
-            {isAssistantMissingSupervisor && (
-                <Alert
-                    type="warning"
-                    className="mb-4"
-                    message="Tho phu can duoc gan voi mot tho chinh truoc khi nhan viec."
-                    action={<Button size="small" onClick={() => setProfileModalOpen(true)}>Cap nhat ho so</Button>}
-                />
-            )}
-            {technicianProfile?.technicianType === 'ASSISTANT' && technicianProfile?.supervisingTechnicianName && (
-                <Alert
-                    type="info"
-                    className="mb-4"
-                    message={`Ban dang la tho phu cua ${technicianProfile.supervisingTechnicianName}. ${technicianProfile.assistantPromoteAt ? `He thong se tu len tho chinh vao ${dayjs(technicianProfile.assistantPromoteAt).format('DD/MM/YYYY HH:mm')}.` : ''}`}
-                />
-            )}
-
-            <Row gutter={16} className="mb-4">
-                <Col xs={24} md={8}>
-                    <Card bordered={false}>
-                        <Statistic title="Đơn chờ nhận" value={dashboard.pendingJobs || 0} prefix={<MessageSquare size={16} />} />
-                    </Card>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Card bordered={false}>
-                        <Statistic title="Đơn đang làm" value={dashboard.inProgressJobs || 0} />
-                    </Card>
-                </Col>
-                <Col xs={24} md={8}>
-                    <Card bordered={false}>
-                        <Statistic title="Đơn hoàn thành" value={dashboard.completedJobs || 0} />
-                    </Card>
-                </Col>
-            </Row>
-
-            <Row gutter={16} className="mb-4">
-                <Col xs={24} md={12}>
-                    <Card bordered={false}>
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <Text strong>Điểm đánh giá trung bình</Text>
-                                <div className="text-xl font-semibold mt-1">{dashboard.averageRating || 0}/5</div>
-                            </div>
-                            <div className="text-right">
-                                <Rate disabled allowHalf value={dashboard.averageRating || 0} />
-                                <div className="text-slate-500 text-sm mt-1">{dashboard.totalReviews || 0} đánh giá</div>
+            {/* Stats Strip */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {statCards.map((s, i) => (
+                    <Card key={i} bordered={false} className="!rounded-xl" bodyStyle={{ padding: '16px 20px' }}>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{s.icon}</div>
+                            <div className="min-w-0">
+                                <div className="text-xs text-slate-500 truncate">{s.title}</div>
+                                <div className={`text-lg font-bold ${s.color} truncate`}>{s.value}{s.suffix}</div>
                             </div>
                         </div>
                     </Card>
-                </Col>
-                <Col xs={24} md={12}>
-                    <Card bordered={false}>
-                        <Statistic title="Số dư ví" value={dashboard.walletBalance || 0} suffix="VND" />
-                    </Card>
-                </Col>
-            </Row>
+                ))}
+            </div>
 
-            <Row gutter={16} className="mb-4">
-                <Col xs={24} md={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Tỉ lệ hoàn thành" value={advancedAnalytics.completionRate || 0} suffix="%" />
-                    </Card>
-                </Col>
-                <Col xs={24} md={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Ticket quá hạn" value={advancedAnalytics.overdueTickets || 0} />
-                    </Card>
-                </Col>
-                <Col xs={24} md={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Đơn hủy" value={advancedAnalytics.cancelled || 0} />
-                    </Card>
-                </Col>
-                <Col xs={24} md={6}>
-                    <Card bordered={false}>
-                        <Statistic title="Đơn từ chối" value={advancedAnalytics.declined || 0} />
-                    </Card>
-                </Col>
-            </Row>
-
-            <Card bordered={false} className="shadow-sm mb-4">
-                <Title level={4}>Don phu hop dang mo</Title>
-                <Table
-                    columns={openColumns}
-                    dataSource={openBookings}
-                    rowKey="id"
-                    pagination={{ pageSize: 5 }}
-                    loading={loading || profileLoading}
-                    locale={{ emptyText: 'Chua co don mo phu hop' }}
-                />
-            </Card>
-
-            <Card bordered={false} className="shadow-sm mb-4">
-                <Title level={4}>Don cua ban</Title>
-                <Table
-                    columns={bookingColumns}
-                    dataSource={bookings}
-                    rowKey="id"
-                    loading={loading || profileLoading}
-                />
-            </Card>
-
-            <Modal
-                title="Them tho phu vao booking"
-                open={assistantModalVisible}
-                onOk={handleAddAssistant}
-                okText="Them"
-                cancelText="Dong"
-                confirmLoading={assistantLoading}
-                onCancel={() => {
-                    setAssistantModalVisible(false);
-                    setAssistantBooking(null);
-                    setAssistantCandidates([]);
-                    setSelectedAssistantId(null);
-                }}
-            >
-                <div className="space-y-4">
-                    <div className="text-slate-600">
-                        Booking #{assistantBooking?.id} - {assistantBooking?.serviceName}
+            {/* Analytics Row */}
+            {(advancedAnalytics.completionRate != null) && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-50 border border-emerald-100">
+                        <TrendingUp size={16} className="text-emerald-600" />
+                        <div><div className="text-xs text-emerald-700">Tỉ lệ hoàn thành</div><div className="font-bold text-emerald-700">{advancedAnalytics.completionRate || 0}%</div></div>
                     </div>
-                    <Select
-                        className="w-full"
-                        placeholder="Chon tho phu"
-                        loading={assistantLoading}
-                        value={selectedAssistantId}
-                        onChange={setSelectedAssistantId}
-                        options={assistantCandidates.map((candidate) => ({
-                            value: candidate.id,
-                            label: `${candidate.fullName} - ${candidate.categoryNames?.join(', ') || 'Khong co category'}`
-                        }))}
-                    />
-                    {!assistantLoading && !assistantCandidates.length && (
-                        <Text type="secondary">Khong co tho phu ranh trong khung gio nay.</Text>
-                    )}
+                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-50 border border-blue-100">
+                        <Briefcase size={16} className="text-blue-600" />
+                        <div><div className="text-xs text-blue-700">Đơn chờ nhận</div><div className="font-bold text-blue-700">{dashboard.pendingJobs || 0}</div></div>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-orange-50 border border-orange-100">
+                        <AlertTriangle size={16} className="text-orange-600" />
+                        <div><div className="text-xs text-orange-700">Đơn hủy</div><div className="font-bold text-orange-700">{advancedAnalytics.cancelled || 0}</div></div>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-50 border border-red-100">
+                        <AlertTriangle size={16} className="text-red-600" />
+                        <div><div className="text-xs text-red-700">Đơn từ chối</div><div className="font-bold text-red-700">{advancedAnalytics.declined || 0}</div></div>
+                    </div>
                 </div>
-            </Modal>
+            )}
 
-            <Tabs
-                className="mb-4"
-                items={[
-                    {
-                        key: 'ranking',
-                        label: 'Xếp hạng kỹ thuật viên',
-                        children: (
-                            <Card bordered={false}>
-                                <List
-                                    dataSource={leaderboard}
-                                    renderItem={(item) => (
-                                        <List.Item>
-                                            <Space className="w-full justify-between">
-                                                <Space>
-                                                    <Trophy size={16} className="text-amber-500" />
-                                                    <Text strong>#{item.rank} {item.technicianName}</Text>
-                                                </Space>
-                                                <Space>
-                                                    <Tag color="blue">Rating: {item.averageRating}</Tag>
-                                                    <Tag color="green">Đơn xong: {item.completedJobs}</Tag>
-                                                    <Tag>{item.totalReviews} review</Tag>
-                                                </Space>
-                                            </Space>
-                                        </List.Item>
-                                    )}
-                                />
-                            </Card>
-                        )
-                    },
-                    {
-                        key: 'tickets',
-                        label: 'Ticketing nâng cao',
-                        children: (
-                            <Card bordered={false}>
-                                <Form form={ticketForm} layout="vertical" onFinish={createTicket}>
-                                    <Row gutter={12}>
-                                        <Col xs={24} md={6}><Form.Item name="title" label="Tiêu đề" rules={[{ required: true, message: 'Nhập tiêu đề' }]}><Input /></Form.Item></Col>
-                                        <Col xs={24} md={6}><Form.Item name="customerId" label="ID khách hàng" rules={[{ required: true, message: 'Nhập customerId' }]}><Input /></Form.Item></Col>
-                                        <Col xs={24} md={4}><Form.Item name="bookingId" label="ID đơn (tuỳ chọn)"><Input /></Form.Item></Col>
-                                        <Col xs={24} md={4}><Form.Item name="category" label="Loại ticket" rules={[{ required: true, message: 'Chọn loại' }]}><Select options={[{ value: 'SERVICE_ISSUE', label: 'Service' }, { value: 'PAYMENT_ISSUE', label: 'Payment' }, { value: 'SCHEDULE_CHANGE', label: 'Schedule' }, { value: 'CUSTOMER_COMPLAINT', label: 'Complaint' }, { value: 'TECHNICAL_SUPPORT', label: 'Technical' }]} /></Form.Item></Col>
-                                        <Col xs={24} md={4}><Form.Item name="priority" label="Ưu tiên" rules={[{ required: true, message: 'Chọn ưu tiên' }]}><Select options={[{ value: 'LOW', label: 'Low' }, { value: 'MEDIUM', label: 'Medium' }, { value: 'HIGH', label: 'High' }, { value: 'URGENT', label: 'Urgent' }]} /></Form.Item></Col>
-                                    </Row>
-                                    <Form.Item name="description" label="Mô tả" rules={[{ required: true, message: 'Nhập mô tả' }]}><Input.TextArea rows={2} /></Form.Item>
-                                    <Button type="primary" htmlType="submit">Tạo ticket</Button>
-                                </Form>
-                                <div className="mt-4">
-                                    <List
-                                        dataSource={tickets}
-                                        renderItem={(item) => (
-                                            <List.Item
-                                                actions={[
-                                                    <Button key="progress" size="small" onClick={() => updateTicketStatus(item.id, 'IN_PROGRESS')}>In Progress</Button>,
-                                                    <Button key="resolve" size="small" type="primary" onClick={() => updateTicketStatus(item.id, 'RESOLVED')}>Resolve</Button>
-                                                ]}
-                                            >
-                                                <List.Item.Meta
-                                                    title={`#${item.id} - ${item.title}`}
-                                                    description={`${item.customerName} | ${item.priority} | ${item.status}`}
-                                                />
-                                            </List.Item>
-                                        )}
-                                    />
-                                </div>
-                            </Card>
-                        )
-                    },
-                    {
-                        key: 'alerts',
-                        label: 'Cảnh báo thông minh',
-                        children: (
-                            <Card bordered={false}>
-                                <List
-                                    dataSource={alerts}
-                                    renderItem={(item) => (
-                                        <List.Item>
-                                            <Space>
-                                                <AlertTriangle size={16} className="text-amber-500" />
-                                                <Tag color={item.severity === 'HIGH' ? 'red' : item.severity === 'MEDIUM' ? 'orange' : 'green'}>{item.severity}</Tag>
-                                                <Text>{item.message}</Text>
-                                            </Space>
-                                        </List.Item>
-                                    )}
-                                />
-                                <div className="mt-4">
-                                    <Text strong>Báo cáo tự động</Text>
-                                    <div className="text-slate-600 mt-1">Khuyến nghị: {autoReport.recommendation || 'Chưa có dữ liệu'}</div>
-                                </div>
-                            </Card>
-                        )
-                    },
-                    {
-                        key: 'interactions',
-                        label: 'Lịch sử tương tác',
-                        children: (
-                            <Card bordered={false}>
-                                <List
-                                    dataSource={interactions}
-                                    renderItem={(item) => (
-                                        <List.Item>
-                                            <Space className="w-full justify-between">
-                                                <div>
-                                                    <Text strong>{item.interactionType}</Text>
-                                                    <div className="text-slate-600">{item.detail}</div>
-                                                </div>
-                                                <Text type="secondary">{dayjs(item.createdAt).format('DD/MM HH:mm')}</Text>
-                                            </Space>
-                                        </List.Item>
-                                    )}
-                                />
-                            </Card>
-                        )
-                    }
-                ]}
-            />
-
-            <Card bordered={false} className="shadow-sm">
-                <Title level={4}>Lịch sử đánh giá</Title>
-                <List
-                    dataSource={reviews}
-                    locale={{ emptyText: 'Chưa có đánh giá nào' }}
-                    renderItem={(item) => (
-                        <List.Item>
-                            <List.Item.Meta
-                                avatar={<Star size={18} className="text-yellow-500 mt-1" />}
-                                title={(
-                                    <div className="flex justify-between items-center">
-                                        <Space>
-                                            <Text strong>{item.customerName}</Text>
-                                            <Rate disabled value={item.rating} />
-                                        </Space>
-                                        <Text type="secondary">{dayjs(item.createdAt).format('DD/MM/YYYY HH:mm')}</Text>
-                                    </div>
-                                )}
-                                description={(
-                                    <div>
-                                        <div>Dịch vụ: {item.serviceName}</div>
-                                        <div>{item.comment || 'Không có nhận xét'}</div>
-                                    </div>
-                                )}
-                            />
-                        </List.Item>
-                    )}
-                />
+            {/* Main Tabs */}
+            <Card bordered={false} className="!rounded-xl !shadow-sm">
+                <Tabs defaultActiveKey="active" items={tabItems} size="middle" />
             </Card>
 
-            <Card bordered={false} className="shadow-sm mt-4">
-                <Title level={4}>Chat real-time theo đơn</Title>
-                <Space className="mb-3">
-                    <Select
-                        style={{ width: 240 }}
-                        placeholder="Chọn booking để chat"
-                        value={chatBookingId}
-                        onChange={openChat}
-                        options={bookings.map(item => ({ value: item.id, label: `#${item.id} - ${item.customerName}` }))}
-                    />
-                </Space>
-                <List
-                    dataSource={chatMessages}
-                    locale={{ emptyText: 'Chưa có tin nhắn' }}
-                    renderItem={(item) => (
-                        <List.Item>
-                            <Space className="w-full justify-between">
-                                <div>
-                                    <Text strong>{item.senderName}</Text>
-                                    <div>{item.content}</div>
-                                </div>
-                                <div className="text-right">
-                                    <Text type="secondary">{dayjs(item.createdAt).format('DD/MM HH:mm')}</Text>
-                                    <div className="text-xs text-slate-500">Xóa lúc {dayjs(item.expiresAt).format('DD/MM HH:mm')}</div>
-                                </div>
-                            </Space>
-                        </List.Item>
-                    )}
-                />
-                <Space className="w-full mt-3">
-                    <Input value={chatInput} onChange={(e) => setChatInput(e.target.value)} placeholder="Nhập tin nhắn..." />
-                    <Button type="primary" onClick={sendChat}>Gửi</Button>
-                </Space>
-            </Card>
-
-            <Modal
-                title="Từ chối công việc"
-                open={rejectionModalVisible}
+            {/* Rejection Modal */}
+            <Modal title="Từ chối công việc" open={rejectionModalVisible}
                 onOk={() => handleTechnicianResponse(selectedBookingId, false, rejectionReason)}
-                onCancel={() => setRejectionModalVisible(false)}
-                okText="Xác nhận từ chối"
-                cancelText="Hủy"
-            >
-                <div className="space-y-4">
-                    <Text>Vui lòng cho biết lý do từ chối công việc này.</Text>
-                    <textarea
-                        className="w-full border rounded-md p-2"
-                        rows={4}
-                        placeholder="Nhập lý do..."
-                        value={rejectionReason}
-                        onChange={(e) => setRejectionReason(e.target.value)}
-                    />
+                onCancel={() => setRejectionModalVisible(false)} okText="Xác nhận từ chối" cancelText="Hủy" okButtonProps={{ danger: true }}>
+                <div className="space-y-3">
+                    <Text>Vui lòng cho biết lý do từ chối công việc này:</Text>
+                    <Input.TextArea rows={4} placeholder="Nhập lý do..." value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} />
                 </div>
             </Modal>
 
-            <Modal
-                title="Hoàn tất hồ sơ kỹ thuật viên"
-                open={profileModalOpen}
-                onCancel={() => {}}
-                footer={null}
-                closable={false}
-                maskClosable={false}
-            >
+            {/* Assistant Modal */}
+            <Modal title="Thêm thợ phụ" open={assistantModalVisible} onOk={handleAddAssistant} okText="Thêm" cancelText="Đóng"
+                confirmLoading={assistantLoading} onCancel={() => { setAssistantModalVisible(false); setAssistantBooking(null); setAssistantCandidates([]); setSelectedAssistantId(null); }}>
+                <div className="space-y-3">
+                    <div className="text-sm text-slate-500">Đơn #{assistantBooking?.id} — {assistantBooking?.serviceName}</div>
+                    <Select className="w-full" placeholder="Chọn thợ phụ" loading={assistantLoading} value={selectedAssistantId} onChange={setSelectedAssistantId}
+                        options={assistantCandidates.map((c) => ({ value: c.id, label: `${c.fullName} — ${c.categoryNames?.join(', ') || 'Không có chuyên mục'}` }))} />
+                    {!assistantLoading && !assistantCandidates.length && <Text type="secondary">Không có thợ phụ rảnh trong khung giờ này.</Text>}
+                </div>
+            </Modal>
+
+            {/* Profile Modal */}
+            <Modal title="Hoàn tất hồ sơ kỹ thuật viên" open={profileModalOpen} onCancel={() => {}} footer={null} closable={false} maskClosable={false} width={560}>
                 <div className="mb-4 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm">
                     Cấu hình hồ sơ để hệ thống matching tự động phân công theo chuyên mục và lịch làm việc.
                 </div>
-                <Form
-                    form={profileForm}
-                    layout="vertical"
-                    onFinish={submitTechnicianProfile}
-                >
-                    <Form.Item name="specialty" label="Thợ làm gì" rules={[{ required: true, message: 'Vui lòng nhập chuyên môn' }]}>
-                        <Input placeholder="Ví dụ: Thợ điện máy" />
+                <Form form={profileForm} layout="vertical" onFinish={submitTechnicianProfile} size="middle">
+                    <Form.Item name="specialty" label="Chuyên môn" rules={[{ required: true, message: 'Nhập chuyên môn' }]}>
+                        <Input placeholder="VD: Thợ điện máy" />
                     </Form.Item>
-                    <Form.Item name="categoryIds" label="Chuyên mục nhận việc" rules={[{ required: true, message: 'Vui lòng chọn chuyên mục' }]}>
+                    <Form.Item name="categoryIds" label="Chuyên mục nhận việc" rules={[{ required: true, message: 'Chọn chuyên mục' }]}>
                         <Select mode="multiple" placeholder="Chọn chuyên mục phù hợp">
-                            {categories.map((category) => (
-                                <Option key={category.id} value={category.id}>{category.name}</Option>
-                            ))}
+                            {categories.map((c) => <Option key={c.id} value={c.id}>{c.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="experienceYears" label="Kinh nghiệm (năm)" rules={[{ required: true, message: 'Vui lòng nhập số năm kinh nghiệm' }]}>
-                        <InputNumber className="w-full" min={0} max={60} />
+                    <Row gutter={12}>
+                        <Col xs={12}><Form.Item name="experienceYears" label="Kinh nghiệm (năm)" rules={[{ required: true }]}><InputNumber className="w-full" min={0} max={60} /></Form.Item></Col>
+                        <Col xs={12}><Form.Item name="citizenId" label="Số CCCD" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                    </Row>
+                    <Form.Item name="workDescription" label="Mô tả công việc" rules={[{ required: true }]}>
+                        <Input.TextArea rows={3} placeholder="VD: Rửa điều hòa, bơm khí..." />
                     </Form.Item>
-                    <Form.Item name="workDescription" label="Mô tả công việc chi tiết" rules={[{ required: true, message: 'Vui lòng nhập mô tả công việc' }]}>
-                        <Input.TextArea rows={4} placeholder="Ví dụ: rửa điều hòa, bơm khí điều hòa..." />
+                    <Form.Item name="technicianType" label="Loại thợ" rules={[{ required: true }]}>
+                        <Select><Option value="MAIN">Thợ chính</Option><Option value="ASSISTANT">Thợ phụ</Option></Select>
                     </Form.Item>
-                    <Form.Item name="citizenId" label="Số CCCD" rules={[{ required: true, message: 'Vui lòng nhập số CCCD' }]}>
-                        <Input placeholder="Nhập số căn cước công dân" />
+                    <Form.Item name="baseLocation" label="Khu vực làm việc" rules={[{ required: true }]}>
+                        <Input placeholder="VD: Cầu Giấy, Hà Nội" />
                     </Form.Item>
-                    <Form.Item name="technicianType" label="Loại thợ" rules={[{ required: true, message: 'Vui lòng chọn loại thợ' }]}>
-                        <Select>
-                            <Option value="MAIN">Thợ chính</Option>
-                            <Option value="ASSISTANT">Thợ phụ</Option>
-                        </Select>
-                    </Form.Item>
-                    <Form.Item name="baseLocation" label="Khu vực làm việc chính" rules={[{ required: true, message: 'Vui lòng nhập khu vực làm việc' }]}>
-                        <Input placeholder="Ví dụ: Cầu Giấy, Hà Nội" />
-                    </Form.Item>
-                    <Space className="w-full" size={12}>
-                        <Form.Item name="availableFrom" label="Bắt đầu ca" className="flex-1" rules={[{ required: true, message: 'Nhập giờ bắt đầu' }]}>
-                            <Input placeholder="08:00" />
-                        </Form.Item>
-                        <Form.Item name="availableTo" label="Kết thúc ca" className="flex-1" rules={[{ required: true, message: 'Nhập giờ kết thúc' }]}>
-                            <Input placeholder="18:00" />
-                        </Form.Item>
-                    </Space>
-                    <Form.Item name="availableForAutoAssign" label="Nhận phân công tự động" valuePropName="checked">
-                        <Switch />
-                    </Form.Item>
+                    <Row gutter={12}>
+                        <Col xs={12}><Form.Item name="availableFrom" label="Bắt đầu ca" rules={[{ required: true }]}><Input placeholder="08:00" /></Form.Item></Col>
+                        <Col xs={12}><Form.Item name="availableTo" label="Kết thúc ca" rules={[{ required: true }]}><Input placeholder="18:00" /></Form.Item></Col>
+                    </Row>
+                    <Form.Item name="availableForAutoAssign" label="Nhận phân công tự động" valuePropName="checked"><Switch /></Form.Item>
                     {selectedTechnicianType === 'ASSISTANT' && (
-                        <Form.Item
-                            name="supervisingTechnicianId"
-                            label="Tho chinh phu trach"
-                            rules={[{ required: true, message: 'Vui long chon tho chinh phu trach' }]}
-                        >
-                            <Select
-                                placeholder="Chon tho chinh"
-                                options={mainTechnicians.map((tech) => ({
-                                    value: tech.id,
-                                    label: `${tech.fullName} - ${tech.categoryNames?.join(', ') || 'Khong co category'}`
-                                }))}
-                            />
-                        </Form.Item>
+                        <>
+                            <Form.Item name="supervisingTechnicianId" label="Thợ chính phụ trách" rules={[{ required: true, message: 'Chọn thợ chính' }]}>
+                                <Select placeholder="Chọn thợ chính" options={mainTechnicians.map((t) => ({ value: t.id, label: `${t.fullName} — ${t.categoryNames?.join(', ') || ''}` }))} />
+                            </Form.Item>
+                            <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
+                                Thợ phụ vẫn có thể tự nhận đơn đúng chuyên mục. Sau 1 tháng, hệ thống sẽ tự động nâng cấp lên thợ chính.
+                            </div>
+                        </>
                     )}
-                    {selectedTechnicianType === 'ASSISTANT' && (
-                        <div className="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
-                            Tho phu van co the tu nhan don dung category cua minh. Sau 1 thang, he thong se tu dong nang cap len tho chinh.
-                        </div>
-                    )}
-                    <Button type="primary" htmlType="submit" className="w-full" loading={savingProfile}>
-                        Lưu hồ sơ kỹ thuật viên
-                    </Button>
+                    <Button type="primary" htmlType="submit" className="w-full" loading={savingProfile}>Lưu hồ sơ kỹ thuật viên</Button>
                 </Form>
             </Modal>
         </div>
@@ -1087,6 +572,3 @@ const TechnicianDashboard = () => {
 };
 
 export default TechnicianDashboard;
-
-
-

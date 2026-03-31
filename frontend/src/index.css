@@ -425,6 +425,7 @@ a:hover {
 .dark .bg-emerald-50 { background-color: #022c22 !important; }
 .dark .bg-indigo-50 { background-color: #1e1b4b !important; }
 .dark .bg-teal-50 { background-color: #042f2e !important; }
+.dark .bg-violet-50 { background-color: #2e1065 !important; }
 
 /* --- Text Colors --- */
 .dark .text-slate-900,
@@ -482,7 +483,10 @@ a:hover {
 .dark .border-purple-100,
 .dark .border-purple-200 { border-color: #581c87 !important; }
 .dark .border-white { border-color: #334155 !important; }
-.dark .border-orange-200 { border-color: #9a3412 !important; }
+.dark .border-orange-200,
+.dark .border-orange-100 { border-color: #9a3412 !important; }
+.dark .border-emerald-100,
+.dark .border-emerald-200 { border-color: #064e3b !important; }
 
 /* --- Hover Backgrounds --- */
 .dark .hover\:bg-blue-50:hover { background-color: #172554 !important; }
