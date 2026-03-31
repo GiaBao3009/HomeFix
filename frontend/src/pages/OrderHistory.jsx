@@ -238,7 +238,15 @@ const OrderHistory = () => {
       title: 'Dich vu',
       dataIndex: 'serviceName',
       key: 'serviceName',
-      render: (value) => <span className="font-medium text-blue-600">{value}</span>
+      render: (value, record) => (
+        <button
+          type="button"
+          className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+          onClick={() => setDetailBookingId(record.id)}
+        >
+          {value}
+        </button>
+      )
     },
     {
       title: 'Lich hen',
@@ -316,6 +324,10 @@ const OrderHistory = () => {
           dataSource={bookings}
           rowKey="id"
           loading={loading}
+          onRow={(record) => ({
+            onClick: () => setDetailBookingId(record.id),
+            className: 'cursor-pointer'
+          })}
           locale={{ emptyText: <Empty description="Ban chua co don hang nao" /> }}
           pagination={{ pageSize: 10 }}
         />
