@@ -154,6 +154,10 @@ const OrderHistory = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    reviewModalOpenRef.current = isReviewModalOpen;
+  }, [isReviewModalOpen]);
+
   const handleOpenReview = (booking) => {
     openReviewModal(booking, undefined);
   };
@@ -488,6 +492,3 @@ const OrderHistory = () => {
 };
 
 export default OrderHistory;
-  useEffect(() => {
-    reviewModalOpenRef.current = isReviewModalOpen;
-  }, [isReviewModalOpen]);

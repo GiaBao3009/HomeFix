@@ -18,7 +18,6 @@ import {
     Circle
 } from 'lucide-react';
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import dayjs from 'dayjs';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -131,8 +130,9 @@ const MessagesPage = () => {
         const token = localStorage.getItem('token');
         if (!token) return;
 
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const client = new Client({
-            webSocketFactory: () => new SockJS('/ws-chat'),
+            brokerURL: `${wsProtocol}://${window.location.host}/ws-chat`,
             reconnectDelay: 5000,
             connectHeaders: { Authorization: `Bearer ${token}` },
             debug: () => {}

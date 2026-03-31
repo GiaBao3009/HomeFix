@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Badge, Popover, List, Avatar, Typography, Button, Empty, notification } from 'antd';
 import { Bell, Check, Clock, MessageSquare } from 'lucide-react';
 import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useTheme } from '../context/ThemeContext';
@@ -114,8 +113,9 @@ const NotificationBell = () => {
 
     const token = localStorage.getItem('token');
     if (token) {
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
       const client = new Client({
-        webSocketFactory: () => new SockJS('/ws-chat'),
+        brokerURL: `${wsProtocol}://${window.location.host}/ws-chat`,
         reconnectDelay: 5000,
         connectHeaders: {
           Authorization: `Bearer ${token}`

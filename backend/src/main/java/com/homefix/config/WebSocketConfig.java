@@ -36,6 +36,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .map(String::trim)
                 .toArray(String[]::new);
         registry.addEndpoint("/ws-chat")
+                .setAllowedOriginPatterns(origins);
+        registry.addEndpoint("/ws-chat")
                 .setAllowedOriginPatterns(origins)
                 .withSockJS();
     }
