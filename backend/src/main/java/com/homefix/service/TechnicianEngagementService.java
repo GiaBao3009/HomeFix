@@ -354,12 +354,6 @@ public class TechnicianEngagementService {
         report.put("reviewCount", reviewCount);
         report.put("revenue", revenue);
         report.put("recommendation", buildRecommendation(avgRating, completed, inProgress));
-        notificationService.createNotification(
-                technician,
-                "Báo cáo tự động đã sẵn sàng",
-                "Báo cáo hiệu suất mới đã được tạo cho tài khoản của bạn.",
-                "AUTO_REPORT",
-                technician.getId());
         return report;
     }
 

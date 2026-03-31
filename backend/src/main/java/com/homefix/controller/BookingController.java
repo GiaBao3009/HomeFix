@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -91,5 +92,13 @@ public class BookingController {
     @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BookingDto> confirmPayment(@PathVariable("id") Long id) {
         return ResponseEntity.ok(bookingService.confirmPayment(id));
+    }
+
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<BookingDto> cancelBooking(
+            @PathVariable("id") Long id,
+            @RequestBody(required = false) Map<String, String> body) {
+        String reason = body != null ? body.get("reason") : null;
+        return ResponseEntity.ok(bookingService.cancelBooking(id, reason));
     }
 }

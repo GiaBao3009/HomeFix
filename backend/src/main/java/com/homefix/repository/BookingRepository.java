@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -55,4 +56,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT b.status, COUNT(b) FROM Booking b GROUP BY b.status")
     List<Object[]> countByStatus();
+
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.customer = :customer AND FUNCTION('DATE', b.bookingTime) = :date AND b.status IN :statuses")
+    long countActiveBookingsByCustomerAndDate(User customer, LocalDate date, List<BookingStatus> statuses);
+
+    @Query("SELECT b FROM Booking b WHERE b.reviewToken = :token")
+    Optional<Booking> findByReviewToken(String token);
 }

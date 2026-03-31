@@ -24,18 +24,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
 public class BookingService {
     private static final BigDecimal COMMISSION_RATE = new BigDecimal("0.10");
-    private static final List<BookingStatus> ACTIVE_WORK_STATUSES = List.of(BookingStatus.ASSIGNED, BookingStatus.IN_PROGRESS);
+    private static final List<BookingStatus> ACTIVE_WORK_STATUSES = List.of(
+            BookingStatus.ASSIGNED, BookingStatus.ARRIVED, BookingStatus.WORKING, BookingStatus.IN_PROGRESS);
+    private static final List<BookingStatus> ACTIVE_BOOKING_STATUSES = List.of(
+            BookingStatus.PENDING, BookingStatus.CONFIRMED, BookingStatus.ASSIGNED,
+            BookingStatus.ARRIVED, BookingStatus.WORKING, BookingStatus.IN_PROGRESS);
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
@@ -44,6 +50,7 @@ public class BookingService {
     private final NotificationService notificationService;
     private final TechnicianMatchingService technicianMatchingService;
     private final TechnicianEngagementService technicianEngagementService;
+    private final EmailService emailService;
     private final JavaMailSender mailSender;
 
     @Value("${app.mail.from:no-reply@homefix.local}")
@@ -52,7 +59,8 @@ public class BookingService {
     public BookingService(BookingRepository bookingRepository, UserRepository userRepository,
             ServicePackageRepository servicePackageRepository, CouponRepository couponRepository,
             NotificationService notificationService, TechnicianMatchingService technicianMatchingService,
-            TechnicianEngagementService technicianEngagementService, JavaMailSender mailSender) {
+            TechnicianEngagementService technicianEngagementService, EmailService emailService,
+            JavaMailSender mailSender) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.servicePackageRepository = servicePackageRepository;
@@ -60,12 +68,26 @@ public class BookingService {
         this.notificationService = notificationService;
         this.technicianMatchingService = technicianMatchingService;
         this.technicianEngagementService = technicianEngagementService;
+        this.emailService = emailService;
         this.mailSender = mailSender;
     }
 
     @Transactional
     public BookingDto createBooking(BookingDto dto) {
         User customer = getCurrentUser();
+
+        if (dto.getBookingTime() == null) {
+            throw new RuntimeException("Booking time is required");
+        }
+        LocalDate bookingDate = dto.getBookingTime().toLocalDate();
+        if (bookingDate.isBefore(LocalDate.now())) {
+            throw new RuntimeException("Không thể đặt lịch cho ngày trong quá khứ");
+        }
+        long activeCount = bookingRepository.countActiveBookingsByCustomerAndDate(
+                customer, bookingDate, ACTIVE_BOOKING_STATUSES);
+        if (activeCount > 0) {
+            throw new RuntimeException("Bạn đã có đơn hàng đang hoạt động trong ngày " + bookingDate + ". Vui lòng hủy đơn cũ hoặc chọn ngày khác.");
+        }
 
         ServicePackage servicePackage = servicePackageRepository.findById(dto.getServiceId())
                 .orElseThrow(() -> new RuntimeException("Service not found"));
@@ -195,8 +217,9 @@ public class BookingService {
             if (!isTechnicianOnBooking(currentUser, booking)) {
                 throw new RuntimeException("You are not part of this booking");
             }
-            if (!Set.of(BookingStatus.IN_PROGRESS, BookingStatus.COMPLETED).contains(newStatus)) {
-                throw new RuntimeException("Technician can only move booking to IN_PROGRESS or COMPLETED");
+            if (!Set.of(BookingStatus.ARRIVED, BookingStatus.WORKING,
+                    BookingStatus.IN_PROGRESS, BookingStatus.COMPLETED).contains(newStatus)) {
+                throw new RuntimeException("Technician can only move booking to ARRIVED, WORKING, IN_PROGRESS or COMPLETED");
             }
         }
 
@@ -209,6 +232,8 @@ public class BookingService {
         if (newStatus == BookingStatus.COMPLETED) {
             booking.setCompletedAt(LocalDateTime.now());
             booking.setPaymentStatus("PAID");
+            String token = UUID.randomUUID().toString();
+            booking.setReviewToken(token);
             applyTechnicianSettlement(booking);
             notificationService.createNotification(
                     booking.getCustomer(),
@@ -217,6 +242,10 @@ public class BookingService {
                     "ORDER_COMPLETED",
                     booking.getId());
             technicianEngagementService.notifyChatRetentionAfterCompletion(booking);
+            try {
+                emailService.sendCompletionEmail(booking, token);
+            } catch (RuntimeException ignored) {
+            }
         } else {
             booking.setCompletedAt(null);
             notificationService.createNotification(
@@ -436,7 +465,7 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingDto cancelBooking(Long bookingId) {
+    public BookingDto cancelBooking(Long bookingId, String cancellationReason) {
         User currentUser = getCurrentUser();
 
         Booking booking = bookingRepository.findByIdForUpdate(bookingId)
@@ -446,11 +475,25 @@ public class BookingService {
                 !booking.getCustomer().getId().equals(currentUser.getId())) {
             throw new RuntimeException("You are not allowed to cancel this booking");
         }
-        if (booking.getStatus() != BookingStatus.PENDING && booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new RuntimeException("Only PENDING/CONFIRMED bookings can be cancelled");
+
+        Set<BookingStatus> cancellableStatuses = Set.of(
+                BookingStatus.PENDING, BookingStatus.CONFIRMED,
+                BookingStatus.ASSIGNED, BookingStatus.ARRIVED);
+        if (!cancellableStatuses.contains(booking.getStatus())) {
+            throw new RuntimeException("Đơn hàng ở trạng thái " + booking.getStatus() + " không thể hủy");
+        }
+
+        boolean hasTechnician = booking.getTechnician() != null;
+        if (hasTechnician && currentUser.getRole() != Role.ADMIN) {
+            if (cancellationReason == null || cancellationReason.trim().isEmpty()) {
+                throw new RuntimeException("Vui lòng nhập lý do hủy đơn khi đã có kỹ thuật viên nhận đơn");
+            }
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
+        if (cancellationReason != null && !cancellationReason.trim().isEmpty()) {
+            booking.setCancellationReason(cancellationReason.trim());
+        }
         notifyAssistantsReleased(booking);
         Booking saved = bookingRepository.save(booking);
 
@@ -485,8 +528,10 @@ public class BookingService {
         return switch (current) {
             case PENDING -> Set.of(BookingStatus.CONFIRMED, BookingStatus.CANCELLED).contains(target);
             case CONFIRMED -> Set.of(BookingStatus.ASSIGNED, BookingStatus.CANCELLED).contains(target);
-            case ASSIGNED -> Set.of(BookingStatus.IN_PROGRESS, BookingStatus.CONFIRMED, BookingStatus.CANCELLED)
-                    .contains(target);
+            case ASSIGNED -> Set.of(BookingStatus.ARRIVED, BookingStatus.IN_PROGRESS,
+                    BookingStatus.CONFIRMED, BookingStatus.CANCELLED).contains(target);
+            case ARRIVED -> Set.of(BookingStatus.WORKING, BookingStatus.CANCELLED).contains(target);
+            case WORKING -> Set.of(BookingStatus.COMPLETED).contains(target);
             case IN_PROGRESS -> Set.of(BookingStatus.COMPLETED, BookingStatus.CANCELLED).contains(target);
             case DECLINED -> Set.of(BookingStatus.CONFIRMED, BookingStatus.ASSIGNED, BookingStatus.CANCELLED)
                     .contains(target);
@@ -750,6 +795,7 @@ public class BookingService {
         dto.setPlatformProfit(entity.getPlatformProfit());
         dto.setAssistantTechnicianIds(entity.getAssistantTechnicians().stream().map(User::getId).toList());
         dto.setAssistantTechnicianNames(entity.getAssistantTechnicians().stream().map(User::getFullName).toList());
+        dto.setCancellationReason(entity.getCancellationReason());
         return dto;
     }
 }

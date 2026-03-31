@@ -67,6 +67,11 @@ public class Booking {
     @Column(columnDefinition = "TEXT")
     private String rejectionReason;
 
+    @Column(columnDefinition = "TEXT")
+    private String cancellationReason;
+
+    private String reviewToken;
+
     private LocalDateTime completedAt;
     private BigDecimal technicianEarning = BigDecimal.ZERO;
     private BigDecimal platformProfit = BigDecimal.ZERO;
@@ -238,5 +243,21 @@ public class Booking {
 
     public void setPlatformProfit(BigDecimal platformProfit) {
         this.platformProfit = platformProfit;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
+    }
+
+    public String getReviewToken() {
+        return reviewToken;
+    }
+
+    public void setReviewToken(String reviewToken) {
+        this.reviewToken = reviewToken;
     }
 }

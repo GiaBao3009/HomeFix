@@ -11,6 +11,8 @@ const statusColors = {
     PENDING: 'orange',
     CONFIRMED: 'gold',
     ASSIGNED: 'blue',
+    ARRIVED: 'geekblue',
+    WORKING: 'purple',
     IN_PROGRESS: 'cyan',
     COMPLETED: 'green',
     CANCELLED: 'red',

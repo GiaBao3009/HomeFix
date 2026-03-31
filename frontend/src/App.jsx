@@ -23,6 +23,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import ReviewPage from './pages/ReviewPage';
 import Footer from './components/Footer';
 import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
@@ -54,6 +55,7 @@ function App() {
                     <Route path="/register" element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/review/:bookingId" element={<ReviewPage />} />
                     <Route path="/payment/gateway" element={<PrivateRoute><PaymentGateway /></PrivateRoute>} />
                     <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
                     <Route 

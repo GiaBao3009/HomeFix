@@ -377,6 +377,8 @@ const TechnicianDashboard = () => {
                 switch (status) {
                     case 'PENDING': color = 'orange'; text = 'Chờ xử lý'; break;
                     case 'ASSIGNED': color = 'blue'; text = 'Chờ xác nhận'; break;
+                    case 'ARRIVED': color = 'geekblue'; text = 'Đã đến nơi'; break;
+                    case 'WORKING': color = 'purple'; text = 'Đang làm việc'; break;
                     case 'IN_PROGRESS': color = 'processing'; text = 'Đang thực hiện'; break;
                     case 'COMPLETED': color = 'success'; text = 'Hoàn thành'; break;
                     case 'CANCELLED': color = 'error'; text = 'Đã hủy'; break;
@@ -412,13 +414,17 @@ const TechnicianDashboard = () => {
                         </>
                     )}
                     {record.status === 'IN_PROGRESS' && (
-                        <Button
-                            type="primary"
-                            size="small"
-                            onClick={() => handleStatusUpdate(record.id, 'COMPLETED')}
-                            className="bg-green-600"
-                            disabled={cannotWork}
-                        >
+                        <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'ARRIVED')} disabled={cannotWork}>
+                            Đã đến nơi
+                        </Button>
+                    )}
+                    {record.status === 'ARRIVED' && (
+                        <Button type="primary" size="small" className="bg-purple-600" onClick={() => handleStatusUpdate(record.id, 'WORKING')} disabled={cannotWork}>
+                            Bắt đầu làm việc
+                        </Button>
+                    )}
+                    {record.status === 'WORKING' && (
+                        <Button type="primary" size="small" className="bg-green-600" onClick={() => handleStatusUpdate(record.id, 'COMPLETED')} disabled={cannotWork}>
                             Hoàn thành
                         </Button>
                     )}
@@ -431,12 +437,14 @@ const TechnicianDashboard = () => {
         let color = 'default';
         let text = status;
         switch (status) {
-            case 'PENDING': color = 'orange'; text = 'Cho xu ly'; break;
-            case 'CONFIRMED': color = 'gold'; text = 'Dang mo'; break;
-            case 'ASSIGNED': color = 'blue'; text = 'Da nhan'; break;
-            case 'IN_PROGRESS': color = 'processing'; text = 'Dang thuc hien'; break;
-            case 'COMPLETED': color = 'success'; text = 'Hoan thanh'; break;
-            case 'CANCELLED': color = 'error'; text = 'Da huy'; break;
+            case 'PENDING': color = 'orange'; text = 'Chờ xử lý'; break;
+            case 'CONFIRMED': color = 'gold'; text = 'Đang mở'; break;
+            case 'ASSIGNED': color = 'blue'; text = 'Đã nhận'; break;
+            case 'ARRIVED': color = 'geekblue'; text = 'Đã đến nơi'; break;
+            case 'WORKING': color = 'purple'; text = 'Đang làm việc'; break;
+            case 'IN_PROGRESS': color = 'processing'; text = 'Đang thực hiện'; break;
+            case 'COMPLETED': color = 'success'; text = 'Hoàn thành'; break;
+            case 'CANCELLED': color = 'error'; text = 'Đã hủy'; break;
             case 'DECLINED': color = 'error'; text = 'Da tu choi'; break;
             default: break;
         }
@@ -593,15 +601,25 @@ const TechnicianDashboard = () => {
                         )}
                         {record.status === 'ASSIGNED' && isAssistantOnBooking && !isOwner && (
                             <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'IN_PROGRESS')} disabled={cannotWork}>
-                                Bat dau ho tro
+                                Bắt đầu hỗ trợ
                             </Button>
                         )}
                         {record.status === 'IN_PROGRESS' && (isOwner || isAssistantOnBooking) && (
-                            <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'COMPLETED')} disabled={cannotWork}>
-                                Hoan thanh
+                            <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'ARRIVED')} disabled={cannotWork}>
+                                Đã đến nơi
                             </Button>
                         )}
-                        {canManageAssistants && ['ASSIGNED', 'IN_PROGRESS'].includes(record.status) && (
+                        {record.status === 'ARRIVED' && (isOwner || isAssistantOnBooking) && (
+                            <Button type="primary" size="small" className="bg-purple-600" onClick={() => handleStatusUpdate(record.id, 'WORKING')} disabled={cannotWork}>
+                                Bắt đầu làm việc
+                            </Button>
+                        )}
+                        {record.status === 'WORKING' && (isOwner || isAssistantOnBooking) && (
+                            <Button type="primary" size="small" className="bg-green-600" onClick={() => handleStatusUpdate(record.id, 'COMPLETED')} disabled={cannotWork}>
+                                Hoàn thành
+                            </Button>
+                        )}
+                        {canManageAssistants && ['ASSIGNED', 'IN_PROGRESS', 'ARRIVED', 'WORKING'].includes(record.status) && (
                             <Button size="small" onClick={() => openAssistantModal(record)} disabled={cannotWork}>
                                 Them tho phu
                             </Button>

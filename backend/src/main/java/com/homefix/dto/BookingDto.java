@@ -33,6 +33,8 @@ public class BookingDto {
     private boolean dispatchEligible;
     private String dispatchBlockReason;
 
+    private String cancellationReason;
+
     public BookingDto() {
     }
 
@@ -256,5 +258,13 @@ public class BookingDto {
 
     public void setDispatchBlockReason(String dispatchBlockReason) {
         this.dispatchBlockReason = dispatchBlockReason;
+    }
+
+    public String getCancellationReason() {
+        return cancellationReason;
+    }
+
+    public void setCancellationReason(String cancellationReason) {
+        this.cancellationReason = cancellationReason;
     }
 }

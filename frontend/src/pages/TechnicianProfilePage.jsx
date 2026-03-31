@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Form, Input, Button, Card, Tabs, message, Avatar, Upload, Select, InputNumber, Switch, Alert } from 'antd';
-import { User, Mail, Phone, MapPin, Lock, Shield, Eye, EyeOff, Camera, Briefcase, Clock, Layers, RefreshCw } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Lock, Shield, Eye, EyeOff, Camera, Briefcase, Clock, Layers, RefreshCw, Landmark } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -18,6 +18,8 @@ const TechnicianProfilePage = () => {
     const [accountForm] = Form.useForm();
     const [passwordForm] = Form.useForm();
     const [technicianForm] = Form.useForm();
+    const [bankForm] = Form.useForm();
+    const [savingBank, setSavingBank] = useState(false);
     const selectedTechnicianType = Form.useWatch('technicianType', technicianForm);
 
     useEffect(() => {
@@ -46,6 +48,11 @@ const TechnicianProfilePage = () => {
             );
 
             accountForm.setFieldsValue(accountProfile);
+            bankForm.setFieldsValue({
+                bankName: accountProfile.bankName || '',
+                bankAccountNumber: accountProfile.bankAccountNumber || '',
+                bankAccountHolder: accountProfile.bankAccountHolder || ''
+            });
             technicianForm.setFieldsValue({
                 specialty: technicianData.specialty,
                 experienceYears: technicianData.experienceYears,
@@ -99,6 +106,20 @@ const TechnicianProfilePage = () => {
             console.error(error);
             onError(error);
             message.error('Tải ảnh lên thất bại');
+        }
+    };
+
+    const handleUpdateBankInfo = async (values) => {
+        setSavingBank(true);
+        try {
+            await api.put('/users/technician/bank-info', values);
+            message.success('Cập nhật thông tin ngân hàng thành công');
+            fetchData();
+            refreshUserProfile?.();
+        } catch (error) {
+            message.error(error.response?.data?.message || error.response?.data || 'Cập nhật thất bại');
+        } finally {
+            setSavingBank(false);
         }
     };
 
@@ -542,6 +563,39 @@ const TechnicianProfilePage = () => {
                                 className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-none shadow-md hover:shadow-lg hover:scale-105 transition-all"
                             >
                                 Đổi mật khẩu
+                            </Button>
+                        </Form.Item>
+                    </Form>
+                </div>
+            )
+        },
+        {
+            key: 'bank',
+            label: (
+                <div className="flex items-center gap-2 px-2">
+                    <Landmark size={18} />
+                    <span className="font-semibold">Ngân hàng</span>
+                </div>
+            ),
+            children: (
+                <div className="space-y-6">
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-sm">
+                        Liên kết tài khoản ngân hàng để rút tiền từ ví kỹ thuật viên. Thông tin này sẽ được sử dụng khi bạn yêu cầu rút tiền.
+                    </div>
+                    <Form form={bankForm} layout="vertical" onFinish={handleUpdateBankInfo} className="max-w-lg">
+                        <Form.Item name="bankName" label="Tên ngân hàng" rules={[{ required: true, message: 'Vui lòng nhập tên ngân hàng' }]}>
+                            <Input placeholder="Ví dụ: MB Bank, Vietcombank, Techcombank..." className="rounded-xl" />
+                        </Form.Item>
+                        <Form.Item name="bankAccountNumber" label="Số tài khoản" rules={[{ required: true, message: 'Vui lòng nhập số tài khoản' }]}>
+                            <Input placeholder="Nhập số tài khoản ngân hàng" className="rounded-xl" />
+                        </Form.Item>
+                        <Form.Item name="bankAccountHolder" label="Tên chủ tài khoản" rules={[{ required: true, message: 'Vui lòng nhập tên chủ tài khoản' }]}>
+                            <Input placeholder="VD: NGUYEN VAN A (viết in hoa)" className="rounded-xl" />
+                        </Form.Item>
+                        <Form.Item>
+                            <Button type="primary" htmlType="submit" loading={savingBank}
+                                className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-none shadow-md hover:shadow-lg hover:scale-105 transition-all">
+                                Lưu thông tin ngân hàng
                             </Button>
                         </Form.Item>
                     </Form>

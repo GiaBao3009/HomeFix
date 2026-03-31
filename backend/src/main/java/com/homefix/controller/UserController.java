@@ -125,6 +125,13 @@ public class UserController {
         return ResponseEntity.ok("Password changed successfully");
     }
 
+    @PutMapping("/technician/bank-info")
+    @PreAuthorize("hasRole('TECHNICIAN')")
+    public ResponseEntity<UserDto> updateBankInfo(@RequestBody Map<String, String> bankInfo) {
+        String email = getCurrentUserEmail();
+        return ResponseEntity.ok(userService.updateBankInfo(email, bankInfo));
+    }
+
     private String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getName();
