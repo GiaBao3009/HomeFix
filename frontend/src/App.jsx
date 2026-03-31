@@ -28,6 +28,7 @@ import { useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 
 import OAuth2Redirect from './pages/OAuth2Redirect';
+import ReviewPage from './pages/ReviewPage';
 
 const PrivateRoute = ({ children }) => {
     const { user, loading } = useAuth();
@@ -56,6 +57,7 @@ function App() {
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/payment/gateway" element={<PrivateRoute><PaymentGateway /></PrivateRoute>} />
                     <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
+                    <Route path="/review/:bookingId" element={<ReviewPage />} />
                     <Route 
                         path="/profile" 
                         element={

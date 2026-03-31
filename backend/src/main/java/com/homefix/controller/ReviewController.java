@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -33,5 +34,17 @@ public class ReviewController {
     @GetMapping("/leaderboard")
     public ResponseEntity<List<TechnicianLeaderboardDto>> getLeaderboard() {
         return ResponseEntity.ok(technicianEngagementService.getTechnicianLeaderboard());
+    }
+
+    @GetMapping("/by-token/{token}")
+    public ResponseEntity<Map<String, Object>> getBookingInfoByToken(@PathVariable("token") String token) {
+        return ResponseEntity.ok(reviewService.getBookingInfoByToken(token));
+    }
+
+    @PostMapping("/by-token/{token}")
+    public ResponseEntity<ReviewDto> createReviewByToken(
+            @PathVariable("token") String token,
+            @RequestBody ReviewDto dto) {
+        return ResponseEntity.ok(reviewService.createReviewByToken(token, dto));
     }
 }

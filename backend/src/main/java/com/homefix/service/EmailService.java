@@ -185,4 +185,72 @@ public class EmailService {
             throw new RuntimeException("Không thể gửi email xác nhận đặt lịch.", e);
         }
     }
+
+    public void sendCompletionEmail(Booking booking, String reviewToken) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(booking.getCustomer().getEmail());
+            helper.setSubject("HomeFix - Đơn hàng #" + booking.getId() + " đã hoàn thành!");
+
+            String reviewLink = frontendUrl + "/review/" + booking.getId() + "?token=" + reviewToken;
+            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy");
+            String formattedTime = booking.getBookingTime().format(dtf);
+            String techName = booking.getTechnician() != null ? booking.getTechnician().getFullName() : "N/A";
+
+            String htmlContent = """
+                <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8fafc; padding: 40px 20px;">
+                    <div style="background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+                        <div style="text-align: center; margin-bottom: 32px;">
+                            <div style="display: inline-block; background: linear-gradient(135deg, #2563eb, #0891b2); color: white; font-size: 24px; font-weight: 800; padding: 12px 20px; border-radius: 12px;">HF</div>
+                            <h1 style="color: #1e293b; margin: 16px 0 8px; font-size: 24px;">HomeFix</h1>
+                        </div>
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <div style="display: inline-block; background: #dcfce7; color: #16a34a; padding: 8px 20px; border-radius: 20px; font-weight: 700; font-size: 14px;">Hoàn thành</div>
+                        </div>
+                        <h2 style="color: #1e293b; font-size: 20px; text-align: center; margin-bottom: 8px;">Đơn hàng #%d đã hoàn thành!</h2>
+                        <p style="color: #475569; text-align: center; margin-bottom: 24px;">Cảm ơn bạn đã sử dụng dịch vụ HomeFix.</p>
+                        <table style="width: 100%%; border-collapse: collapse; margin-bottom: 24px;">
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 12px 0; color: #64748b; font-size: 14px;">Dịch vụ</td>
+                                <td style="padding: 12px 0; color: #1e293b; font-weight: 600; text-align: right;">%s</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 12px 0; color: #64748b; font-size: 14px;">Kỹ thuật viên</td>
+                                <td style="padding: 12px 0; color: #1e293b; font-weight: 600; text-align: right;">%s</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 12px 0; color: #64748b; font-size: 14px;">Thời gian</td>
+                                <td style="padding: 12px 0; color: #1e293b; font-weight: 600; text-align: right;">%s</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 0; color: #64748b; font-size: 14px;">Tổng tiền</td>
+                                <td style="padding: 12px 0; color: #1e293b; font-weight: 600; text-align: right;">%s VNĐ</td>
+                            </tr>
+                        </table>
+                        <div style="text-align: center; margin: 32px 0;">
+                            <p style="color: #475569; margin-bottom: 16px; font-size: 15px;">Vui lòng đánh giá để chúng tôi mang đến trải nghiệm tốt nhất!</p>
+                            <a href="%s" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%%, #06b6d4 100%%); color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 12px; font-weight: 700; font-size: 16px;">Đánh giá ngay</a>
+                        </div>
+                        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;">
+                        <p style="color: #94a3b8; font-size: 12px; text-align: center;">© 2024 HomeFix. Tất cả quyền được bảo lưu.</p>
+                    </div>
+                </div>
+                """.formatted(
+                    booking.getId(),
+                    booking.getServicePackage().getName(),
+                    techName,
+                    formattedTime,
+                    booking.getTotalPrice() != null ? String.format("%,.0f", booking.getTotalPrice()) : "0",
+                    reviewLink
+                );
+
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Không thể gửi email hoàn thành.", e);
+        }
+    }
 }

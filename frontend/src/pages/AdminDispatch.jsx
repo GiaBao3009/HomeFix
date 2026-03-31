@@ -11,6 +11,8 @@ const statusColors = {
     PENDING: 'orange',
     CONFIRMED: 'gold',
     ASSIGNED: 'blue',
+    ARRIVED: 'geekblue',
+    WORKING: 'cyan',
     IN_PROGRESS: 'cyan',
     COMPLETED: 'green',
     CANCELLED: 'red',
@@ -41,7 +43,7 @@ const AdminDispatch = () => {
     const summary = useMemo(() => ({
         open: bookings.filter((item) => item.status === 'CONFIRMED' && !item.technicianId).length,
         claimed: bookings.filter((item) => item.status === 'ASSIGNED').length,
-        inProgress: bookings.filter((item) => item.status === 'IN_PROGRESS').length,
+        inProgress: bookings.filter((item) => ['IN_PROGRESS', 'ARRIVED', 'WORKING'].includes(item.status)).length,
         completed: bookings.filter((item) => item.status === 'COMPLETED').length
     }), [bookings]);
 

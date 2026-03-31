@@ -46,7 +46,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/services/**").permitAll() // Allow all methods for testing, or refine
                                                                          // later
-                        .requestMatchers("/api/content/**").permitAll() // Public content
+                        .requestMatchers("/api/content/**").permitAll()
+                        .requestMatchers("/api/reviews/by-token/**").permitAll()
                         .requestMatchers("/api/files/**").permitAll() // File upload/download
                         .requestMatchers("/uploads/**").permitAll() // Static resources
 

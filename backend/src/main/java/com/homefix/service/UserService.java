@@ -165,6 +165,26 @@ public class UserService {
     }
 
     @Transactional
+    public UserDto updateBankInfo(String email, java.util.Map<String, String> bankInfo) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (user.getRole() != Role.TECHNICIAN) {
+            throw new RuntimeException("Only technicians can update bank info");
+        }
+        String bankName = bankInfo.get("bankName");
+        String bankAccountNumber = bankInfo.get("bankAccountNumber");
+        String bankAccountHolder = bankInfo.get("bankAccountHolder");
+        if (bankName == null || bankName.isBlank() || bankAccountNumber == null || bankAccountNumber.isBlank()
+                || bankAccountHolder == null || bankAccountHolder.isBlank()) {
+            throw new RuntimeException("All bank fields are required");
+        }
+        user.setBankName(bankName.trim());
+        user.setBankAccountNumber(bankAccountNumber.trim());
+        user.setBankAccountHolder(bankAccountHolder.trim().toUpperCase());
+        return mapToDto(userRepository.save(user));
+    }
+
+    @Transactional
     public void changePassword(String email, String oldPassword, String newPassword) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -340,6 +360,9 @@ public class UserService {
         dto.setAverageRating(averageRating == null ? 0.0 : Math.round(averageRating * 100.0) / 100.0);
         dto.setTotalReviews(totalReviews == null ? 0L : totalReviews);
         dto.setCompletedJobs(completedJobs);
+        dto.setBankName(user.getBankName());
+        dto.setBankAccountNumber(user.getBankAccountNumber());
+        dto.setBankAccountHolder(user.getBankAccountHolder());
         return dto;
     }
 

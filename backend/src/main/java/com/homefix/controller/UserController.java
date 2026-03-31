@@ -118,6 +118,12 @@ public class UserController {
         return ResponseEntity.ok(reviewService.getReviewsByTechnician(profile.getId()));
     }
 
+    @PutMapping("/technician/bank-info")
+    public ResponseEntity<UserDto> updateBankInfo(@RequestBody Map<String, String> bankInfo) {
+        String email = getCurrentUserEmail();
+        return ResponseEntity.ok(userService.updateBankInfo(email, bankInfo));
+    }
+
     @PostMapping("/change-password")
     public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest request) {
         String email = getCurrentUserEmail();
