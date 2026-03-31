@@ -532,7 +532,8 @@ public class BookingService {
                     BookingStatus.CONFIRMED, BookingStatus.CANCELLED).contains(target);
             case ARRIVED -> Set.of(BookingStatus.WORKING, BookingStatus.CANCELLED).contains(target);
             case WORKING -> Set.of(BookingStatus.COMPLETED).contains(target);
-            case IN_PROGRESS -> Set.of(BookingStatus.COMPLETED, BookingStatus.CANCELLED).contains(target);
+            case IN_PROGRESS -> Set.of(BookingStatus.ARRIVED, BookingStatus.COMPLETED, BookingStatus.CANCELLED)
+                    .contains(target);
             case DECLINED -> Set.of(BookingStatus.CONFIRMED, BookingStatus.ASSIGNED, BookingStatus.CANCELLED)
                     .contains(target);
             case COMPLETED, CANCELLED -> false;
