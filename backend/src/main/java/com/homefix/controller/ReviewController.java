@@ -42,7 +42,9 @@ public class ReviewController {
     }
 
     @PostMapping("/by-token/{token}")
-    public ResponseEntity<ReviewDto> createReviewByToken(@PathVariable("token") String token, @RequestBody ReviewDto dto) {
+    public ResponseEntity<ReviewDto> createReviewByToken(
+            @PathVariable("token") String token,
+            @RequestBody ReviewDto dto) {
         return ResponseEntity.ok(reviewService.createReviewByToken(token, dto));
     }
 }

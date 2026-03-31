@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Card, message, Modal, Form, Rate, Input, Space, Descriptions } from 'antd';
+import { Table, Tag, Button, Card, message, Modal, Form, Rate, Input, Space } from 'antd';
 import { Calendar, Clock, MapPin, DollarSign, User, Star, XCircle } from 'lucide-react';
 import api from '../services/api';
 import dayjs from 'dayjs';
@@ -143,13 +143,13 @@ const OrderHistory = () => {
         let text = status;
         switch (status) {
           case 'PENDING': color = 'orange'; text = 'Chờ xử lý'; break;
+          case 'CONFIRMED': color = 'cyan'; text = 'Đã xác nhận'; break;
           case 'ASSIGNED': color = 'blue'; text = 'Đã có thợ'; break;
           case 'ARRIVED': color = 'geekblue'; text = 'Đã đến nơi'; break;
           case 'WORKING': color = 'purple'; text = 'Đang làm việc'; break;
           case 'IN_PROGRESS': color = 'processing'; text = 'Đang thực hiện'; break;
           case 'COMPLETED': color = 'success'; text = 'Hoàn thành'; break;
           case 'CANCELLED': color = 'error'; text = 'Đã hủy'; break;
-          case 'CONFIRMED': color = 'cyan'; text = 'Đã xác nhận'; break;
           case 'DECLINED': color = 'red'; text = 'Bị từ chối'; break;
         }
         return <Tag color={color} className="px-3 py-1 rounded-full">{text}</Tag>;

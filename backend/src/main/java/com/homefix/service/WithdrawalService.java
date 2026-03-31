@@ -60,12 +60,14 @@ public class WithdrawalService {
         return mapToDto(withdrawalRepository.save(request));
     }
 
+    @Transactional(readOnly = true)
     public List<WithdrawalDto> getMyWithdrawals() {
         User technician = getCurrentUser();
         return withdrawalRepository.findByTechnicianOrderByCreatedAtDesc(technician).stream()
                 .map(this::mapToDto).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<WithdrawalDto> getAllWithdrawals() {
         return withdrawalRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(this::mapToDto).collect(Collectors.toList());
@@ -99,9 +101,7 @@ public class WithdrawalService {
                     "Yêu cầu rút " + request.getAmount() + " VNĐ đã bị từ chối. Lý do: " + (adminNote != null ? adminNote : "Không rõ"),
                     "WITHDRAWAL_REJECTED", null);
         }
-        if (adminNote != null) {
-            request.setAdminNote(adminNote);
-        }
+        request.setAdminNote(adminNote);
         request.setProcessedAt(LocalDateTime.now());
         return mapToDto(withdrawalRepository.save(request));
     }

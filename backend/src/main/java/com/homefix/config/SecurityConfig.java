@@ -46,7 +46,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/api/services/**").permitAll() // Allow all methods for testing, or refine
                                                                          // later
-                        .requestMatchers("/api/content/**").permitAll() // Public content
+                        .requestMatchers("/api/content/**").permitAll()
+                        .requestMatchers("/api/reviews/by-token/**").permitAll()
                         .requestMatchers("/api/files/**").permitAll() // File upload/download
                         .requestMatchers("/uploads/**").permitAll() // Static resources
 
@@ -59,7 +60,6 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/coupons").hasRole("ADMIN")
                         .requestMatchers("/ws-chat/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
-                        .requestMatchers("/api/reviews/by-token/**").permitAll()
 
                         // Booking Security
                         .requestMatchers("/api/bookings/*/assign").hasRole("ADMIN")

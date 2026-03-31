@@ -397,11 +397,11 @@ const TechnicianDashboard = () => {
                             <Button
                                 type="primary"
                                 size="small"
-                                onClick={() => handleTechnicianResponse(record.id, true)}
+                                onClick={() => handleStatusUpdate(record.id, 'ARRIVED')}
                                 className="bg-blue-600"
                                 disabled={cannotWork}
                             >
-                                Nhận việc
+                                Đã đến nơi
                             </Button>
                             <Button
                                 danger
@@ -414,8 +414,8 @@ const TechnicianDashboard = () => {
                         </>
                     )}
                     {record.status === 'IN_PROGRESS' && (
-                        <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'ARRIVED')} disabled={cannotWork}>
-                            Đã đến nơi
+                        <Button type="primary" size="small" className="bg-green-600" onClick={() => handleStatusUpdate(record.id, 'COMPLETED')} disabled={cannotWork}>
+                            Hoàn thành
                         </Button>
                     )}
                     {record.status === 'ARRIVED' && (
@@ -445,7 +445,7 @@ const TechnicianDashboard = () => {
             case 'IN_PROGRESS': color = 'processing'; text = 'Đang thực hiện'; break;
             case 'COMPLETED': color = 'success'; text = 'Hoàn thành'; break;
             case 'CANCELLED': color = 'error'; text = 'Đã hủy'; break;
-            case 'DECLINED': color = 'error'; text = 'Da tu choi'; break;
+            case 'DECLINED': color = 'error'; text = 'Đã từ chối'; break;
             default: break;
         }
         return <Tag color={color}>{text}</Tag>;
@@ -599,12 +599,7 @@ const TechnicianDashboard = () => {
                                 </Button>
                             </>
                         )}
-                        {record.status === 'ASSIGNED' && isAssistantOnBooking && !isOwner && (
-                            <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'IN_PROGRESS')} disabled={cannotWork}>
-                                Bắt đầu hỗ trợ
-                            </Button>
-                        )}
-                        {record.status === 'IN_PROGRESS' && (isOwner || isAssistantOnBooking) && (
+                        {record.status === 'ASSIGNED' && (isOwner || isAssistantOnBooking) && (
                             <Button type="primary" size="small" onClick={() => handleStatusUpdate(record.id, 'ARRIVED')} disabled={cannotWork}>
                                 Đã đến nơi
                             </Button>
@@ -619,7 +614,12 @@ const TechnicianDashboard = () => {
                                 Hoàn thành
                             </Button>
                         )}
-                        {canManageAssistants && ['ASSIGNED', 'IN_PROGRESS', 'ARRIVED', 'WORKING'].includes(record.status) && (
+                        {record.status === 'IN_PROGRESS' && (isOwner || isAssistantOnBooking) && (
+                            <Button type="primary" size="small" className="bg-green-600" onClick={() => handleStatusUpdate(record.id, 'COMPLETED')} disabled={cannotWork}>
+                                Hoàn thành
+                            </Button>
+                        )}
+                        {canManageAssistants && ['ASSIGNED', 'ARRIVED', 'WORKING', 'IN_PROGRESS'].includes(record.status) && (
                             <Button size="small" onClick={() => openAssistantModal(record)} disabled={cannotWork}>
                                 Them tho phu
                             </Button>

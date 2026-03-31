@@ -7,11 +7,11 @@ import AdminDispatch from './AdminDispatch';
 import AdminCategoryManager from './AdminCategoryManager';
 import AdminUserManager from './AdminUserManager';
 import AdminCouponManager from './AdminCouponManager';
+import AdminWithdrawals from '../components/admin/AdminWithdrawals';
 import TechnicianDashboard from './TechnicianDashboard';
 import TechnicianWallet from './TechnicianWallet';
 import OrderHistory from './OrderHistory';
 import AdminCharts from '../components/admin/AdminCharts';
-import AdminWithdrawals from '../components/admin/AdminWithdrawals';
 import { LayoutDashboard, Users, Calendar, Settings, Briefcase, Award, PieChart, Tag as TagIcon, Layers, Wallet, MessageSquare, ArrowDownCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -175,7 +175,6 @@ const Dashboard = () => {
 
     return (
         <div className="min-h-[80vh] pb-12">
-            {/* Header Section */}
             <div className="overflow-hidden relative py-12 mb-8 text-white bg-gradient-to-br via-blue-900 rounded-3xl shadow-2xl from-slate-900 to-slate-900">
                 <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl bg-blue-500/10"></div>
                 <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full blur-3xl bg-cyan-500/10"></div>
@@ -193,7 +192,6 @@ const Dashboard = () => {
                         </div>
                     </div>
                     
-                    {/* Role Badge */}
                     <div className="inline-flex gap-2 items-center px-4 py-2 mt-4 rounded-full border backdrop-blur-sm bg-white/10 border-white/20">
                         <Award size={16} />
                         <span className="text-sm font-semibold">
@@ -204,7 +202,6 @@ const Dashboard = () => {
                 </div>
             </div>
             
-            {/* Main Content */}
             <div className="px-6 mx-auto max-w-7xl">
                 <Tabs 
                     defaultActiveKey={getDefaultTab()}
@@ -218,7 +215,6 @@ const Dashboard = () => {
                 />
             </div>
 
-            {/* Custom Styles */}
             <style jsx>{`
                 :global(.dashboard-tabs .ant-tabs-tab) {
                     padding: 12px 4px;

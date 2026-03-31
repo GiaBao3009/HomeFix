@@ -37,7 +37,6 @@ public class UserDto {
     private Double averageRating;
     private Long totalReviews;
     private Long completedJobs;
-
     private String bankName;
     private String bankAccountNumber;
     private String bankAccountHolder;

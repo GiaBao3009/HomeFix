@@ -64,7 +64,10 @@ const TechnicianProfilePage = () => {
                 baseLocation: technicianData.baseLocation,
                 availableFrom: technicianData.availableFrom,
                 availableTo: technicianData.availableTo,
-                availableForAutoAssign: technicianData.availableForAutoAssign ?? true
+                availableForAutoAssign: technicianData.availableForAutoAssign ?? true,
+                bankName: technicianData.bankName,
+                bankAccountNumber: technicianData.bankAccountNumber,
+                bankAccountHolder: technicianData.bankAccountHolder
             });
 
             updateUser({

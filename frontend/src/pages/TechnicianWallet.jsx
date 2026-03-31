@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Table, Typography, Tag, message, Button, Modal, Form, InputNumber, Descriptions, Empty } from 'antd';
+import { Card, Table, Typography, Tag, message, Button, Modal, Form, InputNumber, Input, Descriptions, Empty } from 'antd';
 import { Wallet, RefreshCw, Landmark, ArrowDownCircle } from 'lucide-react';
 import api from '../services/api';
 import dayjs from 'dayjs';
@@ -16,7 +16,9 @@ const TechnicianWallet = () => {
     });
     const [withdrawals, setWithdrawals] = useState([]);
     const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+    const [bankModalOpen, setBankModalOpen] = useState(false);
     const [withdrawForm] = Form.useForm();
+    const [bankForm] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
 
     const fetchWallet = async () => {
@@ -37,6 +39,17 @@ const TechnicianWallet = () => {
     };
 
     useEffect(() => { fetchWallet(); }, []);
+
+    const handleBankSubmit = async (values) => {
+        try {
+            await api.put('/users/technician/bank-info', values);
+            message.success('Cập nhật thông tin ngân hàng thành công');
+            setBankModalOpen(false);
+            refreshUserProfile?.();
+        } catch (err) {
+            message.error(err.response?.data?.message || err.response?.data || 'Lỗi cập nhật');
+        }
+    };
 
     const handleWithdraw = async (values) => {
         setSubmitting(true);
@@ -95,8 +108,15 @@ const TechnicianWallet = () => {
                 <div className="flex gap-2">
                     <Button icon={<RefreshCw size={16} />} onClick={fetchWallet}>Làm mới</Button>
                     <Button type="primary" icon={<ArrowDownCircle size={16} />}
-                        onClick={() => { withdrawForm.resetFields(); setWithdrawModalOpen(true); }}
-                        disabled={!hasBankInfo || (wallet.walletBalance || 0) <= 0}>
+                        onClick={() => {
+                            if (!hasBankInfo) {
+                                message.warning('Vui lòng cập nhật thông tin ngân hàng trước');
+                                return;
+                            }
+                            withdrawForm.resetFields();
+                            setWithdrawModalOpen(true);
+                        }}
+                        disabled={(wallet.walletBalance || 0) <= 0}>
                         Rút tiền
                     </Button>
                 </div>
@@ -105,7 +125,15 @@ const TechnicianWallet = () => {
             {!hasBankInfo && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-yellow-800">
                     <Landmark size={18} className="inline mr-2" />
-                    Bạn chưa liên kết tài khoản ngân hàng. Vui lòng cập nhật thông tin ngân hàng tại <a href="/technician/profile" className="text-blue-600 underline">trang hồ sơ</a> để có thể rút tiền.
+                    Bạn chưa liên kết tài khoản ngân hàng. Vui lòng cập nhật thông tin ngân hàng để có thể rút tiền.
+                    <Button size="small" className="ml-2" onClick={() => {
+                        bankForm.setFieldsValue({
+                            bankName: user?.bankName || '',
+                            bankAccountNumber: user?.bankAccountNumber || '',
+                            bankAccountHolder: user?.bankAccountHolder || ''
+                        });
+                        setBankModalOpen(true);
+                    }}>Cập nhật ngân hàng</Button>
                 </div>
             )}
 
@@ -133,15 +161,29 @@ const TechnicianWallet = () => {
                 </Card>
             </div>
 
-            {hasBankInfo && (
-                <Card className="rounded-xl shadow-sm" title={<span><Landmark size={16} className="inline mr-2" />Thông tin ngân hàng liên kết</span>}>
+            <Card className="rounded-xl shadow-sm" title={
+                <div className="flex justify-between items-center">
+                    <span><Landmark size={16} className="inline mr-2" />Thông tin ngân hàng liên kết</span>
+                    <Button size="small" onClick={() => {
+                        bankForm.setFieldsValue({
+                            bankName: user?.bankName || '',
+                            bankAccountNumber: user?.bankAccountNumber || '',
+                            bankAccountHolder: user?.bankAccountHolder || ''
+                        });
+                        setBankModalOpen(true);
+                    }}>{hasBankInfo ? 'Sửa' : 'Thêm'} ngân hàng</Button>
+                </div>
+            }>
+                {hasBankInfo ? (
                     <Descriptions column={3}>
                         <Descriptions.Item label="Ngân hàng">{user.bankName}</Descriptions.Item>
                         <Descriptions.Item label="Số tài khoản">{user.bankAccountNumber}</Descriptions.Item>
                         <Descriptions.Item label="Chủ tài khoản">{user.bankAccountHolder}</Descriptions.Item>
                     </Descriptions>
-                </Card>
-            )}
+                ) : (
+                    <Text type="secondary">Chưa liên kết ngân hàng. Vui lòng thêm thông tin ngân hàng để rút tiền.</Text>
+                )}
+            </Card>
 
             <Card className="rounded-xl shadow-sm" title="Lịch sử nhận tiền">
                 <Table rowKey="id" columns={columns} dataSource={Array.isArray(wallet.items) ? wallet.items : []} loading={loading} pagination={{ pageSize: 8 }} />
@@ -154,6 +196,24 @@ const TechnicianWallet = () => {
                     <Empty description="Chưa có yêu cầu rút tiền nào" />
                 )}
             </Card>
+
+            <Modal title="Thông tin ngân hàng" open={bankModalOpen} onCancel={() => setBankModalOpen(false)} footer={null}>
+                <Form form={bankForm} layout="vertical" onFinish={handleBankSubmit}>
+                    <Form.Item name="bankName" label="Tên ngân hàng" rules={[{ required: true, message: 'Nhập tên ngân hàng' }]}>
+                        <Input placeholder="VD: Vietcombank, MB Bank, Techcombank..." />
+                    </Form.Item>
+                    <Form.Item name="bankAccountNumber" label="Số tài khoản" rules={[{ required: true, message: 'Nhập số tài khoản' }]}>
+                        <Input placeholder="Nhập số tài khoản ngân hàng" />
+                    </Form.Item>
+                    <Form.Item name="bankAccountHolder" label="Tên chủ tài khoản" rules={[{ required: true, message: 'Nhập tên chủ TK' }]}>
+                        <Input placeholder="NGUYEN VAN A (viết hoa, không dấu)" />
+                    </Form.Item>
+                    <div className="text-right">
+                        <Button onClick={() => setBankModalOpen(false)} className="mr-2">Hủy</Button>
+                        <Button type="primary" htmlType="submit">Lưu</Button>
+                    </div>
+                </Form>
+            </Modal>
 
             <Modal title="Rút tiền về tài khoản ngân hàng" open={withdrawModalOpen} onCancel={() => setWithdrawModalOpen(false)} footer={null}>
                 <div className="mb-4 p-3 bg-slate-50 rounded-lg">

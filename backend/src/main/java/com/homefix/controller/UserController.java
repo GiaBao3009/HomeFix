@@ -118,18 +118,18 @@ public class UserController {
         return ResponseEntity.ok(reviewService.getReviewsByTechnician(profile.getId()));
     }
 
-    @PostMapping("/change-password")
-    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest request) {
-        String email = getCurrentUserEmail();
-        userService.changePassword(email, request.getOldPassword(), request.getNewPassword());
-        return ResponseEntity.ok("Password changed successfully");
-    }
-
     @PutMapping("/technician/bank-info")
     @PreAuthorize("hasRole('TECHNICIAN')")
     public ResponseEntity<UserDto> updateBankInfo(@RequestBody Map<String, String> bankInfo) {
         String email = getCurrentUserEmail();
         return ResponseEntity.ok(userService.updateBankInfo(email, bankInfo));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<String> changePassword(@RequestBody ChangePasswordRequest request) {
+        String email = getCurrentUserEmail();
+        userService.changePassword(email, request.getOldPassword(), request.getNewPassword());
+        return ResponseEntity.ok("Password changed successfully");
     }
 
     private String getCurrentUserEmail() {

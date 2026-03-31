@@ -32,7 +32,6 @@ public class BookingDto {
     private List<String> assistantTechnicianNames = new ArrayList<>();
     private boolean dispatchEligible;
     private String dispatchBlockReason;
-
     private String cancellationReason;
 
     public BookingDto() {
