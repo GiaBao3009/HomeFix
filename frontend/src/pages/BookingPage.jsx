@@ -67,7 +67,9 @@ const BookingPage = () => {
         try {
             const bookingData = {
                 serviceId: parseInt(serviceId),
-                bookingTime: values.bookingTime.toISOString(),
+                // Backend stores bookingTime as LocalDateTime, so we must send the
+                // selected local wall-clock time instead of converting it to UTC.
+                bookingTime: values.bookingTime.format('YYYY-MM-DDTHH:mm:ss'),
                 address: values.address,
                 note: values.note,
                 couponCode: values.couponCode,
