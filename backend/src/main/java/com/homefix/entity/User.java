@@ -86,6 +86,10 @@ public class User implements UserDetails {
     @JoinTable(name = "technician_categories", joinColumns = @JoinColumn(name = "technician_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
     private Set<ServiceCategory> categories = new LinkedHashSet<>();
 
+    private String bankName;
+    private String bankAccountNumber;
+    private String bankAccountHolder;
+
     public User() {
     }
 
@@ -293,6 +297,30 @@ public class User implements UserDetails {
 
     public void setCategories(Set<ServiceCategory> categories) {
         this.categories = categories;
+    }
+
+    public String getBankName() {
+        return bankName;
+    }
+
+    public void setBankName(String bankName) {
+        this.bankName = bankName;
+    }
+
+    public String getBankAccountNumber() {
+        return bankAccountNumber;
+    }
+
+    public void setBankAccountNumber(String bankAccountNumber) {
+        this.bankAccountNumber = bankAccountNumber;
+    }
+
+    public String getBankAccountHolder() {
+        return bankAccountHolder;
+    }
+
+    public void setBankAccountHolder(String bankAccountHolder) {
+        this.bankAccountHolder = bankAccountHolder;
     }
 
     @Override
