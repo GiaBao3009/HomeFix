@@ -12,7 +12,8 @@ import TechnicianDashboard from './TechnicianDashboard';
 import TechnicianWallet from './TechnicianWallet';
 import OrderHistory from './OrderHistory';
 import AdminCharts from '../components/admin/AdminCharts';
-import { LayoutDashboard, Users, Calendar, Settings, Briefcase, Award, PieChart, Tag as TagIcon, Layers, Wallet, MessageSquare, ArrowDownCircle } from 'lucide-react';
+import AdminExportStats from '../components/admin/AdminExportStats';
+import { LayoutDashboard, Users, Calendar, Settings, Briefcase, Award, PieChart, Tag as TagIcon, Layers, Wallet, MessageSquare, ArrowDownCircle, FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
@@ -112,6 +113,16 @@ const Dashboard = () => {
                 </div>
             ),
             children: <AdminWithdrawals />
+        },
+        {
+            key: 'export',
+            label: (
+                <div className="flex gap-2 items-center px-2">
+                    <FileSpreadsheet size={18}/>
+                    <span className="font-semibold">Xuất báo cáo</span>
+                </div>
+            ),
+            children: <AdminExportStats />
         }
     ];
 
