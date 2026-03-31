@@ -127,7 +127,7 @@ CREATE TABLE bookings (
     payment_status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
     rejection_reason TEXT NULL,
     completed_at DATETIME NULL,
-    CONSTRAINT chk_bookings_status CHECK (status IN ('PENDING', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'DECLINED')),
+    CONSTRAINT chk_bookings_status CHECK (status IN ('PENDING', 'CONFIRMED', 'ASSIGNED', 'ARRIVED', 'WORKING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'DECLINED')),
     CONSTRAINT chk_bookings_total_price CHECK (total_price >= 0),
     CONSTRAINT chk_bookings_payment_method CHECK (payment_method IN ('CASH', 'MOMO', 'VNPAY')),
     CONSTRAINT chk_bookings_payment_status CHECK (payment_status IN ('PENDING', 'PAID', 'FAILED', 'REFUNDED')),

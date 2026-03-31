@@ -185,6 +185,24 @@ class BookingFlowIntegrationTest {
         assertThat(withAssistant.getAssistantTechnicianNames()).containsExactly(assistantA.getFullName());
     }
 
+    private static final LocalDateTime TYPICAL_BOOKING_TIME = LocalDateTime.of(2026, 5, 22, 10, 0);
+
+    /**
+     * Technician UI: after "Nhận việc" the booking is IN_PROGRESS; "Đã đến nơi" must move to ARRIVED.
+     */
+    @Test
+    void technicianInProgress_canMarkArrived() {
+        BookingDto created = createBookingForCustomer(TYPICAL_BOOKING_TIME);
+
+        authenticate(mainTechnician.getEmail());
+        bookingService.claimBooking(created.getId());
+        BookingDto afterAccept = bookingService.technicianResponse(created.getId(), true, null);
+        assertThat(afterAccept.getStatus()).isEqualTo(BookingStatus.IN_PROGRESS);
+
+        BookingDto arrived = bookingService.updateStatus(created.getId(), BookingStatus.ARRIVED);
+        assertThat(arrived.getStatus()).isEqualTo(BookingStatus.ARRIVED);
+    }
+
     private BookingDto createBookingForCustomer(LocalDateTime bookingTime) {
         authenticate(customer.getEmail());
         BookingDto dto = new BookingDto();
