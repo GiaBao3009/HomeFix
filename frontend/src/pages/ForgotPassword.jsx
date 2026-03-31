@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Form, Input, Button, Alert } from 'antd';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
-import api from '../services/api';
+import api, { getApiErrorMessage } from '../services/api';
 
 const ForgotPassword = () => {
     const [form] = Form.useForm();
@@ -17,7 +17,7 @@ const ForgotPassword = () => {
             await api.post('/auth/forgot-password', { email: values.email });
             setSuccess(true);
         } catch (err) {
-            setError(err.response?.data?.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
+            setError(getApiErrorMessage(err, 'Có lỗi xảy ra. Vui lòng thử lại.'));
         } finally {
             setLoading(false);
         }

@@ -18,9 +18,8 @@ const Login = () => {
     const onFinish = async (values) => {
         setLoading(true);
         setError('');
-        const userData = await login(values.email, values.password);
-        setLoading(false);
-        if (userData) {
+        try {
+            const userData = await login(values.email, values.password);
             if (userData.role === 'TECHNICIAN') {
                 navigate('/technician/dashboard');
             } else if (userData.role === 'ADMIN') {
@@ -28,8 +27,10 @@ const Login = () => {
             } else {
                 navigate('/');
             }
-        } else {
-            setError('Email hoặc mật khẩu không chính xác');
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setLoading(false);
         }
     };
 

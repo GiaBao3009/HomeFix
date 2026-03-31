@@ -40,12 +40,18 @@ services:
       - SPRING_JPA_SHOW_SQL=false
       - GOOGLE_CLIENT_ID=tam_thoi_chua_dung
       - GOOGLE_CLIENT_SECRET=tam_thoi_chua_dung
-      - HOMEFIX_APP_CORS_ALLOWED_ORIGINS=http://homefix.ink,https://homefix.ink,http://localhost:5173,http://localhost:5174
+      - HOMEFIX_APP_CORS_ALLOWED_ORIGINS=https://homefix.ink,https://www.homefix.ink,http://localhost:*,http://127.0.0.1:*,http://192.168.*:*,http://10.*:*,http://172.16.*:*
       - APP_FRONTEND_URL=https://homefix.ink
       - APP_OAUTH2_REDIRECT_URI=https://homefix.ink/oauth2/redirect
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/v3/api-docs || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -66,7 +72,8 @@ services:
       - ssl_certs:/etc/nginx/ssl:ro
       - certbot_www:/var/www/certbot:ro
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     deploy:
       resources:
         limits:

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Form, Input, Button, Alert } from 'antd';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle, ArrowLeft } from 'lucide-react';
-import api from '../services/api';
+import api, { getApiErrorMessage } from '../services/api';
 
 const ResetPassword = () => {
     const [form] = Form.useForm();
@@ -29,7 +29,7 @@ const ResetPassword = () => {
             });
             setSuccess(true);
         } catch (err) {
-            setError(err.response?.data?.message || 'Có lỗi xảy ra. Token có thể đã hết hạn.');
+            setError(getApiErrorMessage(err, 'Có lỗi xảy ra. Token có thể đã hết hạn.'));
         } finally {
             setLoading(false);
         }

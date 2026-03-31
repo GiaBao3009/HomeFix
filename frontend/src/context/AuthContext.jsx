@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext } from 'react';
-import api from '../services/api';
+import api, { getApiErrorMessage } from '../services/api';
 import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
@@ -32,8 +32,7 @@ export const AuthProvider = ({ children }) => {
             toast.success('Đăng nhập thành công!');
             return userData;
         } catch (error) {
-            toast.error(error.response?.data?.error || 'Đăng nhập thất bại');
-            return null;
+            throw new Error(getApiErrorMessage(error, 'Đăng nhập thất bại'));
         }
     };
 
@@ -51,24 +50,7 @@ export const AuthProvider = ({ children }) => {
             return userData;
         } catch (error) {
             console.error("Register error:", error);
-            const errorData = error.response?.data;
-            let errorMessage = 'Đăng ký thất bại';
-            
-            if (errorData) {
-                if (typeof errorData === 'string') {
-                    errorMessage = errorData;
-                } else if (typeof errorData === 'object') {
-                    if (errorData.error) {
-                        errorMessage = errorData.error;
-                    } else {
-                        // Join all values from the map (validation errors)
-                        errorMessage = Object.values(errorData).join(', ');
-                    }
-                }
-            }
-            
-            toast.error(errorMessage);
-            return null;
+            throw new Error(getApiErrorMessage(error, 'Đăng ký thất bại'));
         }
     };
 

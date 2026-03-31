@@ -21,15 +21,16 @@ const Register = () => {
     const onFinish = async (values) => {
         setLoading(true);
         setError('');
-        const userData = await register({
-            ...values,
-            role: values.role || 'CUSTOMER'
-        });
-        setLoading(false);
-        if (userData) {
+        try {
+            const userData = await register({
+                ...values,
+                role: values.role || 'CUSTOMER'
+            });
             navigate(userData.role === 'TECHNICIAN' ? '/technician/dashboard' : '/');
-        } else {
-            setError('Đăng ký thất bại. Email có thể đã tồn tại.');
+        } catch (error) {
+            setError(error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
