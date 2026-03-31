@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button, Dropdown, Avatar, Drawer } from 'antd';
-import { User, LogOut, LayoutDashboard, Settings, Users, Tag, Layers, Wallet, MessageSquare, Moon, Sun, Menu, X } from 'lucide-react';
+import { User, LogOut, LayoutDashboard, Settings, Users, Tag, Layers, Wallet, MessageSquare, Moon, Sun, Menu, X, ArrowDownCircle, FileSpreadsheet, PieChart } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 import { useTheme } from '../context/ThemeContext';
 
@@ -43,6 +43,14 @@ const Navbar = () => {
         ] : []),
         ...(user?.role === 'ADMIN' ? [
             {
+                key: 'admin-dashboard',
+                label: (
+                    <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/dashboard')}>
+                        <PieChart size={16} /> Dashboard
+                    </div>
+                ),
+            },
+            {
                 key: 'admin-dispatch',
                 label: (
                     <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/admin/dispatch')}>
@@ -79,6 +87,22 @@ const Navbar = () => {
                 label: (
                     <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/admin/coupons')}>
                         <Tag size={16} /> Mã giảm giá
+                    </div>
+                ),
+            },
+            {
+                key: 'admin-withdrawals',
+                label: (
+                    <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/dashboard')}>
+                        <ArrowDownCircle size={16} /> Rút tiền
+                    </div>
+                ),
+            },
+            {
+                key: 'admin-export',
+                label: (
+                    <div className="flex gap-2 items-center px-2 py-1" onClick={() => navigate('/dashboard')}>
+                        <FileSpreadsheet size={16} /> Xuất báo cáo
                     </div>
                 ),
             }
