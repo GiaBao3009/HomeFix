@@ -303,9 +303,15 @@ const ServiceList = () => {
                     width: 40px !important;
                     height: 4px !important;
                 }
+                :global(.dark .custom-dots li button) {
+                    background: rgba(148, 163, 184, 0.45) !important;
+                }
                 :global(.custom-dots li.slick-active button) {
                     background: white !important;
                     width: 60px !important;
+                }
+                :global(.dark .custom-dots li.slick-active button) {
+                    background: #f1f5f9 !important;
                 }
             `}</style>
         </div>

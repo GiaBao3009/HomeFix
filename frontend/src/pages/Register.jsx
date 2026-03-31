@@ -1,18 +1,22 @@
 import { useState } from 'react';
 import { Form, Input, Button, Alert, Skeleton, Radio, Space } from 'antd';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import useContent from '../hooks/useContent';
 import { User, Mail, Lock, Phone, Eye, EyeOff, Sparkles, Clock, ShieldCheck, CreditCard } from 'lucide-react';
 
 const Register = () => {
-    const { register } = useAuth();
+    const { register, user } = useAuth();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [form] = Form.useForm();
     const selectedRole = Form.useWatch('role', form);
     const { content: pageContent, loading: contentLoading } = useContent('REGISTER');
+
+    if (user) {
+        return <Navigate to="/" replace />;
+    }
 
     const onFinish = async (values) => {
         setLoading(true);
@@ -242,7 +246,7 @@ const Register = () => {
                                 block 
                                 size="large" 
                                 className="flex gap-3 justify-center items-center h-14 font-semibold rounded-xl border-2 transition-all text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50 group"
-                                onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/google'}
+                                onClick={() => { window.location.href = '/oauth2/authorization/google'; }}
                             >
                                 <svg className="w-6 h-6" viewBox="0 0 24 24">
                                     <path

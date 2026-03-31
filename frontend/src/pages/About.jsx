@@ -324,8 +324,14 @@ const About = () => {
                     font-size: 1.125rem;
                     color: #2563eb;
                 }
+                :global(.dark .custom-timeline .ant-timeline-item-label) {
+                    color: #60a5fa;
+                }
                 :global(.custom-timeline .ant-timeline-item-tail) {
                     border-left: 2px solid #e2e8f0;
+                }
+                :global(.dark .custom-timeline .ant-timeline-item-tail) {
+                    border-left-color: #334155;
                 }
             `}</style>
         </div>

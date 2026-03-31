@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Typography, Spin } from 'antd';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import api from '../../services/api';
+import { useTheme } from '../../context/ThemeContext';
 
 const { Title } = Typography;
 
@@ -10,7 +11,8 @@ const AdminCharts = () => {
     const [revenueData, setRevenueData] = useState([]);
     const [statusData, setStatusData] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+    const { darkMode } = useTheme();
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -77,10 +79,10 @@ const AdminCharts = () => {
                         <div className="h-[300px]">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={revenueData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="name" />
-                                    <YAxis />
-                                    <Tooltip formatter={(value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)} />
+                                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#334155' : '#e2e8f0'} />
+                                    <XAxis dataKey="name" tick={{ fill: darkMode ? '#94a3b8' : '#64748b' }} stroke={darkMode ? '#334155' : '#e2e8f0'} />
+                                    <YAxis tick={{ fill: darkMode ? '#94a3b8' : '#64748b' }} stroke={darkMode ? '#334155' : '#e2e8f0'} />
+                                    <Tooltip formatter={(value) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)} contentStyle={{ backgroundColor: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e2e8f0', color: darkMode ? '#e2e8f0' : '#1e293b' }} />
                                     <Area type="monotone" dataKey="total" stroke="#8884d8" fill="#8884d8" />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -107,8 +109,8 @@ const AdminCharts = () => {
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip />
-                                    <Legend />
+                                    <Tooltip contentStyle={{ backgroundColor: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e2e8f0', color: darkMode ? '#e2e8f0' : '#1e293b' }} />
+                                    <Legend wrapperStyle={{ color: darkMode ? '#e2e8f0' : '#1e293b' }} />
                                 </PieChart>
                             </ResponsiveContainer>
                         </div>
@@ -122,11 +124,11 @@ const AdminCharts = () => {
                         <div className="h-[300px]">
                              <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={topServices} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis type="number" />
-                                    <YAxis dataKey="serviceName" type="category" width={150} />
-                                    <Tooltip />
-                                    <Legend />
+                                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#334155' : '#e2e8f0'} />
+                                    <XAxis type="number" tick={{ fill: darkMode ? '#94a3b8' : '#64748b' }} stroke={darkMode ? '#334155' : '#e2e8f0'} />
+                                    <YAxis dataKey="serviceName" type="category" width={150} tick={{ fill: darkMode ? '#94a3b8' : '#64748b' }} stroke={darkMode ? '#334155' : '#e2e8f0'} />
+                                    <Tooltip contentStyle={{ backgroundColor: darkMode ? '#1e293b' : '#fff', borderColor: darkMode ? '#334155' : '#e2e8f0', color: darkMode ? '#e2e8f0' : '#1e293b' }} />
+                                    <Legend wrapperStyle={{ color: darkMode ? '#e2e8f0' : '#1e293b' }} />
                                     <Bar dataKey="count" name="Số lượt đặt" fill="#82ca9d" />
                                 </BarChart>
                             </ResponsiveContainer>

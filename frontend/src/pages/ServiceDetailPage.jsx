@@ -125,12 +125,12 @@ const ServiceDetailPage = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Column: Image & Info */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="lg:col-span-2 space-y-8 order-2 lg:order-1">
                     <div className="rounded-3xl overflow-hidden shadow-2xl relative group bg-white">
                         {allImages.length > 1 ? (
                             <Carousel autoplay effect="fade" arrows infinite>
                                 {allImages.map((url, index) => (
-                                    <div key={index} className="h-[400px]">
+                                    <div key={index} className="h-[220px] sm:h-[340px] md:h-[400px]">
                                         <img 
                                             src={url} 
                                             alt={`${service.name} - ${index + 1}`}
@@ -144,7 +144,7 @@ const ServiceDetailPage = () => {
                                 ))}
                             </Carousel>
                         ) : (
-                            <div className="h-[400px]">
+                            <div className="h-[220px] sm:h-[340px] md:h-[400px]">
                                 <img 
                                     src={service.imageUrl || 'https://placehold.co/800x600?text=Service'} 
                                     alt={service.name}
@@ -158,11 +158,11 @@ const ServiceDetailPage = () => {
                         )}
                         
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent pointer-events-none"></div>
-                        <div className="absolute bottom-0 left-0 p-8 text-white pointer-events-none">
+                        <div className="absolute bottom-0 left-0 p-4 sm:p-8 text-white pointer-events-none">
                             <Tag color="blue" className="mb-2 text-sm px-3 py-1 rounded-full border-none bg-blue-600/80 backdrop-blur-sm">
                                 {service.categoryName || 'Dịch vụ'}
                             </Tag>
-                            <h1 className="text-4xl font-bold mb-2">{service.name}</h1>
+                            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 leading-tight">{service.name}</h1>
                             <div className="flex items-center gap-2 text-yellow-400">
                                 <Rate disabled defaultValue={averageRating} allowHalf className="text-yellow-400 text-sm" />
                                 <span className="text-white text-sm">({reviews.length} đánh giá)</span>
@@ -216,10 +216,10 @@ const ServiceDetailPage = () => {
                     </Card>
 
                     <div className="space-y-6">
-                        <div className="flex justify-between items-center">
-                            <Title level={4}>Đánh giá từ khách hàng ({reviews.length})</Title>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+                            <Title level={4} className="!mb-0">Đánh giá từ khách hàng ({reviews.length})</Title>
                             {canReview && (
-                                <Button type="primary" onClick={() => setReviewModalVisible(true)}>
+                                <Button type="primary" onClick={() => setReviewModalVisible(true)} className="self-start sm:self-auto">
                                     Viết đánh giá
                                 </Button>
                             )}
@@ -228,22 +228,22 @@ const ServiceDetailPage = () => {
                             <div className="grid gap-4">
                                 {reviews.map((review) => (
                                     <Card key={review.id} className="shadow-sm hover:shadow-md transition-shadow rounded-xl border-slate-100">
-                                        <div className="flex gap-4">
+                                        <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
                                             <Avatar 
                                                 icon={<User />} 
                                                 src={review.customerAvatar || review.userAvatar} 
                                                 size={48}
-                                                className="bg-slate-200" 
+                                                className="bg-slate-200 shrink-0 sm:mt-0.5" 
                                             />
-                                            <div className="flex-1">
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <div>
-                                                        <Text strong className="text-lg block">{review.customerName || review.userName}</Text>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-start mb-1">
+                                                    <div className="min-w-0">
+                                                        <Text strong className="text-base sm:text-lg block truncate">{review.customerName || review.userName}</Text>
                                                         <Text type="secondary" className="text-xs">
                                                             {dayjs(review.createdAt).format('DD/MM/YYYY HH:mm')}
                                                         </Text>
                                                     </div>
-                                                    <Rate disabled defaultValue={review.rating} className="text-sm text-yellow-400" />
+                                                    <Rate disabled defaultValue={review.rating} className="text-sm text-yellow-400 shrink-0" />
                                                 </div>
                                                 <Paragraph className="text-slate-600 mb-0 mt-2 bg-slate-50 p-3 rounded-lg">
                                                     {review.comment}
@@ -261,13 +261,13 @@ const ServiceDetailPage = () => {
                     </div>
                 </div>
 
-                {/* Right Column: Booking Card */}
-                <div className="lg:col-span-1">
-                    <div className="sticky top-24">
+                {/* Right Column: Booking Card — first on mobile for quick booking */}
+                <div className="lg:col-span-1 order-1 lg:order-2">
+                    <div className="lg:sticky lg:top-24">
                         <Card className="shadow-2xl rounded-3xl border-none overflow-hidden">
-                            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-6 -m-6 mb-6 text-white text-center">
+                            <div className="bg-gradient-to-r from-blue-600 to-cyan-500 p-5 sm:p-6 -m-6 mb-6 text-white text-center">
                                 <Text className="block text-blue-100 mb-1 uppercase tracking-wider text-xs font-bold">Giá dịch vụ</Text>
-                                <div className="text-4xl font-black">
+                                <div className="text-3xl sm:text-4xl font-black break-words">
                                     {service.price?.toLocaleString('vi-VN')}
                                     <span className="text-xl font-normal opacity-80"> đ</span>
                                 </div>

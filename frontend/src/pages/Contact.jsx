@@ -266,11 +266,10 @@ const Contact = () => {
                         src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3724.096814183571!2d105.7800937149326!3d21.028811885998398!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3135ab4cd0c66f05%3A0xea038ad3775aaced!2zQ8ahIHF1YW4gVHJ1bmcgxrDGoW5nIMSQb8OgbiBUaGFuaCBmacOqbiBD4buZbmcgU-G6o24gSOG7kyBDaMOtIE1pbmggLSBUUlVORyBUw4JNIEPDlE5HIE5HjMOqIFRIw5RORyBUSU4gVEhBTkggTknDqU4gVkl44buGVCBOQU0!5e0!3m2!1svi!2s!4v1647847384938!5m2!1svi!2s" 
                         width="100%" 
                         height="100%" 
-                        style={{ border: 0 }} 
                         allowFullScreen="" 
                         loading="lazy"
                         title="Google Map"
-                        className="relative z-0"
+                        className="relative z-0 w-full h-full border-0"
                     />
                 </div>
             </div>

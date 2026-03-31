@@ -1,9 +1,10 @@
 import { Layout, Row, Col, Typography, Space, Input, Button, Divider } from 'antd';
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Send } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const { Footer: AntFooter } = Layout;
-const { Title, Text, Link } = Typography;
+const { Title, Text } = Typography;
 
 const Footer = () => {
     const { user } = useAuth();
@@ -42,15 +43,15 @@ const Footer = () => {
                     {/* Quick Links - Hidden/Modified for Admin/Tech */}
                     {!isAdminOrTech && (
                     <Col xs={24} sm={12} md={5}>
-                        <Title level={4} style={{ color: 'white', marginBottom: '1.5rem' }}>Khám phá</Title>
+                        <Title level={4} className="!text-white !mb-6">Khám phá</Title>
                         <div className="flex flex-col gap-3">
-                            <Link href="/services" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Dịch vụ</Link>
-                            <Link href="/about" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Về chúng tôi</Link>
-                            <Link href="/contact" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Liên hệ</Link>
+                            <Link to="/services" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Dịch vụ</Link>
+                            <Link to="/about" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Về chúng tôi</Link>
+                            <Link to="/contact" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Liên hệ</Link>
                             {!user && (
                                 <>
-                                    <Link href="/login" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng nhập</Link>
-                                    <Link href="/register" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng ký</Link>
+                                    <Link to="/login" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng nhập</Link>
+                                    <Link to="/register" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng ký</Link>
                                 </>
                             )}
                         </div>
@@ -59,7 +60,7 @@ const Footer = () => {
 
                     {/* Contact Info - Always visible but maybe simplified for Admin */}
                     <Col xs={24} sm={12} md={5}>
-                        <Title level={4} style={{ color: 'white', marginBottom: '1.5rem' }}>Liên hệ</Title>
+                        <Title level={4} className="!text-white !mb-6">Liên hệ</Title>
                         <div className="flex flex-col gap-4">
                             <div className="flex items-start gap-3 text-slate-400 group">
                                 <MapPin size={20} className="mt-1 group-hover:text-blue-400 transition-colors" />
@@ -78,7 +79,7 @@ const Footer = () => {
 
                     {/* Newsletter */}
                     <Col xs={24} md={6}>
-                        <Title level={4} style={{ color: 'white', marginBottom: '1.5rem' }}>Đăng ký tin tức</Title>
+                        <Title level={4} className="!text-white !mb-6">Đăng ký tin tức</Title>
                         <Text className="text-slate-400 block mb-4">
                             Nhận thông tin khuyến mãi và mẹo vặt chăm sóc nhà cửa mới nhất.
                         </Text>
@@ -100,8 +101,8 @@ const Footer = () => {
                 <div className="flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
                     <p>© 2026 HomeFix. All rights reserved.</p>
                     <div className="flex gap-6 mt-4 md:mt-0">
-                        <Link className="text-slate-500 hover:text-slate-300">Điều khoản sử dụng</Link>
-                        <Link className="text-slate-500 hover:text-slate-300">Chính sách bảo mật</Link>
+                        <Link to="/about" className="text-slate-500 hover:text-slate-300">Điều khoản sử dụng</Link>
+                        <Link to="/contact" className="text-slate-500 hover:text-slate-300">Chính sách bảo mật</Link>
                     </div>
                 </div>
                 <div className="text-center mt-8">

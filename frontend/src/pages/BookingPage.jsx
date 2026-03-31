@@ -376,10 +376,11 @@ const BookingPage = () => {
                 footer={null}
                 centered
                 width={480}
+                styles={{ body: { maxWidth: '100vw', overflow: 'auto' } }}
                 closeIcon={<X size={20} />}
                 className="qr-payment-modal"
             >
-                <div className="text-center py-2">
+                <div className="text-center py-2 max-w-full min-w-0">
                     <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-white font-bold text-sm mb-6 ${qrModal.method === 'MOMO' ? 'bg-gradient-to-r from-pink-500 to-rose-500' : 'bg-gradient-to-r from-blue-600 to-cyan-500'
                         }`}>
                         {qrModal.method === 'MOMO' ? <Smartphone size={18} /> : <CreditCard size={18} />}
@@ -390,14 +391,14 @@ const BookingPage = () => {
                     <p className="text-slate-500 mb-6">Mở app {qrModal.method === 'MOMO' ? 'MoMo' : 'Ngân hàng'} → Quét mã QR bên dưới</p>
 
                     {/* QR Image */}
-                    <div className="bg-white border-2 border-slate-100 rounded-2xl p-4 inline-block mb-6 shadow-lg">
+                    <div className="bg-white border-2 border-slate-100 rounded-2xl p-3 sm:p-4 inline-block mb-6 shadow-lg max-w-full overflow-auto mx-auto">
                         <img
                             src={qrModal.method === 'MOMO'
                                 ? getMomoQrUrl(qrModal.amount, qrModal.bookingId)
                                 : getBankQrUrl(qrModal.amount, qrModal.bookingId)
                             }
                             alt="QR Code thanh toán"
-                            className="w-64 h-64 object-contain"
+                            className="w-full max-w-[256px] aspect-square object-contain mx-auto block"
                             onError={(e) => {
                                 e.target.onerror = null;
                                 e.target.src = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(
@@ -410,7 +411,7 @@ const BookingPage = () => {
                     </div>
 
                     {/* Payment Details */}
-                    <div className="bg-slate-50 rounded-2xl p-5 text-left space-y-3 mb-6">
+                    <div className="bg-slate-50 rounded-2xl p-4 sm:p-5 text-left space-y-3 mb-6 max-w-full overflow-x-auto">
                         {qrModal.method === 'BANK_TRANSFER' && (
                             <>
                                 <div className="flex justify-between items-center">

@@ -203,7 +203,7 @@ const Login = () => {
                                 block
                                 size="large"
                                 className="flex gap-3 justify-center items-center py-3 h-14 rounded-xl border-2 transition-all border-slate-200 hover:border-slate-300 hover:bg-slate-50 group"
-                                onClick={() => window.location.href = 'http://localhost:8080/oauth2/authorization/google'}
+                                onClick={() => { window.location.href = '/oauth2/authorization/google'; }}
                             >
                                 <svg className="w-6 h-6" viewBox="0 0 24 24">
                                     <path

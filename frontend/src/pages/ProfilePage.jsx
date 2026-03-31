@@ -113,8 +113,7 @@ const ProfilePage = () => {
                             <Avatar 
                                 size={100} 
                                 src={avatarUrl}
-                                className="border-4 border-white shadow-lg"
-                                style={{ backgroundColor: '#3b82f6' }}
+                                className="border-4 border-white shadow-lg bg-[#3b82f6] dark:bg-[#60a5fa] dark:border-slate-600"
                             >
                                 {!avatarUrl && <span className="text-3xl font-bold">{profile?.fullName?.charAt(0) || 'U'}</span>}
                             </Avatar>
@@ -373,13 +372,22 @@ const ProfilePage = () => {
                 :global(.profile-tabs .ant-tabs-tab:hover) {
                     color: #3b82f6;
                 }
+                :global(.dark .profile-tabs .ant-tabs-tab:hover) {
+                    color: #60a5fa;
+                }
                 :global(.profile-tabs .ant-tabs-tab-active) {
                     color: #2563eb !important;
+                }
+                :global(.dark .profile-tabs .ant-tabs-tab-active) {
+                    color: #60a5fa !important;
                 }
                 :global(.profile-tabs .ant-tabs-ink-bar) {
                     background: linear-gradient(to right, #3b82f6, #06b6d4);
                     height: 3px;
                     border-radius: 3px 3px 0 0;
+                }
+                :global(.dark .profile-tabs .ant-tabs-ink-bar) {
+                    background: linear-gradient(to right, #60a5fa, #22d3ee);
                 }
             `}</style>
         </div>

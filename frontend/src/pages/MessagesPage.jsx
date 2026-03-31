@@ -495,7 +495,7 @@ const MessagesPage = () => {
                     </div>
 
                     {/* ── CENTER: Chat Area ── */}
-                    <div className={`rounded-2xl shadow-lg flex flex-col min-h-[calc(100vh-280px)] ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
+                    <div className={`rounded-2xl shadow-lg min-h-[calc(100vh-280px)] ${!showMobileChat ? 'hidden xl:flex xl:flex-col' : 'flex flex-col'} ${darkMode ? 'bg-slate-900 border border-slate-800' : 'bg-white'}`}>
                         {!selectedConversation ? (
                             <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
                                 <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-600/20 to-cyan-500/20 flex items-center justify-center">
@@ -513,8 +513,8 @@ const MessagesPage = () => {
                                 {/* Chat Header */}
                                 <div className={`p-4 border-b flex items-center justify-between gap-3 ${darkMode ? 'border-slate-800' : 'border-slate-200'}`}>
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <button className={`xl:hidden p-2 rounded-xl transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
-                                            onClick={() => { setShowMobileChat(false); setSelectedConversationId(null); }}>
+                                        <button type="button" className={`xl:hidden p-2 rounded-xl transition-colors ${darkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
+                                            onClick={() => setShowMobileChat(false)}>
                                             <ArrowLeft size={20} />
                                         </button>
                                         <div className="min-w-0">

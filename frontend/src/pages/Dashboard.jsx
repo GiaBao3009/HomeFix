@@ -152,8 +152,8 @@ const Dashboard = () => {
                     <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-600/20 to-cyan-500/20 flex items-center justify-center">
                         <MessageSquare size={36} className="text-blue-500" />
                     </div>
-                    <div className="text-center">
-                        <div className="text-xl font-bold mb-2">Tin nhắn & Chat</div>
+                        <div className="text-center">
+                        <div className={`text-xl font-bold mb-2 ${darkMode ? 'text-slate-100' : 'text-slate-900'}`}>Tin nhắn & Chat</div>
                         <div className={`mb-4 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>Nhắn tin realtime với kỹ thuật viên và quản trị viên</div>
                         <Button type="primary" size="large" icon={<MessageSquare size={18} />} onClick={() => navigate('/messages')}>
                             Mở Inbox
@@ -222,19 +222,31 @@ const Dashboard = () => {
                     color: #64748b;
                     transition: all 0.3s;
                 }
+                :global(.dark .dashboard-tabs .ant-tabs-tab) {
+                    color: #94a3b8;
+                }
                 
                 :global(.dashboard-tabs .ant-tabs-tab:hover) {
                     color: #3b82f6;
                 }
+                :global(.dark .dashboard-tabs .ant-tabs-tab:hover) {
+                    color: #60a5fa;
+                }
                 
                 :global(.dashboard-tabs .ant-tabs-tab-active) {
                     color: #2563eb !important;
+                }
+                :global(.dark .dashboard-tabs .ant-tabs-tab-active) {
+                    color: #60a5fa !important;
                 }
                 
                 :global(.dashboard-tabs .ant-tabs-ink-bar) {
                     background: linear-gradient(to right, #3b82f6, #06b6d4);
                     height: 3px;
                     border-radius: 3px 3px 0 0;
+                }
+                :global(.dark .dashboard-tabs .ant-tabs-ink-bar) {
+                    background: linear-gradient(to right, #60a5fa, #22d3ee);
                 }
             `}</style>
         </div>

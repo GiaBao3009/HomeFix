@@ -20,12 +20,12 @@ const Home = () => {
                 if (Array.isArray(response.data)) {
                     // Get top 3 services or random 3 for "Popular"
                     // For now, just slice the first 3
-                    const mappedServices = response.data.slice(0, 3).map(service => ({
+                    const mappedServices = response.data.slice(0, 3).map((service, index) => ({
                         id: service.id,
                         name: service.name,
                         image: service.imageUrl || "https://images.unsplash.com/photo-1581578731117-104f8a746950?auto=format&fit=crop&q=80&w=800",
                         rating: 5, // Default/Placeholder as backend doesn't support yet
-                        reviews: Math.floor(Math.random() * 100) + 50, // Random placeholder
+                        reviews: 50 + index * 27, // Deterministic placeholder per card slot
                         price: service.price ? `${service.price.toLocaleString('vi-VN')} đ` : "Liên hệ",
                         tag: "Phổ biến" // Placeholder
                     }));
@@ -149,7 +149,7 @@ const Home = () => {
                                 </div>
 
                                 {/* Trust badges */}
-                                <div className="flex gap-8 items-center pt-8 text-slate-300">
+                                <div className="flex flex-wrap gap-8 items-center pt-8 text-slate-300">
                                     <div className="flex gap-3 items-center group">
                                         <div className="flex justify-center items-center w-10 h-10 rounded-full transition-transform bg-green-500/20 group-hover:scale-110">
                                             <CheckCircle className="text-green-400" size={20} />
@@ -257,12 +257,12 @@ const Home = () => {
 
             {/* Popular Services - Modern Card Grid */}
             <div className="px-4 mx-auto max-w-7xl">
-                <div className="flex justify-between items-end mb-12">
-                    <div>
-                        <h2 className="mb-3 text-5xl font-bold text-slate-900">{pageContent?.popular_title?.content || "Dịch vụ phổ biến"}</h2>
-                        <p className="text-xl text-slate-600">{pageContent?.popular_desc?.content || "Được nhiều khách hàng tin dùng nhất tháng này"}</p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-end sm:gap-2 mb-12">
+                    <div className="min-w-0">
+                        <h2 className="mb-3 text-3xl font-bold sm:text-4xl md:text-5xl text-slate-900">{pageContent?.popular_title?.content || "Dịch vụ phổ biến"}</h2>
+                        <p className="text-lg sm:text-xl text-slate-600">{pageContent?.popular_desc?.content || "Được nhiều khách hàng tin dùng nhất tháng này"}</p>
                     </div>
-                    <Link to="/services">
+                    <Link to="/services" className="shrink-0 self-start sm:self-end">
                         <Button
                             type="link"
                             className="flex gap-2 items-center text-lg font-semibold text-blue-600 transition-all hover:gap-3"
@@ -333,22 +333,22 @@ const Home = () => {
 
             {/* CTA Section */}
             <div className="px-4 mx-auto max-w-7xl">
-                <div className="relative bg-gradient-to-br from-blue-600 via-cyan-500 to-blue-700 rounded-[2rem] p-12 md:p-16 overflow-hidden">
+                <div className="relative bg-gradient-to-br from-blue-600 via-cyan-500 to-blue-700 rounded-[2rem] p-8 sm:p-12 md:p-16 overflow-hidden">
                     {/* Background decoration */}
                     <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl bg-white/10"></div>
                     <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full blur-3xl bg-cyan-400/20"></div>
 
-                    <div className="relative mx-auto max-w-3xl text-center">
-                        <h2 className="mb-6 text-4xl font-black text-white md:text-5xl">
+                    <div className="relative mx-auto max-w-3xl text-center px-1 sm:px-0">
+                        <h2 className="mb-4 sm:mb-6 text-2xl font-black leading-tight text-white sm:text-3xl md:text-4xl lg:text-5xl">
                             {pageContent?.cta_title?.content || "Sẵn sàng trải nghiệm dịch vụ tốt nhất?"}
                         </h2>
-                        <p className="mb-10 text-xl font-light text-blue-100">
+                        <p className="mb-8 sm:mb-10 text-base font-light sm:text-lg md:text-xl text-blue-100">
                             {pageContent?.cta_desc?.content || "Hàng nghìn khách hàng đã tin tưởng HomeFix. Đến lượt bạn!"}
                         </p>
                         <Link to="/services">
                             <Button
                                 size="large"
-                                className="px-12 h-16 text-lg font-bold text-blue-600 bg-white rounded-2xl border-none shadow-2xl transition-all hover:bg-blue-50 hover:scale-105"
+                                className="w-full max-w-xs sm:max-w-none sm:w-auto px-8 sm:px-12 h-14 sm:h-16 text-base sm:text-lg font-bold text-blue-600 bg-white rounded-2xl border-none shadow-2xl transition-all hover:bg-blue-50 hover:scale-105"
                                 icon={<ArrowRight size={20} />}
                                 iconPosition="end"
                             >
