@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Card, message, Modal, Form, Rate, Input } from 'antd';
-import { Calendar, Clock, MapPin, DollarSign, User, Star } from 'lucide-react';
+import { Table, Tag, Button, Card, message, Modal, Form, Rate, Input, Space } from 'antd';
+import { Calendar, Clock, MapPin, DollarSign, User, Star, XCircle } from 'lucide-react';
 import api from '../services/api';
 import dayjs from 'dayjs';
 
@@ -8,11 +8,15 @@ const OrderHistory = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Review Modal State
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [reviewForm] = Form.useForm();
   const [submittingReview, setSubmittingReview] = useState(false);
+
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelBooking, setCancelBooking] = useState(null);
+  const [cancelForm] = Form.useForm();
+  const [cancelling, setCancelling] = useState(false);
 
   const fetchBookings = async () => {
     try {
@@ -53,6 +57,45 @@ const OrderHistory = () => {
       message.error('Không thể gửi đánh giá');
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const handleCancelClick = (booking) => {
+    setCancelBooking(booking);
+    cancelForm.resetFields();
+    if (booking.technicianId) {
+      setIsCancelModalOpen(true);
+    } else {
+      Modal.confirm({
+        title: 'Xác nhận hủy đơn',
+        content: `Bạn có chắc chắn muốn hủy đơn hàng #${booking.id}?`,
+        okText: 'Hủy đơn',
+        cancelText: 'Quay lại',
+        okType: 'danger',
+        onOk: async () => {
+          try {
+            await api.post(`/bookings/${booking.id}/cancel`, {});
+            message.success('Đã hủy đơn hàng');
+            fetchBookings();
+          } catch (err) {
+            message.error(err.response?.data?.message || err.response?.data || 'Không thể hủy đơn');
+          }
+        }
+      });
+    }
+  };
+
+  const handleSubmitCancel = async (values) => {
+    setCancelling(true);
+    try {
+      await api.post(`/bookings/${cancelBooking.id}/cancel`, { reason: values.reason });
+      message.success('Đã hủy đơn hàng');
+      setIsCancelModalOpen(false);
+      fetchBookings();
+    } catch (err) {
+      message.error(err.response?.data?.message || err.response?.data || 'Không thể hủy đơn');
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -99,11 +142,13 @@ const OrderHistory = () => {
         let text = status;
         switch (status) {
           case 'PENDING': color = 'orange'; text = 'Chờ xử lý'; break;
+          case 'CONFIRMED': color = 'cyan'; text = 'Đã xác nhận'; break;
           case 'ASSIGNED': color = 'blue'; text = 'Đã có thợ'; break;
+          case 'ARRIVED': color = 'geekblue'; text = 'Thợ đã đến'; break;
+          case 'WORKING': color = 'processing'; text = 'Đang làm việc'; break;
           case 'IN_PROGRESS': color = 'processing'; text = 'Đang thực hiện'; break;
           case 'COMPLETED': color = 'success'; text = 'Hoàn thành'; break;
           case 'CANCELLED': color = 'error'; text = 'Đã hủy'; break;
-          case 'CONFIRMED': color = 'cyan'; text = 'Đã xác nhận'; break;
           case 'DECLINED': color = 'red'; text = 'Bị từ chối'; break;
         }
         return <Tag color={color} className="px-3 py-1 rounded-full">{text}</Tag>;
@@ -113,7 +158,8 @@ const OrderHistory = () => {
       title: 'Hành động',
       key: 'action',
       render: (_, record) => (
-         record.status === 'COMPLETED' ? (
+        <Space>
+          {record.status === 'COMPLETED' && (
              <Button 
                 type="primary" 
                 ghost 
@@ -123,7 +169,17 @@ const OrderHistory = () => {
              >
                  Đánh giá
              </Button>
-         ) : null
+          )}
+          {['PENDING', 'CONFIRMED', 'ASSIGNED', 'ARRIVED'].includes(record.status) && (
+            <Button
+              danger
+              size="small"
+              onClick={() => handleCancelClick(record)}
+            >
+              Hủy đơn
+            </Button>
+          )}
+        </Space>
       ),
     }
   ];
@@ -176,6 +232,30 @@ const OrderHistory = () => {
                 <Button onClick={() => setIsReviewModalOpen(false)} className="mr-2">Hủy</Button>
                 <Button type="primary" htmlType="submit" loading={submittingReview}>Gửi đánh giá</Button>
             </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Hủy đơn hàng"
+        open={isCancelModalOpen}
+        onCancel={() => setIsCancelModalOpen(false)}
+        footer={null}
+      >
+        <p className="mb-4 text-slate-600">
+          Đơn hàng <strong>#{cancelBooking?.id}</strong> đã có kỹ thuật viên nhận. Vui lòng cho biết lý do hủy:
+        </p>
+        <Form form={cancelForm} layout="vertical" onFinish={handleSubmitCancel}>
+          <Form.Item
+            name="reason"
+            label="Lý do hủy đơn"
+            rules={[{ required: true, message: 'Vui lòng nhập lý do hủy đơn' }]}
+          >
+            <Input.TextArea rows={4} placeholder="Nhập lý do hủy đơn hàng..." />
+          </Form.Item>
+          <Form.Item className="mb-0 text-right">
+            <Button onClick={() => setIsCancelModalOpen(false)} className="mr-2">Quay lại</Button>
+            <Button type="primary" danger htmlType="submit" loading={cancelling}>Xác nhận hủy</Button>
+          </Form.Item>
         </Form>
       </Modal>
     </div>

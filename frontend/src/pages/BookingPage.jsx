@@ -252,7 +252,7 @@ const BookingPage = () => {
                                     format="DD/MM/YYYY HH:mm"
                                     className="w-full rounded-xl border-slate-200"
                                     placeholder="Chọn ngày và giờ"
-                                    disabledDate={(current) => current && current < dayjs().endOf('day')}
+                                    disabledDate={(current) => current && current < dayjs().startOf('day')}
                                 />
                             </Form.Item>
 
