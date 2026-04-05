@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, message, Space, Upload, Card, Typography, Empty } from 'antd';
 import { Edit, Trash, Plus, Upload as UploadIcon, Layers } from 'lucide-react';
-import api from '../services/api';
+import api, { getApiErrorMessage } from '../services/api';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -21,22 +21,24 @@ const AdminCategoryManager = () => {
             setCategories(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error(error);
-            message.error('Không thể tải danh mục');
+            message.error(getApiErrorMessage(error, 'Khong the tai danh muc'));
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => { fetchCategories(); }, []);
+    useEffect(() => {
+        fetchCategories();
+    }, []);
 
     const handleSubmit = async (values) => {
         try {
             if (editingCategory) {
                 await api.put(`/categories/${editingCategory.id}`, values);
-                message.success('Cập nhật danh mục thành công');
+                message.success('Cap nhat danh muc thanh cong');
             } else {
                 await api.post('/categories', values);
-                message.success('Tạo danh mục thành công');
+                message.success('Tao danh muc thanh cong');
             }
             setIsModalOpen(false);
             form.resetFields();
@@ -44,17 +46,17 @@ const AdminCategoryManager = () => {
             fetchCategories();
         } catch (error) {
             console.error(error);
-            message.error('Thao tác thất bại');
+            message.error(getApiErrorMessage(error, 'Thao tac that bai'));
         }
     };
 
     const handleDelete = async (id) => {
         try {
             await api.delete(`/categories/${id}`);
-            message.success('Xóa danh mục thành công');
+            message.success('Xoa danh muc thanh cong');
             fetchCategories();
         } catch (error) {
-            message.error('Xóa thất bại');
+            message.error(getApiErrorMessage(error, 'Xoa that bai'));
         }
     };
 
@@ -66,10 +68,10 @@ const AdminCategoryManager = () => {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             onSuccess(response.data);
-            message.success('Tải ảnh thành công');
+            message.success('Tai anh thanh cong');
         } catch (error) {
             onError(error);
-            message.error('Tải ảnh thất bại');
+            message.error(getApiErrorMessage(error, 'Tai anh that bai'));
         }
     };
 
@@ -80,34 +82,53 @@ const AdminCategoryManager = () => {
             dataIndex: 'iconUrl',
             key: 'iconUrl',
             width: 70,
-            render: (url) => url
-                ? <img src={url} alt="icon" className="w-9 h-9 rounded-lg object-cover border border-slate-200" />
-                : <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center"><Layers size={16} className="text-slate-400" /></div>
+            render: (url) =>
+                url ? (
+                    <img src={url} alt="icon" className="w-9 h-9 rounded-lg object-cover border border-slate-200" />
+                ) : (
+                    <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
+                        <Layers size={16} className="text-slate-400" />
+                    </div>
+                ),
         },
-        { title: 'Tên danh mục', dataIndex: 'name', key: 'name', render: (t) => <Text strong>{t}</Text> },
-        { title: 'Mô tả', dataIndex: 'description', key: 'description', ellipsis: true },
+        { title: 'Ten danh muc', dataIndex: 'name', key: 'name', render: (textValue) => <Text strong>{textValue}</Text> },
+        { title: 'Mo ta', dataIndex: 'description', key: 'description', ellipsis: true },
         {
-            title: 'Hành động',
+            title: 'Hanh dong',
             key: 'actions',
             width: 120,
             render: (_, record) => (
                 <Space size={4}>
-                    <Button size="small" icon={<Edit size={14} />} onClick={() => {
-                        setEditingCategory(record);
-                        form.setFieldsValue(record);
-                        setIsModalOpen(true);
-                    }}>Sửa</Button>
-                    <Button size="small" danger icon={<Trash size={14} />} onClick={() => Modal.confirm({
-                        title: 'Xóa danh mục?',
-                        content: 'Hành động này sẽ xóa tất cả dịch vụ trong danh mục.',
-                        okText: 'Xóa',
-                        okType: 'danger',
-                        cancelText: 'Hủy',
-                        onOk: () => handleDelete(record.id)
-                    })} />
+                    <Button
+                        size="small"
+                        icon={<Edit size={14} />}
+                        onClick={() => {
+                            setEditingCategory(record);
+                            form.setFieldsValue(record);
+                            setIsModalOpen(true);
+                        }}
+                    >
+                        Sua
+                    </Button>
+                    <Button
+                        size="small"
+                        danger
+                        icon={<Trash size={14} />}
+                        onClick={() =>
+                            Modal.confirm({
+                                title: 'Xoa danh muc?',
+                                content:
+                                    'He thong se khong cho xoa neu danh muc van con dich vu. Hay chuyen dich vu sang danh muc khac truoc de bao toan lich su don hang.',
+                                okText: 'Xoa',
+                                okType: 'danger',
+                                cancelText: 'Huy',
+                                onOk: () => handleDelete(record.id),
+                            })
+                        }
+                    />
                 </Space>
-            )
-        }
+            ),
+        },
     ];
 
     return (
@@ -116,17 +137,23 @@ const AdminCategoryManager = () => {
                 <div className="flex items-center gap-3">
                     <h2 className="text-xl font-bold flex items-center gap-2 !mb-0">
                         <Layers size={22} className="text-blue-600" />
-                        Quản lý Danh mục
+                        Quan ly Danh muc
                     </h2>
                     <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-600">
-                        {categories.length} danh mục
+                        {categories.length} danh muc
                     </span>
                 </div>
-                <Button type="primary" icon={<Plus size={16} />} onClick={() => {
-                    setEditingCategory(null);
-                    form.resetFields();
-                    setIsModalOpen(true);
-                }}>Thêm danh mục</Button>
+                <Button
+                    type="primary"
+                    icon={<Plus size={16} />}
+                    onClick={() => {
+                        setEditingCategory(null);
+                        form.resetFields();
+                        setIsModalOpen(true);
+                    }}
+                >
+                    Them danh muc
+                </Button>
             </div>
 
             <Card bordered={false} className="!rounded-xl shadow-sm">
@@ -136,26 +163,28 @@ const AdminCategoryManager = () => {
                     rowKey="id"
                     loading={loading}
                     pagination={{ pageSize: 10, size: 'small' }}
-                    locale={{ emptyText: <Empty description="Chưa có danh mục nào" /> }}
+                    locale={{ emptyText: <Empty description="Chua co danh muc nao" /> }}
                 />
             </Card>
 
             <Modal
-                title={editingCategory ? 'Sửa danh mục' : 'Thêm danh mục mới'}
+                title={editingCategory ? 'Sua danh muc' : 'Them danh muc moi'}
                 open={isModalOpen}
                 onCancel={() => setIsModalOpen(false)}
                 footer={null}
                 destroyOnClose
             >
                 <Form form={form} onFinish={handleSubmit} layout="vertical" className="mt-4">
-                    <Form.Item name="name" label="Tên danh mục" rules={[{ required: true, message: 'Nhập tên danh mục' }]}>
-                        <Input placeholder="VD: Điện lạnh, Sửa ống nước..." />
+                    <Form.Item name="name" label="Ten danh muc" rules={[{ required: true, message: 'Nhap ten danh muc' }]}>
+                        <Input placeholder="VD: Dien lanh, Sua ong nuoc..." />
                     </Form.Item>
-                    <Form.Item name="description" label="Mô tả">
-                        <TextArea rows={3} placeholder="Mô tả ngắn về danh mục..." />
+                    <Form.Item name="description" label="Mo ta">
+                        <TextArea rows={3} placeholder="Mo ta ngan ve danh muc..." />
                     </Form.Item>
-                    <Form.Item name="iconUrl" label="Icon URL" hidden><Input /></Form.Item>
-                    <Form.Item label="Icon danh mục">
+                    <Form.Item name="iconUrl" label="Icon URL" hidden>
+                        <Input />
+                    </Form.Item>
+                    <Form.Item label="Icon danh muc">
                         <div className="flex items-center gap-4">
                             {iconUrl ? (
                                 <img src={iconUrl} alt="Icon" className="w-16 h-16 rounded-xl object-cover border border-slate-200" />
@@ -165,19 +194,26 @@ const AdminCategoryManager = () => {
                                 </div>
                             )}
                             <Upload
-                                customRequest={({ file, onSuccess, onError }) => handleUpload({
-                                    file,
-                                    onSuccess: (data) => { form.setFieldValue('iconUrl', data.fileUrl); onSuccess(data); },
-                                    onError
-                                })}
+                                customRequest={({ file, onSuccess, onError }) =>
+                                    handleUpload({
+                                        file,
+                                        onSuccess: (data) => {
+                                            form.setFieldValue('iconUrl', data.fileUrl);
+                                            onSuccess(data);
+                                        },
+                                        onError,
+                                    })
+                                }
                                 showUploadList={false}
                                 accept="image/*"
                             >
-                                <Button icon={<UploadIcon size={16} />}>Tải ảnh lên</Button>
+                                <Button icon={<UploadIcon size={16} />}>Tai anh len</Button>
                             </Upload>
                         </div>
                     </Form.Item>
-                    <Button type="primary" htmlType="submit" className="w-full">Lưu</Button>
+                    <Button type="primary" htmlType="submit" className="w-full">
+                        Luu
+                    </Button>
                 </Form>
             </Modal>
         </div>
