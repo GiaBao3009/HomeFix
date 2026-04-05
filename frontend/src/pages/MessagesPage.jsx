@@ -25,6 +25,40 @@ import { useTheme } from '../context/ThemeContext';
 
 const QUICK_EMOJIS = ['👍', '🎉', '❤️', '😀', '🔥', '🙏', '😂', '👏', '💯', '✨'];
 
+const OPTIMISTIC_PREFIX = 'local-msg-';
+
+const createClientMessageId = () =>
+    `${OPTIMISTIC_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+const normalizeMessage = (message) => ({
+    ...message,
+    optimistic: Boolean(message?.optimistic),
+    failed: Boolean(message?.failed),
+    sending: Boolean(message?.sending),
+});
+
+const mergeIncomingMessage = (current, incoming) => {
+    const normalizedIncoming = normalizeMessage(incoming);
+    const matchIndex = current.findIndex((item) =>
+        (normalizedIncoming.id != null && item.id === normalizedIncoming.id) ||
+        (normalizedIncoming.clientMessageId && item.clientMessageId === normalizedIncoming.clientMessageId)
+    );
+
+    if (matchIndex >= 0) {
+        const next = [...current];
+        next[matchIndex] = {
+            ...next[matchIndex],
+            ...normalizedIncoming,
+            optimistic: false,
+            failed: false,
+            sending: false,
+        };
+        return next;
+    }
+
+    return [...current, normalizedIncoming];
+};
+
 const MessagesPage = () => {
     const { user } = useAuth();
     const { darkMode, toggleDarkMode } = useTheme();
@@ -56,11 +90,16 @@ const MessagesPage = () => {
     const conversationSubscriptions = useRef([]);
     const typingTimeoutRef = useRef(null);
     const composerRef = useRef(null);
+    const selectedConversationIdRef = useRef(null);
 
     const selectedConversation = useMemo(
         () => conversations.find((item) => item.id === selectedConversationId) || null,
         [conversations, selectedConversationId]
     );
+
+    useEffect(() => {
+        selectedConversationIdRef.current = selectedConversationId;
+    }, [selectedConversationId]);
 
     const totalUnread = useMemo(
         () => conversations.reduce((total, conversation) => total + (conversation.unreadCount || 0), 0),
@@ -146,8 +185,8 @@ const MessagesPage = () => {
             client.subscribe('/user/queue/notifications', () => {
                 fetchConversations();
             });
-            if (selectedConversationId) {
-                subscribeToConversation(selectedConversationId);
+            if (selectedConversationIdRef.current) {
+                subscribeToConversation(selectedConversationIdRef.current);
             }
         };
 
@@ -171,11 +210,7 @@ const MessagesPage = () => {
         conversationSubscriptions.current = [
             socketRef.current.subscribe(`/topic/chat/conversations/${conversationId}`, (frame) => {
                 const payload = JSON.parse(frame.body);
-                setMessages((current) => {
-                    if (current.some((item) => item.id === payload.id)) return current;
-                    return [...current, payload];
-                });
-                fetchConversations();
+                setMessages((current) => mergeIncomingMessage(current, payload));
                 scrollToBottom();
                 if (payload.senderId !== user?.id && document.hidden && window.Notification && Notification.permission === 'granted') {
                     new Notification(payload.senderName || 'Tin nhắn mới', {
@@ -237,7 +272,17 @@ const MessagesPage = () => {
             });
             const payload = response.data;
             setMessagePage({ page: payload.page, hasNext: payload.hasNext, totalElements: payload.totalElements });
-            setMessages((current) => appendOlder ? [...payload.items, ...current] : payload.items);
+            setMessages((current) => {
+                const normalizedItems = (payload.items || []).map(normalizeMessage);
+                if (appendOlder) {
+                    return [...normalizedItems, ...current];
+                }
+
+                const pendingCurrent = current.filter(
+                    (item) => item.conversationId === conversationId && (item.optimistic || item.failed || item.sending)
+                );
+                return pendingCurrent.reduce((acc, item) => mergeIncomingMessage(acc, item), normalizedItems);
+            });
             if (!appendOlder) setTimeout(scrollToBottom, 80);
         } catch (error) {
             console.error(error);
@@ -301,21 +346,106 @@ const MessagesPage = () => {
         }
     };
 
+    const buildOptimisticMessage = (payload, clientMessageId) => ({
+        id: clientMessageId,
+        clientMessageId,
+        conversationId: payload.conversationId,
+        senderId: user?.id,
+        senderName: user?.fullName || 'Ban',
+        senderAvatarUrl: user?.avatarUrl || null,
+        content: payload.content?.trim() ? payload.content : '[Da gui tep dinh kem]',
+        createdAt: new Date().toISOString(),
+        editedAt: null,
+        deleted: false,
+        parentMessageId: replyTarget?.id || null,
+        parentMessagePreview: replyTarget?.content || null,
+        mentionedUserIds: [...mentionIds],
+        attachments: [...attachments],
+        optimistic: true,
+        sending: true,
+        failed: false,
+    });
+
+    const sendMessagePayload = async (payload) => {
+        if (socketRef.current?.connected) {
+            socketRef.current.publish({ destination: '/app/chat.send', body: JSON.stringify(payload) });
+            return null;
+        }
+        return api.post('/chat/messages', payload);
+    };
+
+    const markMessageFailed = (clientMessageId) => {
+        setMessages((current) =>
+            current.map((item) =>
+                item.clientMessageId === clientMessageId
+                    ? { ...item, sending: false, failed: true, optimistic: false }
+                    : item
+            )
+        );
+    };
+
+    const retryMessage = async (messageItem) => {
+        const payload = {
+            conversationId: messageItem.conversationId,
+            clientMessageId: messageItem.clientMessageId || createClientMessageId(),
+            content: messageItem.content === '[Da gui tep dinh kem]' ? '' : messageItem.content,
+            parentMessageId: messageItem.parentMessageId || null,
+            mentionedUserIds: messageItem.mentionedUserIds || [],
+            attachments: messageItem.attachments || [],
+        };
+
+        setMessages((current) =>
+            current.map((item) =>
+                item.clientMessageId === messageItem.clientMessageId
+                    ? { ...item, sending: true, failed: false, optimistic: true }
+                    : item
+            )
+        );
+
+        try {
+            const response = await sendMessagePayload(payload);
+            if (response?.data) {
+                setMessages((current) => mergeIncomingMessage(current, response.data));
+            }
+            scrollToBottom();
+        } catch (error) {
+            console.error(error);
+            markMessageFailed(payload.clientMessageId);
+            antdMessage.error(error.response?.data?.message || 'Gui lai tin nhan that bai');
+        }
+    };
+
     const handleSendMessage = async () => {
         if (!selectedConversationId || (!composer.trim() && attachments.length === 0)) return;
+        const clientMessageId = createClientMessageId();
         const payload = {
             conversationId: selectedConversationId,
             content: composer,
+            clientMessageId,
             parentMessageId: replyTarget?.id || null,
             mentionedUserIds: mentionIds,
             attachments
         };
+        const optimisticMessage = buildOptimisticMessage(payload, clientMessageId);
         try {
             setSending(true);
-            if (socketRef.current?.connected) {
-                socketRef.current.publish({ destination: '/app/chat.send', body: JSON.stringify(payload) });
-            } else {
-                await api.post('/chat/messages', payload);
+            setMessages((current) => mergeIncomingMessage(current, optimisticMessage));
+            setConversations((current) =>
+                current.map((conversation) =>
+                    conversation.id === selectedConversationId
+                        ? {
+                              ...conversation,
+                              lastMessagePreview: optimisticMessage.content,
+                              lastMessageAt: optimisticMessage.createdAt,
+                              lastSenderId: user?.id,
+                              lastSenderName: user?.fullName || 'Ban',
+                          }
+                        : conversation
+                )
+            );
+            const response = await sendMessagePayload(payload);
+            if (response?.data) {
+                setMessages((current) => mergeIncomingMessage(current, response.data));
             }
             setComposer('');
             setAttachments([]);
@@ -326,6 +456,7 @@ const MessagesPage = () => {
         } catch (error) {
             console.error(error);
             antdMessage.error(error.response?.data?.message || 'Gửi tin nhắn thất bại');
+            markMessageFailed(clientMessageId);
         } finally {
             setSending(false);
         }
