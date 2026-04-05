@@ -4,8 +4,8 @@ import com.homefix.common.BookingStatus;
 import com.homefix.common.Role;
 import com.homefix.common.TechnicianApprovalStatus;
 import com.homefix.common.TechnicianType;
-import com.homefix.entity.ServiceCategory;
 import com.homefix.entity.Booking;
+import com.homefix.entity.ServiceCategory;
 import com.homefix.entity.ServicePackage;
 import com.homefix.entity.User;
 import com.homefix.repository.BookingRepository;
@@ -104,43 +104,46 @@ public class TechnicianMatchingService {
 
     public String getDispatchBlockReason(User technician, Booking booking) {
         if (booking == null || booking.getServicePackage() == null) {
-            return "Đơn không hợp lệ";
+            return "ÄÆ¡n khĂ´ng há»£p lá»‡";
+        }
+        if (booking.getServicePackage().getCategory() == null) {
+            return "Dich vu nay khong con danh muc hop le de dieu phoi";
         }
         if (!isOpenForDispatch(booking) || booking.getTechnician() != null) {
-            return "Đơn không còn mở";
+            return "ÄÆ¡n khĂ´ng cĂ²n má»Ÿ";
         }
         if (technician == null || technician.getRole() != Role.TECHNICIAN) {
-            return "Tài khoản không phải kỹ thuật viên";
+            return "TĂ i khoáº£n khĂ´ng pháº£i ká»¹ thuáº­t viĂªn";
         }
         if (!technician.isTechnicianProfileCompleted()) {
-            return "Chưa hoàn tất hồ sơ kỹ thuật viên";
+            return "ChÆ°a hoĂ n táº¥t há»“ sÆ¡ ká»¹ thuáº­t viĂªn";
         }
         if (!technician.isAvailableForAutoAssign()) {
-            return "Bạn đang tắt nhận phân công tự động";
+            return "Báº¡n Ä‘ang táº¯t nháº­n phĂ¢n cĂ´ng tá»± Ä‘á»™ng";
         }
         if (technician.getTechnicianType() == TechnicianType.MAIN
                 && technician.getTechnicianApprovalStatus() != TechnicianApprovalStatus.APPROVED) {
-            return "Hồ sơ thợ chính đang chờ duyệt";
+            return "Há»“ sÆ¡ thá»£ chĂ­nh Ä‘ang chá» duyá»‡t";
         }
         if (technician.getTechnicianType() == TechnicianType.ASSISTANT
                 && technician.getSupervisingTechnician() == null) {
-            return "Thợ phụ chưa được gán thợ chính phụ trách";
+            return "Thá»£ phá»¥ chÆ°a Ä‘Æ°á»£c gĂ¡n thá»£ chĂ­nh phá»¥ trĂ¡ch";
         }
         if (!matchesCategory(technician, booking.getServicePackage().getCategory())) {
-            return "Đơn này không thuộc chuyên mục của bạn";
+            return "ÄÆ¡n nĂ y khĂ´ng thuá»™c chuyĂªn má»¥c cá»§a báº¡n";
         }
         if (!isWithinAvailability(technician, booking.getBookingTime())) {
-            return "Đơn nằm ngoài ca làm việc đã cấu hình";
+            return "ÄÆ¡n náº±m ngoĂ i ca lĂ m viá»‡c Ä‘Ă£ cáº¥u hĂ¬nh";
         }
         if (hasConflict(technician, booking.getBookingTime())) {
-            return "Bạn đang bị trùng lịch ở khung giờ này";
+            return "Báº¡n Ä‘ang bá»‹ trĂ¹ng lá»‹ch á»Ÿ khung giá» nĂ y";
         }
         return null;
     }
 
     private boolean matchesCategory(User technician, ServiceCategory targetCategory) {
-        if (targetCategory == null) {
-            return true;
+        if (targetCategory == null || targetCategory.getId() == null) {
+            return false;
         }
         return technician.getCategories().stream().anyMatch(c -> c.getId().equals(targetCategory.getId()));
     }

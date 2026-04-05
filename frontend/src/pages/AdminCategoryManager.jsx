@@ -33,7 +33,7 @@ const AdminCategoryManager = () => {
     const [form] = Form.useForm();
     const iconUrl = Form.useWatch('iconUrl', form);
 
-    const categoryCountLabel = useMemo(() => `${categories.length} danh mục`, [categories.length]);
+    const categoryCountLabel = useMemo(() => `${categories.length} danh muc`, [categories.length]);
 
     const fetchCategories = async () => {
         setLoading(true);
@@ -41,7 +41,7 @@ const AdminCategoryManager = () => {
             const response = await api.get('/categories');
             setCategories(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
-            message.error(getApiErrorMessage(error, 'Không thể tải danh mục'));
+            message.error(getApiErrorMessage(error, 'Không thể tải danh muc'));
         } finally {
             setLoading(false);
         }
@@ -62,15 +62,15 @@ const AdminCategoryManager = () => {
         try {
             if (editingCategory) {
                 await api.put(`/categories/${editingCategory.id}`, values);
-                message.success('Cập nhật danh mục thành công');
+                message.success('Cap nhat danh muc thanh cong');
             } else {
                 await api.post('/categories', values);
-                message.success('Tạo danh mục thành công');
+                message.success('Tao danh muc thanh cong');
             }
             resetModal();
             await fetchCategories();
         } catch (error) {
-            message.error(getApiErrorMessage(error, 'Thao tác thất bại'));
+            message.error(getApiErrorMessage(error, 'Thao tac that bai'));
         } finally {
             setSubmitting(false);
         }
@@ -79,10 +79,10 @@ const AdminCategoryManager = () => {
     const handleDelete = async (id) => {
         try {
             await api.delete(`/categories/${id}`);
-            message.success('Xóa danh mục thành công');
+            message.success('Xoa danh muc thanh cong');
             await fetchCategories();
         } catch (error) {
-            message.error(getApiErrorMessage(error, 'Xóa thất bại'));
+            message.error(getApiErrorMessage(error, 'Xoa that bai'));
         }
     };
 
@@ -96,10 +96,10 @@ const AdminCategoryManager = () => {
             });
             form.setFieldValue('iconUrl', response.data.fileUrl);
             onSuccess?.(response.data);
-            message.success('Tải icon thành công');
+            message.success('Tai icon thanh cong');
         } catch (error) {
             onError?.(error);
-            message.error(getApiErrorMessage(error, 'Tải icon thất bại'));
+            message.error(getApiErrorMessage(error, 'Tai icon that bai'));
         }
     };
 
@@ -115,13 +115,13 @@ const AdminCategoryManager = () => {
             const data = response.data || {};
             const warningCount = Array.isArray(data.warnings) ? data.warnings.length : 0;
             message.success(
-                `Import xong: tạo ${data.createdCount || 0}, cập nhật ${data.updatedCount || 0}, bỏ qua ${data.skippedCount || 0}${warningCount ? `, cần xem ${warningCount} cảnh báo` : ''}`,
+                `Import xong: tao ${data.createdCount || 0}, cap nhat ${data.updatedCount || 0}, bo qua ${data.skippedCount || 0}${warningCount ? `, can xem ${warningCount} canh bao` : ''}`,
             );
             onSuccess?.(response.data);
             await fetchCategories();
         } catch (error) {
             onError?.(error);
-            message.error(getApiErrorMessage(error, 'Import Excel thất bại'));
+            message.error(getApiErrorMessage(error, 'Import Excel that bai'));
         } finally {
             setImporting(false);
         }
@@ -141,9 +141,9 @@ const AdminCategoryManager = () => {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(blobUrl);
-            message.success('Đã tải file mẫu danh mục');
+            message.success('Da tai file mau danh muc');
         } catch (error) {
-            message.error(getApiErrorMessage(error, 'Tải file mẫu thất bại'));
+            message.error(getApiErrorMessage(error, 'Tai file mau that bai'));
         } finally {
             setDownloadingTemplate(false);
         }
@@ -166,14 +166,14 @@ const AdminCategoryManager = () => {
                 ),
         },
         {
-            title: 'Tên danh mục',
+            title: 'Ten danh muc',
             dataIndex: 'name',
             key: 'name',
             render: (value) => <Text strong>{value}</Text>,
         },
-        { title: 'Mô tả', dataIndex: 'description', key: 'description', ellipsis: true },
+        { title: 'Mo ta', dataIndex: 'description', key: 'description', ellipsis: true },
         {
-            title: 'Hành động',
+            title: 'Hanh dong',
             key: 'actions',
             width: 160,
             render: (_, record) => (
@@ -187,7 +187,7 @@ const AdminCategoryManager = () => {
                             setIsModalOpen(true);
                         }}
                     >
-                        Sửa
+                        Sua
                     </Button>
                     <Button
                         size="small"
@@ -195,12 +195,12 @@ const AdminCategoryManager = () => {
                         icon={<Trash size={14} />}
                         onClick={() =>
                             Modal.confirm({
-                                title: 'Xóa danh mục?',
+                                title: 'Xoa danh muc?',
                                 content:
-                                    'Hệ thống sẽ không cho xóa nếu danh mục vẫn còn dịch vụ. Hãy chuyển dịch vụ sang nơi khác trước.',
-                                okText: 'Xóa',
+                                    'He thong se khong cho xoa neu danh muc van con dich vu. Hay chuyen dich vu sang noi khac truoc.',
+                                okText: 'Xoa',
                                 okType: 'danger',
-                                cancelText: 'Hủy',
+                                cancelText: 'Huy',
                                 onOk: () => handleDelete(record.id),
                             })
                         }
@@ -219,7 +219,7 @@ const AdminCategoryManager = () => {
                     </div>
                     <div>
                         <Title level={3} className="!mb-0">
-                            Quản lý Danh mục
+                            Quan ly Danh muc
                         </Title>
                         <Text type="secondary">{categoryCountLabel}</Text>
                     </div>
@@ -239,7 +239,7 @@ const AdminCategoryManager = () => {
                             setIsModalOpen(true);
                         }}
                     >
-                        Thêm danh mục
+                        Them danh muc
                     </Button>
                 </Space>
             </div>
@@ -252,15 +252,15 @@ const AdminCategoryManager = () => {
                                 Excel workflow
                             </Tag>
                             <Tag className="!rounded-full !border-slate-200 !bg-white !px-3 !py-1 !text-xs !text-slate-600">
-                                Import theo cột
+                                Import theo cot
                             </Tag>
                         </div>
                         <Text strong className="block text-lg text-slate-900">
-                            Tải file mẫu rồi điền vào cho nhanh
+                            Tai file mau roi dien vao cho nhanh
                         </Text>
                         <Text type="secondary" className="mt-2 block max-w-2xl leading-7">
-                            File mẫu đã có sẵn header đúng format cho HomeFix. Admin chỉ việc tải xuống, điền dữ liệu vào
-                            sheet đầu tiên, sau đó import thẳng lên hệ thống.
+                            File mau da co san header dung format cho HomeFix. Admin chi viec tai xuong, dien du lieu vao
+                            sheet dau tien, sau do import thang len he thong.
                         </Text>
                         <div className="mt-5 flex flex-wrap gap-3">
                             <Button
@@ -270,7 +270,7 @@ const AdminCategoryManager = () => {
                                 loading={downloadingTemplate}
                                 onClick={handleDownloadTemplate}
                             >
-                                Tải file mẫu
+                                Tai file mau
                             </Button>
                             <Upload accept=".xlsx,.xls" showUploadList={false} customRequest={handleImportFile}>
                                 <Button
@@ -286,7 +286,7 @@ const AdminCategoryManager = () => {
                     </div>
                     <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
                         <Text strong className="mb-3 block text-slate-900">
-                            Cột hỗ trợ trong template
+                            Cot ho tro trong template
                         </Text>
                         <List
                             size="small"
@@ -298,7 +298,7 @@ const AdminCategoryManager = () => {
                             )}
                         />
                         <Text type="secondary" className="mt-3 block text-xs leading-6">
-                            `name` là bắt buộc. Nếu trùng tên danh mục cũ, hệ thống sẽ cập nhật thay vì tạo bản ghi mới.
+                            `name` la bat buoc. Neu trung ten danh muc cu, he thong se cap nhat thay vi tao ban ghi moi.
                         </Text>
                     </div>
                 </div>
@@ -311,28 +311,28 @@ const AdminCategoryManager = () => {
                     rowKey="id"
                     loading={loading}
                     pagination={{ pageSize: 10, size: 'small' }}
-                    locale={{ emptyText: <Empty description="Chưa có danh mục nào" /> }}
+                    locale={{ emptyText: <Empty description="Chua co danh muc nao" /> }}
                 />
             </Card>
 
             <Modal
-                title={editingCategory ? 'Sửa danh mục' : 'Thêm danh mục mới'}
+                title={editingCategory ? 'Sua danh muc' : 'Them danh muc moi'}
                 open={isModalOpen}
                 onCancel={resetModal}
                 footer={null}
                 destroyOnClose
             >
                 <Form form={form} layout="vertical" onFinish={handleSubmit} className="mt-4">
-                    <Form.Item name="name" label="Tên danh mục" rules={[{ required: true, message: 'Nhập tên danh mục' }]}>
-                        <Input placeholder="VD: Điện lạnh, Sơn nhà..." />
+                    <Form.Item name="name" label="Ten danh muc" rules={[{ required: true, message: 'Nhap ten danh muc' }]}>
+                        <Input placeholder="VD: Dien lanh, Son nha..." />
                     </Form.Item>
-                    <Form.Item name="description" label="Mô tả">
-                        <TextArea rows={3} placeholder="Mô tả ngắn về danh mục..." />
+                    <Form.Item name="description" label="Mo ta">
+                        <TextArea rows={3} placeholder="Mo ta ngan ve danh muc..." />
                     </Form.Item>
                     <Form.Item name="iconUrl" label="Icon URL" hidden>
                         <Input />
                     </Form.Item>
-                    <Form.Item label="Icon danh mục">
+                    <Form.Item label="Icon danh muc">
                         <div className="flex items-center gap-4">
                             {iconUrl ? (
                                 <img src={iconUrl} alt="icon-preview" className="h-16 w-16 rounded-2xl border border-slate-200 object-cover" />
@@ -342,12 +342,12 @@ const AdminCategoryManager = () => {
                                 </div>
                             )}
                             <Upload customRequest={handleIconUpload} showUploadList={false} accept="image/*">
-                                <Button icon={<UploadIcon size={16} />}>Tải icon lên</Button>
+                                <Button icon={<UploadIcon size={16} />}>Tai icon len</Button>
                             </Upload>
                         </div>
                     </Form.Item>
                     <Button type="primary" htmlType="submit" className="w-full" loading={submitting}>
-                        Lưu
+                        Luu
                     </Button>
                 </Form>
             </Modal>

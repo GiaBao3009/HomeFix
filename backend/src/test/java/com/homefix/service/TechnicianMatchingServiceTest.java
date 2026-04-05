@@ -95,6 +95,46 @@ class TechnicianMatchingServiceTest {
     }
 
     @Test
+    void findMatchingTechnicians_shouldRejectServiceWithoutCategory() {
+        ServiceCategory category = new ServiceCategory();
+        category.setId(12L);
+
+        ServicePackage servicePackage = new ServicePackage();
+        servicePackage.setCategory(null);
+
+        User tech = buildTechnician(6L, "Orphan", "Dong Da", LocalTime.of(8, 0), LocalTime.of(18, 0), category);
+
+        when(userRepository.findTechniciansForMatchingWithLock()).thenReturn(List.of(tech));
+
+        List<User> result = matchingService.findMatchingTechnicians(
+                servicePackage,
+                LocalDateTime.of(2026, 5, 10, 10, 0),
+                "Dong Da Ha Noi",
+                3);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getDispatchBlockReason_shouldExplainMissingCategory() {
+        ServiceCategory category = new ServiceCategory();
+        category.setId(13L);
+
+        ServicePackage servicePackage = new ServicePackage();
+        servicePackage.setCategory(null);
+
+        com.homefix.entity.Booking booking = new com.homefix.entity.Booking();
+        booking.setStatus(com.homefix.common.BookingStatus.CONFIRMED);
+        booking.setServicePackage(servicePackage);
+        booking.setBookingTime(LocalDateTime.of(2026, 5, 10, 10, 0));
+
+        User tech = buildTechnician(7L, "Explain", "Dong Da", LocalTime.of(8, 0), LocalTime.of(18, 0), category);
+
+        assertThat(matchingService.getDispatchBlockReason(tech, booking))
+                .isEqualTo("Dich vu nay khong con danh muc hop le de dieu phoi");
+    }
+
+    @Test
     void addressSimilarity_shouldReturnHigherScoreForSimilarAddress() {
         double close = matchingService.addressSimilarity("Cầu Giấy Hà Nội", "Phố Cầu Giấy, Hà Nội");
         double far = matchingService.addressSimilarity("Hải Phòng", "Cầu Giấy, Hà Nội");
