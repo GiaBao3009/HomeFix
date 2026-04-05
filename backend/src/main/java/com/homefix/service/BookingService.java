@@ -95,10 +95,12 @@ public class BookingService {
 
         ServicePackage servicePackage = servicePackageRepository.findById(dto.getServiceId())
                 .orElseThrow(() -> new RuntimeException("Service not found"));
+        ensureBookableServicePackage(servicePackage);
 
         Booking booking = new Booking();
         booking.setCustomer(customer);
         booking.setServicePackage(servicePackage);
+        booking.captureServiceSnapshot();
         booking.setBookingTime(dto.getBookingTime());
         booking.setAddress(dto.getAddress());
         booking.setNote(dto.getNote());
@@ -553,6 +555,12 @@ public class BookingService {
         return paymentMethod.trim().toUpperCase();
     }
 
+    private void ensureBookableServicePackage(ServicePackage servicePackage) {
+        if (servicePackage.getCategory() == null) {
+            throw new RuntimeException("Service is unavailable because it no longer belongs to a valid category");
+        }
+    }
+
     private void applyTechnicianSettlement(Booking booking) {
         if (booking.getTechnician() == null || booking.getTotalPrice() == null) {
             return;
@@ -770,12 +778,13 @@ public class BookingService {
     }
 
     private BookingDto mapToDto(Booking entity) {
+        Long serviceId = entity.getServicePackage() != null ? entity.getServicePackage().getId() : null;
         BookingDto dto = new BookingDto(
                 entity.getId(),
                 entity.getCustomer().getId(),
                 entity.getCustomer().getFullName(),
-                entity.getServicePackage().getId(),
-                entity.getServicePackage().getName(),
+                serviceId,
+                entity.resolveServiceName(),
                 entity.getTechnician() != null ? entity.getTechnician().getId() : null,
                 entity.getTechnician() != null ? entity.getTechnician().getFullName() : null,
                 entity.getBookingTime(),
@@ -800,6 +809,8 @@ public class BookingService {
         dto.setAssistantTechnicianIds(entity.getAssistantTechnicians().stream().map(User::getId).toList());
         dto.setAssistantTechnicianNames(entity.getAssistantTechnicians().stream().map(User::getFullName).toList());
         dto.setCancellationReason(entity.getCancellationReason());
+        dto.setServiceCategoryName(entity.resolveServiceCategoryName());
+        dto.setServiceBasePrice(entity.resolveServicePrice());
         return dto;
     }
 }

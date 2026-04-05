@@ -12,6 +12,8 @@ public class BookingDto {
     private String customerName;
     private Long serviceId;
     private String serviceName;
+    private String serviceCategoryName;
+    private BigDecimal serviceBasePrice;
     private Long technicianId;
     private String technicianName;
     private LocalDateTime bookingTime;
@@ -100,6 +102,22 @@ public class BookingDto {
 
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
+    }
+
+    public String getServiceCategoryName() {
+        return serviceCategoryName;
+    }
+
+    public void setServiceCategoryName(String serviceCategoryName) {
+        this.serviceCategoryName = serviceCategoryName;
+    }
+
+    public BigDecimal getServiceBasePrice() {
+        return serviceBasePrice;
+    }
+
+    public void setServiceBasePrice(BigDecimal serviceBasePrice) {
+        this.serviceBasePrice = serviceBasePrice;
     }
 
     public Long getTechnicianId() {
