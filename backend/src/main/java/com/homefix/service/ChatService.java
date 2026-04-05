@@ -244,6 +244,7 @@ public class ChatService {
         participantRepository.save(senderParticipant);
 
         ConversationMessageDto dto = mapMessage(savedMessage);
+        dto.setClientMessageId(request.getClientMessageId());
         messagingTemplate.convertAndSend("/topic/chat/conversations/" + conversation.getId(), dto);
 
         for (ConversationParticipant participant : participants) {

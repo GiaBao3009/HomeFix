@@ -5,6 +5,7 @@ import java.util.List;
 
 public class SendConversationMessageRequest {
     private Long conversationId;
+    private String clientMessageId;
     private String content;
     private Long parentMessageId;
     private List<Long> mentionedUserIds = new ArrayList<>();
@@ -20,6 +21,14 @@ public class SendConversationMessageRequest {
 
     public String getContent() {
         return content;
+    }
+
+    public String getClientMessageId() {
+        return clientMessageId;
+    }
+
+    public void setClientMessageId(String clientMessageId) {
+        this.clientMessageId = clientMessageId;
     }
 
     public void setContent(String content) {
