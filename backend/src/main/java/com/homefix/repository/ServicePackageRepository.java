@@ -10,4 +10,5 @@ public interface ServicePackageRepository extends JpaRepository<ServicePackage, 
     long countByCategoryId(Long categoryId);
     List<ServicePackage> findByCategoryId(Long categoryId);
     Page<ServicePackage> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String q1, String q2, Pageable pageable);
+    java.util.Optional<ServicePackage> findByNameIgnoreCaseAndCategoryId(String name, Long categoryId);
 }
