@@ -2,6 +2,7 @@ package com.homefix.service;
 
 import com.homefix.entity.ServiceCategory;
 import com.homefix.repository.ServiceCategoryRepository;
+import com.homefix.repository.ServicePackageRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -9,9 +10,12 @@ import java.util.List;
 @Service
 public class ServiceCategoryService {
     private final ServiceCategoryRepository repository;
+    private final ServicePackageRepository servicePackageRepository;
 
-    public ServiceCategoryService(ServiceCategoryRepository repository) {
+    public ServiceCategoryService(ServiceCategoryRepository repository,
+            ServicePackageRepository servicePackageRepository) {
         this.repository = repository;
+        this.servicePackageRepository = servicePackageRepository;
     }
 
     public List<ServiceCategory> getAllCategories() {
@@ -48,6 +52,12 @@ public class ServiceCategoryService {
 
     public void deleteCategory(Long id) {
         ServiceCategory category = getCategoryById(id);
+        long packageCount = servicePackageRepository.countByCategoryId(id);
+        if (packageCount > 0) {
+            throw new RuntimeException(
+                    "Khong the xoa danh muc vi van con " + packageCount
+                            + " dich vu dang thuoc danh muc nay. Hay chuyen dich vu sang danh muc khac truoc de bao toan lich su don hang.");
+        }
         repository.delete(category);
     }
 }

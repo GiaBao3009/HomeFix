@@ -845,14 +845,8 @@ Cơ chế:
 
 ## 15. Tác giả
 
-**Author:** Vinhdev04
-**Github:** https://github.com/Vinhdev04
-
 **Author:** GiaBao3009
 **Github:** https://github.com/GiaBao3009
 
 **Author:** Vinhdev04
 **Github:** https://github.com/Vinhdev04
-
-**Author:** GiaBao3009
-**Github:** https://github.com/GiaBao3009

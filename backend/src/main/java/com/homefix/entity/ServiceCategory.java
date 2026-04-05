@@ -18,7 +18,7 @@ public class ServiceCategory {
     @Column(name = "icon_url")
     private String iconUrl;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "category")
     @com.fasterxml.jackson.annotation.JsonIgnore
     private List<ServicePackage> servicePackages;
 

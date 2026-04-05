@@ -95,7 +95,8 @@ public class ReviewService {
 
     public List<ReviewDto> getReviewsByService(Long serviceId) {
         return reviewRepository.findAll().stream()
-                .filter(r -> r.getBooking().getServicePackage().getId().equals(serviceId))
+                .filter(r -> r.getBooking().getServicePackage() != null
+                        && r.getBooking().getServicePackage().getId().equals(serviceId))
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
     }
@@ -115,7 +116,7 @@ public class ReviewService {
         boolean alreadyReviewed = reviewRepository.existsByBooking_Id(booking.getId());
         Map<String, Object> info = new HashMap<>();
         info.put("bookingId", booking.getId());
-        info.put("serviceName", booking.getServicePackage().getName());
+        info.put("serviceName", booking.resolveServiceName());
         info.put("technicianName", booking.getTechnician() != null ? booking.getTechnician().getFullName() : "N/A");
         info.put("completedAt", booking.getCompletedAt());
         info.put("alreadyReviewed", alreadyReviewed);
@@ -163,7 +164,7 @@ public class ReviewService {
         ReviewDto dto = new ReviewDto(
                 entity.getId(),
                 entity.getBooking().getId(),
-                entity.getBooking().getServicePackage().getName(),
+                entity.getBooking().resolveServiceName(),
                 entity.getBooking().getCustomer().getFullName(),
                 entity.getRating(),
                 entity.getComment(),
