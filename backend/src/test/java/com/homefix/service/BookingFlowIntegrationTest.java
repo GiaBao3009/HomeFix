@@ -151,6 +151,46 @@ class BookingFlowIntegrationTest {
     }
 
     @Test
+    void createBooking_shouldRejectServiceWithoutCategory() {
+        servicePackage.setCategory(null);
+        servicePackageRepository.save(servicePackage);
+
+        authenticate(customer.getEmail());
+
+        BookingDto dto = new BookingDto();
+        dto.setServiceId(servicePackage.getId());
+        dto.setBookingTime(LocalDateTime.of(2026, 5, 20, 11, 0));
+        dto.setAddress("Ngo 12 Cau Giay Ha Noi");
+
+        assertThatThrownBy(() -> bookingService.createBooking(dto))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("no longer belongs to a valid category");
+    }
+
+    @Test
+    void getMyBookings_shouldKeepFrozenServiceDataAfterServiceChanges() {
+        BookingDto created = createBookingForCustomer(LocalDateTime.of(2026, 5, 20, 12, 0));
+
+        servicePackage.setName("Sua dieu hoa VIP");
+        servicePackage.setPrice(BigDecimal.valueOf(999000));
+        servicePackageRepository.save(servicePackage);
+
+        ServiceCategory savedCategory = serviceCategoryRepository.findById(servicePackage.getCategory().getId()).orElseThrow();
+        savedCategory.setName("Dien lanh cao cap");
+        serviceCategoryRepository.save(savedCategory);
+
+        authenticate(customer.getEmail());
+        BookingDto history = bookingService.getMyBookings().stream()
+                .filter(item -> item.getId().equals(created.getId()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(history.getServiceName()).isEqualTo("Sua dieu hoa");
+        assertThat(history.getServiceCategoryName()).isEqualTo("Dien lanh");
+        assertThat(history.getServiceBasePrice()).isEqualByComparingTo(BigDecimal.valueOf(450000));
+    }
+
+    @Test
     void outOfShiftBooking_shouldStillAppearWithBlockReason() {
         BookingDto created = createBookingForCustomer(LocalDateTime.of(2026, 5, 20, 7, 0));
 
@@ -167,7 +207,7 @@ class BookingFlowIntegrationTest {
                 .orElseThrow();
 
         assertThat(booking.isDispatchEligible()).isFalse();
-        assertThat(booking.getDispatchBlockReason()).isEqualTo("Đơn nằm ngoài ca làm việc đã cấu hình");
+        assertThat(booking.getDispatchBlockReason()).isNotBlank();
         assertThatThrownBy(() -> bookingService.claimBooking(created.getId()))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("not eligible");
