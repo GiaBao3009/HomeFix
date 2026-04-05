@@ -9,4 +9,5 @@ import java.util.List;
 public interface ServicePackageRepository extends JpaRepository<ServicePackage, Long> {
     List<ServicePackage> findByCategoryId(Long categoryId);
     Page<ServicePackage> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String q1, String q2, Pageable pageable);
+    java.util.Optional<ServicePackage> findByNameIgnoreCaseAndCategoryId(String name, Long categoryId);
 }

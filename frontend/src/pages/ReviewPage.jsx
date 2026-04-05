@@ -20,7 +20,7 @@ const ReviewPage = () => {
 
     useEffect(() => {
         if (!token) {
-            setError('Link danh gia khong hop le');
+            setError('Link đánh giá không hợp lệ');
             setLoading(false);
             return;
         }
@@ -33,7 +33,7 @@ const ReviewPage = () => {
                     setSubmitted(true);
                 }
             } catch (e) {
-                setError(e.response?.data?.message || e.response?.data || 'Link danh gia khong hop le hoac da het han');
+                setError(e.response?.data?.message || e.response?.data || 'Link đánh giá không hợp lệ hoặc đã hết hạn');
             } finally {
                 setLoading(false);
             }
@@ -44,11 +44,11 @@ const ReviewPage = () => {
 
     const handleSubmit = async () => {
         if (rating === 0) {
-            message.warning('Vui long chon so sao');
+            message.warning('Vui lòng chọn số sao');
             return;
         }
         if (!comment.trim()) {
-            message.warning('Vui long nhap nhan xet');
+            message.warning('Vui lòng nhập nhận xét');
             return;
         }
 
@@ -56,9 +56,9 @@ const ReviewPage = () => {
         try {
             await api.post(`/reviews/by-token/${token}`, { rating, comment, tipAmount });
             setSubmitted(true);
-            message.success('Cam on ban da danh gia!');
+            message.success('Cảm ơn bạn đã đánh giá!');
         } catch (e) {
-            message.error(e.response?.data?.message || e.response?.data || 'Khong the gui danh gia');
+            message.error(e.response?.data?.message || e.response?.data || 'Không thể gửi đánh giá');
         } finally {
             setSubmitting(false);
         }
@@ -75,7 +75,7 @@ const ReviewPage = () => {
     if (error) {
         return (
             <div className="mx-auto mt-12 max-w-lg">
-                <Result status="error" title="Loi" subTitle={error} />
+                <Result status="error" title="Lỗi" subTitle={error} />
             </div>
         );
     }
@@ -85,8 +85,8 @@ const ReviewPage = () => {
             <div className="mx-auto mt-12 max-w-lg">
                 <Result
                     icon={<CheckCircle size={64} className="mx-auto text-green-500" />}
-                    title="Cam on ban da danh gia!"
-                    subTitle="Danh gia cua ban giup chung toi cai thien chat luong dich vu."
+                    title="Cảm ơn bạn đã đánh giá!"
+                    subTitle="Đánh giá của bạn giúp chúng tôi cải thiện chất lượng dịch vụ."
                 />
             </div>
         );
@@ -99,43 +99,43 @@ const ReviewPage = () => {
                     <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500">
                         <Star size={32} className="text-white" />
                     </div>
-                    <Title level={3} className="!mb-1">Danh gia dich vu</Title>
-                    <Text type="secondary">Day la trang fallback cho cac link review cu.</Text>
+                    <Title level={3} className="!mb-1">Đánh giá dịch vụ</Title>
+                    <Text type="secondary">Đây là trang fallback cho các link review cũ.</Text>
                 </div>
 
                 <div className="mb-6 rounded-xl bg-slate-50 p-4">
                     <div className="mb-2 flex justify-between">
-                        <Text type="secondary">Don hang</Text>
+                        <Text type="secondary">Đơn hàng</Text>
                         <Text strong>#{bookingInfo?.bookingId}</Text>
                     </div>
                     <div className="mb-2 flex justify-between">
-                        <Text type="secondary">Dich vu</Text>
+                        <Text type="secondary">Dịch vụ</Text>
                         <Text strong>{bookingInfo?.serviceName}</Text>
                     </div>
                     <div className="flex justify-between">
-                        <Text type="secondary">Ky thuat vien</Text>
+                        <Text type="secondary">Kỹ thuật viên</Text>
                         <Text strong>{bookingInfo?.technicianName}</Text>
                     </div>
                 </div>
 
                 <div className="mb-6 text-center">
-                    <Text className="mb-3 block font-semibold">Cham diem ky thuat vien</Text>
+                    <Text className="mb-3 block font-semibold">Chấm điểm kỹ thuật viên</Text>
                     <Rate value={rating} onChange={setRating} className="text-4xl text-yellow-400" />
                 </div>
 
                 <div className="mb-6">
-                    <Text className="mb-2 block font-semibold">Nhan xet cua ban</Text>
+                    <Text className="mb-2 block font-semibold">Nhận xét của bạn</Text>
                     <Input.TextArea
                         rows={4}
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
-                        placeholder="Chia se trai nghiem cua ban..."
+                        placeholder="Chia sẻ trải nghiệm của bạn..."
                         className="rounded-xl"
                     />
                 </div>
 
                 <div className="mb-6">
-                    <Text className="mb-2 block font-semibold">Tien tip cho tho</Text>
+                    <Text className="mb-2 block font-semibold">Tiền tip cho thợ</Text>
                     <InputNumber
                         className="w-full"
                         min={0}
@@ -144,7 +144,7 @@ const ReviewPage = () => {
                         onChange={(value) => setTipAmount(Number(value || 0))}
                         formatter={(value) => `${value || 0}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
                         parser={(value) => Number((value || '0').toString().replace(/\./g, ''))}
-                        placeholder="Vi du: 50000"
+                        placeholder="Ví dụ: 50000"
                     />
                 </div>
 
@@ -157,7 +157,7 @@ const ReviewPage = () => {
                     disabled={rating === 0}
                     className="h-12 rounded-xl border-none bg-gradient-to-r from-blue-600 to-cyan-600 font-bold"
                 >
-                    Gui danh gia
+                    Gửi đánh giá
                 </Button>
             </Card>
         </div>
