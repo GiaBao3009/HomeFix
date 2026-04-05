@@ -9,15 +9,15 @@ import {
     Modal,
     Space,
     Table,
+    Tag,
     Typography,
     Upload,
-    Tag,
     message,
 } from 'antd';
 import { Download, Edit, FileSpreadsheet, Layers, Plus, Trash, Upload as UploadIcon } from 'lucide-react';
 import api, { getApiErrorMessage } from '../services/api';
 
-const { Text, Title } = Typography;
+const { Title, Text } = Typography;
 const { TextArea } = Input;
 
 const CATEGORY_COLUMNS = ['name', 'description', 'iconUrl'];
@@ -41,7 +41,7 @@ const AdminCategoryManager = () => {
             const response = await api.get('/categories');
             setCategories(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
-            message.error(getApiErrorMessage(error, 'Khong the tai danh muc'));
+            message.error(getApiErrorMessage(error, 'Không thể tải danh muc'));
         } finally {
             setLoading(false);
         }
@@ -89,6 +89,7 @@ const AdminCategoryManager = () => {
     const handleIconUpload = async ({ file, onSuccess, onError }) => {
         const formData = new FormData();
         formData.append('file', file);
+
         try {
             const response = await api.post('/files/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
@@ -106,6 +107,7 @@ const AdminCategoryManager = () => {
         const formData = new FormData();
         formData.append('file', file);
         setImporting(true);
+
         try {
             const response = await api.post('/admin/catalog-import/categories', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
@@ -194,7 +196,8 @@ const AdminCategoryManager = () => {
                         onClick={() =>
                             Modal.confirm({
                                 title: 'Xoa danh muc?',
-                                content: 'Danh muc chi nen xoa khi da chuyen het dich vu sang noi khac.',
+                                content:
+                                    'He thong se khong cho xoa neu danh muc van con dich vu. Hay chuyen dich vu sang noi khac truoc.',
                                 okText: 'Xoa',
                                 okType: 'danger',
                                 cancelText: 'Huy',
@@ -256,8 +259,8 @@ const AdminCategoryManager = () => {
                             Tai file mau roi dien vao cho nhanh
                         </Text>
                         <Text type="secondary" className="mt-2 block max-w-2xl leading-7">
-                            File mau da co san header dung format cho HomeFix. Admin chi viec tai xuong, dien du lieu vao sheet dau
-                            tien, sau do import thang len he thong.
+                            File mau da co san header dung format cho HomeFix. Admin chi viec tai xuong, dien du lieu vao
+                            sheet dau tien, sau do import thang len he thong.
                         </Text>
                         <div className="mt-5 flex flex-wrap gap-3">
                             <Button
@@ -270,14 +273,19 @@ const AdminCategoryManager = () => {
                                 Tai file mau
                             </Button>
                             <Upload accept=".xlsx,.xls" showUploadList={false} customRequest={handleImportFile}>
-                                <Button icon={<FileSpreadsheet size={16} />} size="large" className="!h-11 !rounded-xl !px-5" loading={importing}>
+                                <Button
+                                    icon={<FileSpreadsheet size={16} />}
+                                    size="large"
+                                    className="!h-11 !rounded-xl !px-5"
+                                    loading={importing}
+                                >
                                     Import ngay
                                 </Button>
                             </Upload>
                         </div>
                     </div>
                     <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5">
-                        <Text strong className="block mb-3 text-slate-900">
+                        <Text strong className="mb-3 block text-slate-900">
                             Cot ho tro trong template
                         </Text>
                         <List

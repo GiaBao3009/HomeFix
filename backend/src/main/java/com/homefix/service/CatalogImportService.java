@@ -10,13 +10,13 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.FormulaEvaluator;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,7 +33,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -54,12 +53,16 @@ public class CatalogImportService {
 
         try (Workbook openedWorkbook = workbook.workbook()) {
             Sheet sheet = workbook.firstSheet();
-            Map<String, Integer> headerMap = readHeaderMap(sheet.getRow(sheet.getFirstRowNum()));
+            Map<String, Integer> headerMap = findHeaderMap(sheet, workbook, List.of("name"));
             requireColumns(headerMap, List.of("name"), "Ten danh muc");
+            int headerRowIndex = getHeaderRowIndex(headerMap);
 
-            for (int rowIndex = sheet.getFirstRowNum() + 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            for (int rowIndex = headerRowIndex + 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
                 if (row == null || isBlankRow(row, workbook.formatter(), workbook.evaluator())) {
+                    continue;
+                }
+                if (isHeaderRow(row, headerMap, workbook)) {
                     continue;
                 }
 
@@ -70,8 +73,7 @@ public class CatalogImportService {
                     continue;
                 }
 
-                ServiceCategory category = categoryRepository.findByNameIgnoreCase(name)
-                        .orElseGet(ServiceCategory::new);
+                ServiceCategory category = categoryRepository.findByNameIgnoreCase(name).orElseGet(ServiceCategory::new);
                 boolean creating = category.getId() == null;
 
                 category.setName(name);
@@ -103,15 +105,19 @@ public class CatalogImportService {
 
         try (Workbook openedWorkbook = workbook.workbook()) {
             Sheet sheet = workbook.firstSheet();
-            Map<String, Integer> headerMap = readHeaderMap(sheet.getRow(sheet.getFirstRowNum()));
+            Map<String, Integer> headerMap = findHeaderMap(sheet, workbook, List.of("name", "price"));
             requireColumns(headerMap, List.of("name", "price"), "Ten dich vu, Gia");
+            int headerRowIndex = getHeaderRowIndex(headerMap);
             if (!hasColumn(headerMap, "categoryname") && !hasColumn(headerMap, "categoryid")) {
                 throw new RuntimeException("File import dich vu phai co cot CategoryName hoac CategoryId");
             }
 
-            for (int rowIndex = sheet.getFirstRowNum() + 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            for (int rowIndex = headerRowIndex + 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
                 if (row == null || isBlankRow(row, workbook.formatter(), workbook.evaluator())) {
+                    continue;
+                }
+                if (isHeaderRow(row, headerMap, workbook)) {
                     continue;
                 }
 
@@ -135,8 +141,7 @@ public class CatalogImportService {
                     continue;
                 }
 
-                ServicePackage servicePackage = packageRepository
-                        .findByNameIgnoreCaseAndCategoryId(serviceName, category.getId())
+                ServicePackage servicePackage = packageRepository.findByNameIgnoreCaseAndCategoryId(serviceName, category.getId())
                         .orElseGet(ServicePackage::new);
                 boolean creating = servicePackage.getId() == null;
 
@@ -161,6 +166,7 @@ public class CatalogImportService {
                 if (hasColumn(headerMap, "imageurls")) {
                     replaceImages(servicePackage, parseImageUrls(getOptionalCell(row, headerMap, workbook, "imageurls")));
                 }
+
                 packageRepository.save(servicePackage);
 
                 if (creating) {
@@ -208,15 +214,11 @@ public class CatalogImportService {
             sampleRow2.createCell(0).setCellValue("Dien nuoc");
             sampleRow2.createCell(1).setCellValue("Sua ong nuoc, bon cau, thiet bi ve sinh");
 
-            createGuideSheet(
-                    workbook,
-                    "Huong dan",
-                    List.of(
-                            new String[]{"name", "Bat buoc", "Ten danh muc de tao moi hoac cap nhat"},
-                            new String[]{"description", "Khong bat buoc", "Mo ta ngan hien thi cho admin va user"},
-                            new String[]{"iconUrl", "Khong bat buoc", "Link icon/anh dai dien cua danh muc"}
-                    )
-            );
+            createGuideSheet(workbook, "Huong dan", List.of(
+                    new String[]{"name", "Bat buoc", "Ten danh muc de tao moi hoac cap nhat"},
+                    new String[]{"description", "Khong bat buoc", "Mo ta ngan hien thi cho admin va user"},
+                    new String[]{"iconUrl", "Khong bat buoc", "Link icon/anh dai dien cua danh muc"}
+            ));
 
             autosizeColumns(dataSheet, headers.length);
             return toBytes(workbook);
@@ -265,20 +267,16 @@ public class CatalogImportService {
             sampleRow2.createCell(3).setCellValue("Thong tac nhanh trong ngay");
             sampleRow2.createCell(7).setCellValue("ACTIVE");
 
-            createGuideSheet(
-                    workbook,
-                    "Huong dan",
-                    List.of(
-                            new String[]{"categoryName / categoryId", "Bat buoc", "Chon 1 trong 2. Neu categoryName chua ton tai, he thong se tao moi"},
-                            new String[]{"name", "Bat buoc", "Ten dich vu, trung ten trong cung danh muc thi update"},
-                            new String[]{"price", "Bat buoc", "Gia dich vu. Ho tro so thuong va o formula"},
-                            new String[]{"description", "Khong bat buoc", "Mo ta ngan"},
-                            new String[]{"detailedDescription", "Khong bat buoc", "Mo ta chi tiet"},
-                            new String[]{"imageUrl", "Khong bat buoc", "Anh dai dien"},
-                            new String[]{"imageUrls", "Khong bat buoc", "Nhieu link anh, cach nhau boi dau phay / dau cham phay / xuong dong"},
-                            new String[]{"status", "Khong bat buoc", "ACTIVE hoac INACTIVE"}
-                    )
-            );
+            createGuideSheet(workbook, "Huong dan", List.of(
+                    new String[]{"categoryName / categoryId", "Bat buoc", "Chon 1 trong 2. Neu categoryName chua ton tai, he thong se tao moi"},
+                    new String[]{"name", "Bat buoc", "Ten dich vu, trung ten trong cung danh muc thi update"},
+                    new String[]{"price", "Bat buoc", "Gia dich vu. Ho tro so thuong va o formula"},
+                    new String[]{"description", "Khong bat buoc", "Mo ta ngan"},
+                    new String[]{"detailedDescription", "Khong bat buoc", "Mo ta chi tiet"},
+                    new String[]{"imageUrl", "Khong bat buoc", "Anh dai dien"},
+                    new String[]{"imageUrls", "Khong bat buoc", "Nhieu link anh, cach nhau boi dau phay / dau cham phay / xuong dong"},
+                    new String[]{"status", "Khong bat buoc", "ACTIVE hoac INACTIVE"}
+            ));
 
             autosizeColumns(dataSheet, headers.length);
             return toBytes(workbook);
@@ -287,48 +285,10 @@ public class CatalogImportService {
         }
     }
 
-    private void replaceImages(ServicePackage servicePackage, List<String> imageUrls) {
-        servicePackage.getImages().clear();
-        for (String imageUrl : imageUrls) {
-            servicePackage.addImage(new ServiceImage(null, imageUrl, servicePackage));
-        }
-        if ((servicePackage.getImageUrl() == null || servicePackage.getImageUrl().isBlank()) && !imageUrls.isEmpty()) {
-            servicePackage.setImageUrl(imageUrls.get(0));
-        }
-    }
-
-    private ServiceCategory resolveCategory(Row row, Map<String, Integer> headerMap, WorkbookContext workbook) {
-        String categoryIdText = getOptionalCell(row, headerMap, workbook, "categoryid");
-        if (categoryIdText != null && !categoryIdText.isBlank()) {
-            try {
-                long categoryId = Long.parseLong(categoryIdText.trim());
-                return categoryRepository.findById(categoryId).orElse(null);
-            } catch (NumberFormatException ignored) {
-            }
-        }
-
-        String categoryName = getOptionalCell(row, headerMap, workbook, "categoryname");
-        if (categoryName == null || categoryName.isBlank()) {
-            return null;
-        }
-
-        Optional<ServiceCategory> existing = categoryRepository.findByNameIgnoreCase(categoryName);
-        if (existing.isPresent()) {
-            return existing.get();
-        }
-
-        ServiceCategory category = new ServiceCategory();
-        category.setName(categoryName.trim());
-        category.setDescription(getOptionalCell(row, headerMap, workbook, "categorydescription"));
-        category.setIconUrl(getOptionalCell(row, headerMap, workbook, "categoryiconurl"));
-        return categoryRepository.save(category);
-    }
-
     private WorkbookContext openWorkbook(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new RuntimeException("Vui long chon file Excel de import");
         }
-
         try {
             InputStream inputStream = file.getInputStream();
             Workbook workbook = new XSSFWorkbook(inputStream);
@@ -338,21 +298,46 @@ public class CatalogImportService {
         }
     }
 
-    private Map<String, Integer> readHeaderMap(Row headerRow) {
-        if (headerRow == null) {
-            throw new RuntimeException("File Excel khong co dong tieu de");
+    private Map<String, Integer> findHeaderMap(Sheet sheet, WorkbookContext workbook, List<String> requiredKeys) {
+        for (int rowIndex = sheet.getFirstRowNum(); rowIndex <= Math.min(sheet.getLastRowNum(), 15); rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            if (row == null || isBlankRow(row, workbook.formatter(), workbook.evaluator())) {
+                continue;
+            }
+            Map<String, Integer> headerMap = readHeaderMap(row, workbook);
+            boolean matches = requiredKeys.stream().allMatch(key -> resolveColumnIndex(headerMap, key) != null);
+            if (matches) {
+                headerMap.put("__header_row__", rowIndex);
+                return headerMap;
+            }
         }
+        return new HashMap<>();
+    }
 
+    private Map<String, Integer> readHeaderMap(Row headerRow, WorkbookContext workbook) {
         Map<String, Integer> headerMap = new HashMap<>();
         short lastCellNum = headerRow.getLastCellNum();
         for (int cellIndex = 0; cellIndex < lastCellNum; cellIndex++) {
             Cell cell = headerRow.getCell(cellIndex);
-            String value = normalizeKey(cell == null ? null : cell.getStringCellValue());
+            String value = normalizeKey(cell == null ? null : workbook.formatter().formatCellValue(cell, workbook.evaluator()));
             if (!value.isBlank()) {
                 headerMap.put(value, cellIndex);
             }
         }
         return headerMap;
+    }
+
+    private boolean isHeaderRow(Row row, Map<String, Integer> headerMap, WorkbookContext workbook) {
+        Integer headerRowIndex = headerMap.get("__header_row__");
+        return headerRowIndex != null && row.getRowNum() == headerRowIndex;
+    }
+
+    private int getHeaderRowIndex(Map<String, Integer> headerMap) {
+        Integer headerRowIndex = headerMap.get("__header_row__");
+        if (headerRowIndex == null) {
+            throw new RuntimeException("Khong tim thay dong header hop le trong file Excel");
+        }
+        return headerRowIndex;
     }
 
     private void requireColumns(Map<String, Integer> headerMap, List<String> requiredKeys, String displayName) {
@@ -401,9 +386,8 @@ public class CatalogImportService {
         if (headerMap.containsKey(key)) {
             return headerMap.get(key);
         }
-
         return switch (key) {
-            case "name" -> firstPresent(headerMap, "name", "servicename", "tendichvu", "tendanhmuc");
+            case "name" -> firstPresent(headerMap, "name", "servicename", "tendichvu", "tendanhmuc", "ten");
             case "description" -> firstPresent(headerMap, "description", "mota", "motangan");
             case "iconurl" -> firstPresent(headerMap, "iconurl", "icon", "iconlink", "anhicon");
             case "detaileddescription" -> firstPresent(headerMap, "detaileddescription", "detail", "chitiet", "motachitiet");
@@ -411,10 +395,8 @@ public class CatalogImportService {
             case "imageurl" -> firstPresent(headerMap, "imageurl", "image", "mainimage", "anhdaidien");
             case "imageurls" -> firstPresent(headerMap, "imageurls", "images", "gallery", "danhsachanh");
             case "status" -> firstPresent(headerMap, "status", "trangthai");
-            case "categoryname" -> firstPresent(headerMap, "categoryname", "category", "tendanhmuc");
-            case "categoryid" -> firstPresent(headerMap, "categoryid", "madanhmuc");
-            case "categorydescription" -> firstPresent(headerMap, "categorydescription", "motadanhmuc");
-            case "categoryiconurl" -> firstPresent(headerMap, "categoryiconurl", "iconurldanhmuc", "icondanhmuc");
+            case "categoryname" -> firstPresent(headerMap, "categoryname", "category", "tendanhmuc", "danhmuc");
+            case "categoryid" -> firstPresent(headerMap, "categoryid", "madanhmuc", "danhmucid");
             default -> null;
         };
     }
@@ -426,6 +408,40 @@ public class CatalogImportService {
             }
         }
         return null;
+    }
+
+    private ServiceCategory resolveCategory(Row row, Map<String, Integer> headerMap, WorkbookContext workbook) {
+        String categoryIdText = getOptionalCell(row, headerMap, workbook, "categoryid");
+        if (categoryIdText != null && !categoryIdText.isBlank()) {
+            try {
+                Long categoryId = Long.parseLong(categoryIdText.trim());
+                return categoryRepository.findById(categoryId).orElse(null);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        String categoryName = getOptionalCell(row, headerMap, workbook, "categoryname");
+        if (categoryName == null || categoryName.isBlank()) {
+            return null;
+        }
+        Optional<ServiceCategory> existing = categoryRepository.findByNameIgnoreCase(categoryName);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        ServiceCategory category = new ServiceCategory();
+        category.setName(categoryName.trim());
+        return categoryRepository.save(category);
+    }
+
+    private void replaceImages(ServicePackage servicePackage, List<String> imageUrls) {
+        servicePackage.getImages().clear();
+        for (String imageUrl : imageUrls) {
+            servicePackage.addImage(new ServiceImage(null, imageUrl, servicePackage));
+        }
+        if ((servicePackage.getImageUrl() == null || servicePackage.getImageUrl().isBlank()) && !imageUrls.isEmpty()) {
+            servicePackage.setImageUrl(imageUrls.get(0));
+        }
     }
 
     private String normalizeKey(String value) {
@@ -442,12 +458,10 @@ public class CatalogImportService {
         if (raw == null || raw.isBlank()) {
             return null;
         }
-
-        String normalized = raw.replaceAll("[^0-9,.-]", "");
+        String normalized = raw.replaceAll("[^0-9,.-]", "").replace(",", "");
         if (normalized.isBlank()) {
             return null;
         }
-        normalized = normalized.replace(",", "");
         try {
             return new BigDecimal(normalized);
         } catch (NumberFormatException ex) {
@@ -459,13 +473,11 @@ public class CatalogImportService {
         if (raw == null || raw.isBlank()) {
             return List.of();
         }
-
         Set<String> urls = new LinkedHashSet<>();
         String[] parts = raw.split("[\\n,;|]+");
         for (String part : parts) {
-            String trimmed = part == null ? null : part.trim();
-            if (trimmed != null && !trimmed.isBlank()) {
-                urls.add(trimmed);
+            if (part != null && !part.trim().isBlank()) {
+                urls.add(part.trim());
             }
         }
         return new ArrayList<>(urls);

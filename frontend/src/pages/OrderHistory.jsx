@@ -33,15 +33,15 @@ const { Text, Title } = Typography;
 const POLL_INTERVAL_MS = 10000;
 
 const STATUS_META = {
-  PENDING: { color: 'orange', text: 'Cho xu ly' },
-  CONFIRMED: { color: 'cyan', text: 'Da xac nhan' },
-  ASSIGNED: { color: 'blue', text: 'Da co tho' },
-  IN_PROGRESS: { color: 'processing', text: 'Dang thuc hien' },
-  ARRIVED: { color: 'geekblue', text: 'Da den noi' },
-  WORKING: { color: 'purple', text: 'Dang lam viec' },
-  COMPLETED: { color: 'success', text: 'Hoan thanh' },
-  CANCELLED: { color: 'error', text: 'Da huy' },
-  DECLINED: { color: 'red', text: 'Bi tu choi' }
+  PENDING: { color: 'orange', text: 'Chờ xử lý' },
+  CONFIRMED: { color: 'cyan', text: 'Đã xác nhận' },
+  ASSIGNED: { color: 'blue', text: 'Đã có thợ' },
+  IN_PROGRESS: { color: 'processing', text: 'Đang thực hiện' },
+  ARRIVED: { color: 'geekblue', text: 'Đã đến nơi' },
+  WORKING: { color: 'purple', text: 'Đang làm việc' },
+  COMPLETED: { color: 'success', text: 'Hoàn thành' },
+  CANCELLED: { color: 'error', text: 'Đã hủy' },
+  DECLINED: { color: 'red', text: 'Bị từ chối' }
 };
 
 const PROGRESS_STEPS = ['CONFIRMED', 'ASSIGNED', 'IN_PROGRESS', 'ARRIVED', 'WORKING', 'COMPLETED'];
@@ -121,7 +121,7 @@ const OrderHistory = () => {
     }
 
     openReviewModal(targetBooking, 5);
-    message.success(`Don #${targetBooking.id} vua hoan thanh. Ban co the danh gia va tip cho tho ngay bay gio.`);
+    message.success(`Đơn #${targetBooking.id} vừa hoàn thành. Bạn có thể đánh giá và tip cho thợ ngay bây giờ.`);
   };
 
   const fetchBookings = async ({ silent = false } = {}) => {
@@ -139,7 +139,7 @@ const OrderHistory = () => {
     } catch (error) {
       console.error('Error fetching bookings:', error);
       if (!silent) {
-        message.error('Khong the tai lich su don hang');
+        message.error('Không thể tải lịch sử đơn hàng');
       }
     } finally {
       if (!silent) {
@@ -175,35 +175,35 @@ const OrderHistory = () => {
         comment: values.comment,
         tipAmount: values.tipAmount || 0
       });
-      message.success('Danh gia thanh cong. Cam on ban!');
+      message.success('Đánh giá thành công. Cảm ơn bạn!');
       setIsReviewModalOpen(false);
       setReviewBookingId(null);
       reviewForm.resetFields();
       await fetchBookings({ silent: true });
     } catch (error) {
       console.error('Review error:', error);
-      message.error(error.response?.data?.message || 'Khong the gui danh gia');
+      message.error(error.response?.data?.message || 'Không thể gửi đánh giá');
     } finally {
       setSubmittingReview(false);
     }
   };
 
   const handleCancelClick = (booking) => {
-    const hasTechnician = booking.technicianName && booking.technicianName !== 'Chua co';
+    const hasTechnician = booking.technicianName && booking.technicianName !== 'Chưa có';
     if (!hasTechnician) {
       Modal.confirm({
-        title: 'Xac nhan huy don',
-        content: `Ban co chac chan muon huy don hang #${booking.id}?`,
-        okText: 'Huy don',
-        cancelText: 'Khong',
+        title: 'Xác nhận hủy đơn',
+        content: `Bạn có chắc chắn muốn hủy đơn hàng #${booking.id}?`,
+        okText: 'Hủy đơn',
+        cancelText: 'Không',
         okButtonProps: { danger: true },
         onOk: async () => {
           try {
             await api.post(`/bookings/${booking.id}/cancel`, {});
-            message.success('Da huy don hang thanh cong');
+            message.success('Đã hủy đơn hàng thành công');
             fetchBookings({ silent: true });
           } catch (e) {
-            message.error(e.response?.data?.message || e.response?.data || 'Khong the huy don');
+            message.error(e.response?.data?.message || e.response?.data || 'Không thể hủy đơn');
           }
         }
       });
@@ -219,11 +219,11 @@ const OrderHistory = () => {
     setCancellingBooking(true);
     try {
       await api.post(`/bookings/${cancelBooking.id}/cancel`, { reason: values.reason });
-      message.success('Da gui yeu cau huy don thanh cong');
+      message.success('Đã gửi yêu cầu hủy đơn thành công');
       setCancelModalOpen(false);
       fetchBookings({ silent: true });
     } catch (e) {
-      message.error(e.response?.data?.message || e.response?.data || 'Khong the huy don');
+      message.error(e.response?.data?.message || e.response?.data || 'Không thể hủy đơn');
     } finally {
       setCancellingBooking(false);
     }
@@ -233,13 +233,13 @@ const OrderHistory = () => {
 
   const columns = [
     {
-      title: 'Ma don',
+      title: 'Mã đơn',
       dataIndex: 'id',
       key: 'id',
       render: (value) => <span className="font-bold text-slate-700">#{value}</span>
     },
     {
-      title: 'Dich vu',
+      title: 'Dịch vụ',
       dataIndex: 'serviceName',
       key: 'serviceName',
       render: (value, record) => (
@@ -253,7 +253,7 @@ const OrderHistory = () => {
       )
     },
     {
-      title: 'Lich hen',
+      title: 'Lịch hẹn',
       dataIndex: 'bookingTime',
       key: 'bookingTime',
       render: (value) => (
@@ -264,34 +264,34 @@ const OrderHistory = () => {
       )
     },
     {
-      title: 'Tam tinh',
+      title: 'Tạm tính',
       dataIndex: 'totalPrice',
       key: 'totalPrice',
       render: (value) => <span className="font-semibold text-slate-700">{formatCurrency(value)}</span>
     },
     {
-      title: 'Trang thai',
+      title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
       render: renderStatusTag
     },
     {
-      title: 'Hanh dong',
+      title: 'Hành động',
       key: 'action',
       render: (_, record) => (
         <Space wrap>
-          <Button size="small" onClick={() => setDetailBookingId(record.id)}>Chi tiet</Button>
+          <Button size="small" onClick={() => setDetailBookingId(record.id)}>Chi tiết</Button>
           {record.status === 'COMPLETED' && !record.reviewed && (
             <Button type="primary" ghost size="small" icon={<Star size={14} />} onClick={() => handleOpenReview(record)}>
-              Danh gia
+              Đánh giá
             </Button>
           )}
           {record.status === 'COMPLETED' && record.reviewed && (
-            <Tag color="green" className="rounded-full px-3 py-1">Da danh gia</Tag>
+            <Tag color="green" className="rounded-full px-3 py-1">Đã đánh giá</Tag>
           )}
           {cancellableStatuses.includes(record.status) && (
             <Button danger size="small" icon={<XCircle size={14} />} onClick={() => handleCancelClick(record)}>
-              Huy don
+              Hủy đơn
             </Button>
           )}
         </Space>
@@ -309,15 +309,15 @@ const OrderHistory = () => {
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <Title level={2} className="!mb-1">Don hang cua toi</Title>
-          <Text type="secondary">Trang nay tu dong cap nhat tien do don va mo popup review khi don hoan thanh.</Text>
+          <Title level={2} className="!mb-1">Đơn hàng của tôi</Title>
+          <Text type="secondary">Trang này tự động cập nhật tiến độ đơn và mở popup review khi đơn hoàn thành.</Text>
         </div>
         <Space>
           <Tag color="blue" className="rounded-full px-3 py-1">
-            Cap nhat {lastUpdatedAt ? lastUpdatedAt.format('HH:mm:ss') : '...'}
+            Cập nhật {lastUpdatedAt ? lastUpdatedAt.format('HH:mm:ss') : '...'}
           </Tag>
           <Button icon={<RefreshCw size={16} />} onClick={() => fetchBookings()}>
-            Lam moi
+            Làm mới
           </Button>
         </Space>
       </div>
@@ -332,23 +332,23 @@ const OrderHistory = () => {
             onClick: () => setDetailBookingId(record.id),
             className: 'cursor-pointer'
           })}
-          locale={{ emptyText: <Empty description="Ban chua co don hang nao" /> }}
+          locale={{ emptyText: <Empty description="Bạn chưa có đơn hàng nào" /> }}
           pagination={{ pageSize: 10 }}
         />
       </Card>
 
       <Modal
-        title={selectedBooking ? `Chi tiet don hang #${selectedBooking.id}` : 'Chi tiet don hang'}
+        title={selectedBooking ? `Chi tiết đơn hàng #${selectedBooking.id}` : 'Chi tiết đơn hàng'}
         open={Boolean(detailBookingId)}
         onCancel={() => setDetailBookingId(null)}
         width={920}
         footer={[
           selectedBooking?.status === 'COMPLETED' && !selectedBooking?.reviewed ? (
             <Button key="review" type="primary" onClick={() => handleOpenReview(selectedBooking)}>
-              Danh gia va tip
+              Đánh giá và tip
             </Button>
           ) : null,
-          <Button key="close" onClick={() => setDetailBookingId(null)}>Dong</Button>
+          <Button key="close" onClick={() => setDetailBookingId(null)}>Đóng</Button>
         ]}
       >
         {selectedBooking ? (
@@ -356,16 +356,16 @@ const OrderHistory = () => {
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <Text type="secondary">Trang thai hien tai</Text>
+                  <Text type="secondary">Trạng thái hiện tại</Text>
                   <div className="mt-1">{renderStatusTag(selectedBooking.status)}</div>
                 </div>
                 {selectedBooking.reviewed && (
-                  <Tag color="green" className="rounded-full px-3 py-1">Da danh gia</Tag>
+                  <Tag color="green" className="rounded-full px-3 py-1">Đã đánh giá</Tag>
                 )}
               </div>
               {selectedBooking.status === 'CANCELLED' || selectedBooking.status === 'DECLINED' ? (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-700">
-                  Don hang nay khong con trong luong xu ly.
+                  Đơn hàng này không còn trong luồng xử lý.
                 </div>
               ) : (
                 <Steps current={Math.max(PROGRESS_STEPS.indexOf(selectedBooking.status), 0)} size="small" items={progressItems} />
@@ -374,39 +374,39 @@ const OrderHistory = () => {
 
             <div className="grid gap-4 lg:grid-cols-2">
               <Card className="rounded-2xl">
-                <Descriptions title="Thong tin cong viec" column={1} size="small">
-                  <Descriptions.Item label="Dich vu">{selectedBooking.serviceName}</Descriptions.Item>
-                  <Descriptions.Item label="Ky thuat vien">{selectedBooking.technicianName || 'Dang cho phan cong'}</Descriptions.Item>
-                  <Descriptions.Item label="Thoi gian hen">{dayjs(selectedBooking.bookingTime).format('DD/MM/YYYY HH:mm')}</Descriptions.Item>
-                  <Descriptions.Item label="Dia chi">{selectedBooking.address}</Descriptions.Item>
-                  <Descriptions.Item label="Ghi chu">{selectedBooking.note || 'Khong co ghi chu'}</Descriptions.Item>
-                  <Descriptions.Item label="Hoan thanh luc">
-                    {selectedBooking.completedAt ? dayjs(selectedBooking.completedAt).format('DD/MM/YYYY HH:mm') : 'Chua hoan thanh'}
+                <Descriptions title="Thông tin công việc" column={1} size="small">
+                  <Descriptions.Item label="Dịch vụ">{selectedBooking.serviceName}</Descriptions.Item>
+                  <Descriptions.Item label="Kỹ thuật viên">{selectedBooking.technicianName || 'Đang chờ phân công'}</Descriptions.Item>
+                  <Descriptions.Item label="Thời gian hẹn">{dayjs(selectedBooking.bookingTime).format('DD/MM/YYYY HH:mm')}</Descriptions.Item>
+                  <Descriptions.Item label="Địa chỉ">{selectedBooking.address}</Descriptions.Item>
+                  <Descriptions.Item label="Ghi chú">{selectedBooking.note || 'Không có ghi chú'}</Descriptions.Item>
+                  <Descriptions.Item label="Hoàn thành lúc">
+                    {selectedBooking.completedAt ? dayjs(selectedBooking.completedAt).format('DD/MM/YYYY HH:mm') : 'Chưa hoàn thành'}
                   </Descriptions.Item>
                 </Descriptions>
               </Card>
 
               <Card className="rounded-2xl">
-                <Descriptions title="Tien va thanh toan" column={1} size="small">
-                  <Descriptions.Item label="Gia dich vu">{formatCurrency(selectedBooking.totalPrice)}</Descriptions.Item>
-                  <Descriptions.Item label="Tien tip">{selectedBooking.tipAmount ? formatCurrency(selectedBooking.tipAmount) : 'Chua tip'}</Descriptions.Item>
-                  <Descriptions.Item label="Tong sau tip">
+                <Descriptions title="Tiền và thanh toán" column={1} size="small">
+                  <Descriptions.Item label="Giá dịch vụ">{formatCurrency(selectedBooking.totalPrice)}</Descriptions.Item>
+                  <Descriptions.Item label="Tiền tip">{selectedBooking.tipAmount ? formatCurrency(selectedBooking.tipAmount) : 'Chưa tip'}</Descriptions.Item>
+                  <Descriptions.Item label="Tổng sau tip">
                     <span className="font-semibold text-emerald-600">{formatCurrency(totalWithTip)}</span>
                   </Descriptions.Item>
-                  <Descriptions.Item label="Phuong thuc">{selectedBooking.paymentMethod || 'CASH'}</Descriptions.Item>
-                  <Descriptions.Item label="Trang thai thanh toan">{selectedBooking.paymentStatus || 'PENDING'}</Descriptions.Item>
-                  <Descriptions.Item label="Ma giam gia">{selectedBooking.couponCode || 'Khong dung'}</Descriptions.Item>
+                  <Descriptions.Item label="Phương thức">{selectedBooking.paymentMethod || 'CASH'}</Descriptions.Item>
+                  <Descriptions.Item label="Trạng thái thanh toán">{selectedBooking.paymentStatus || 'PENDING'}</Descriptions.Item>
+                  <Descriptions.Item label="Mã giảm giá">{selectedBooking.couponCode || 'Không dùng'}</Descriptions.Item>
                 </Descriptions>
               </Card>
             </div>
           </div>
         ) : (
-          <Empty description="Khong tim thay don hang" />
+          <Empty description="Không tìm thấy đơn hàng" />
         )}
       </Modal>
 
       <Modal
-        title="Danh gia ky thuat vien"
+        title="Đánh giá kỹ thuật viên"
         open={isReviewModalOpen}
         onCancel={() => {
           setIsReviewModalOpen(false);
@@ -417,35 +417,35 @@ const OrderHistory = () => {
         <div className="mb-4 space-y-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center gap-2 text-slate-700">
             <Receipt size={16} />
-            <span className="font-semibold">Don #{reviewBooking?.id}</span>
+            <span className="font-semibold">Đơn #{reviewBooking?.id}</span>
           </div>
           <div className="flex items-center gap-2 text-slate-600">
             <User size={16} />
-            <span>{reviewBooking?.technicianName || 'Khong co thong tin ky thuat vien'}</span>
+            <span>{reviewBooking?.technicianName || 'Không có thông tin kỹ thuật viên'}</span>
           </div>
           <div className="flex items-center gap-2 text-slate-600">
             <DollarSign size={16} />
-            <span>Gia dich vu: {formatCurrency(reviewBooking?.totalPrice)}</span>
+            <span>Giá dịch vụ: {formatCurrency(reviewBooking?.totalPrice)}</span>
           </div>
         </div>
 
         <Form form={reviewForm} layout="vertical" onFinish={handleSubmitReview}>
           <Form.Item
             name="rating"
-            label="Cham diem"
-            rules={[{ required: true, message: 'Vui long chon so sao' }]}
+            label="Chấm điểm"
+            rules={[{ required: true, message: 'Vui lòng chọn số sao' }]}
           >
             <Rate />
           </Form.Item>
 
-          <Form.Item name="comment" label="Nhan xet">
-            <Input.TextArea rows={4} placeholder="Chia se trai nghiem cua ban..." />
+          <Form.Item name="comment" label="Nhận xét">
+            <Input.TextArea rows={4} placeholder="Chia sẻ trải nghiệm của bạn..." />
           </Form.Item>
 
           <Form.Item
             name="tipAmount"
-            label="Tien tip cho tho"
-            extra="De 0 neu ban chua muon tip."
+            label="Tiền tip cho thợ"
+            extra="Để 0 nếu bạn chưa muốn tip."
           >
             <InputNumber
               className="w-full"
@@ -453,7 +453,7 @@ const OrderHistory = () => {
               step={10000}
               formatter={(value) => `${value || 0}`.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}
               parser={(value) => Number((value || '0').toString().replace(/\./g, ''))}
-              placeholder="Vi du: 50000"
+              placeholder="Ví dụ: 50000"
             />
           </Form.Item>
 
@@ -462,28 +462,28 @@ const OrderHistory = () => {
               setIsReviewModalOpen(false);
               setReviewBookingId(null);
             }} className="mr-2">
-              Dong
+              Đóng
             </Button>
             <Button type="primary" htmlType="submit" loading={submittingReview} icon={<CheckCircle2 size={16} />}>
-              Gui danh gia
+              Gửi đánh giá
             </Button>
           </Form.Item>
         </Form>
       </Modal>
 
-      <Modal title="Huy don hang" open={cancelModalOpen} onCancel={() => setCancelModalOpen(false)} footer={null}>
+      <Modal title="Hủy đơn hàng" open={cancelModalOpen} onCancel={() => setCancelModalOpen(false)} footer={null}>
         <div className="mb-4">
-          <p className="font-semibold">Don hang: <span className="text-blue-600">#{cancelBooking?.id}</span></p>
-          <p className="text-sm text-slate-500">Ky thuat vien da nhan don: <strong>{cancelBooking?.technicianName}</strong></p>
-          <p className="mt-2 text-sm text-orange-600">Don hang da co ky thuat vien nhan, vui long cho biet ly do huy.</p>
+          <p className="font-semibold">Đơn hàng: <span className="text-blue-600">#{cancelBooking?.id}</span></p>
+          <p className="text-sm text-slate-500">Kỹ thuật viên đã nhận đơn: <strong>{cancelBooking?.technicianName}</strong></p>
+          <p className="mt-2 text-sm text-orange-600">Đơn hàng đã có kỹ thuật viên nhận, vui lòng cho biết lý do hủy.</p>
         </div>
         <Form form={cancelForm} layout="vertical" onFinish={handleCancelSubmit}>
-          <Form.Item name="reason" label="Ly do huy don" rules={[{ required: true, message: 'Vui long nhap ly do huy don' }]}>
-            <Input.TextArea rows={4} placeholder="Nhap ly do huy don hang..." />
+          <Form.Item name="reason" label="Lý do hủy đơn" rules={[{ required: true, message: 'Vui lòng nhập lý do hủy đơn' }]}>
+            <Input.TextArea rows={4} placeholder="Nhập lý do hủy đơn hàng..." />
           </Form.Item>
           <Form.Item className="mb-0 text-right">
-            <Button onClick={() => setCancelModalOpen(false)} className="mr-2">Quay lai</Button>
-            <Button type="primary" danger htmlType="submit" loading={cancellingBooking}>Xac nhan huy</Button>
+            <Button onClick={() => setCancelModalOpen(false)} className="mr-2">Quay lại</Button>
+            <Button type="primary" danger htmlType="submit" loading={cancellingBooking}>Xác nhận hủy</Button>
           </Form.Item>
         </Form>
       </Modal>
