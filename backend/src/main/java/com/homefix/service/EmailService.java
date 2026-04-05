@@ -167,7 +167,7 @@ public class EmailService {
                 </div>
                 """.formatted(
                     booking.getId(),
-                    booking.getServicePackage().getName(),
+                    booking.resolveServiceName(),
                     formattedTime,
                     booking.getAddress(),
                     booking.getTotalPrice() != null ? String.format("%,.0f", booking.getTotalPrice()) : "0",
@@ -234,7 +234,7 @@ public class EmailService {
                 </div>
                 """.formatted(
                     booking.getId(),
-                    booking.getServicePackage().getName(),
+                    booking.resolveServiceName(),
                     techName,
                     formattedTime,
                     booking.getTotalPrice() != null ? String.format("%,.0f", booking.getTotalPrice()) : "0",

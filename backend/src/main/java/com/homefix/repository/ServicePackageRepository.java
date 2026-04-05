@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 
 public interface ServicePackageRepository extends JpaRepository<ServicePackage, Long> {
+    long countByCategoryId(Long categoryId);
     List<ServicePackage> findByCategoryId(Long categoryId);
     Page<ServicePackage> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String q1, String q2, Pageable pageable);
 }

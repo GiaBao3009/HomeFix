@@ -20,6 +20,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByCustomer(User customer);
 
     List<Booking> findByTechnician(User technician);
+    long countByServicePackageId(Long servicePackageId);
     List<Booking> findByTechnicianAndStatus(User technician, BookingStatus status);
     long countByTechnicianAndStatusIn(User technician, List<BookingStatus> statuses);
     long countByTechnicianAndStatus(User technician, BookingStatus status);
@@ -45,8 +46,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query("SELECT DISTINCT b FROM Booking b LEFT JOIN FETCH b.assistantTechnicians WHERE b.id = :id")
     Optional<Booking> findByIdForUpdate(Long id);
 
-    @org.springframework.data.jpa.repository.Query("SELECT b.servicePackage.name, COUNT(b) FROM Booking b WHERE b.status = 'COMPLETED' GROUP BY b.servicePackage.name ORDER BY COUNT(b) DESC")
+    @Query("SELECT COALESCE(b.serviceNameSnapshot, b.servicePackage.name), COUNT(b) FROM Booking b WHERE b.status = 'COMPLETED' GROUP BY COALESCE(b.serviceNameSnapshot, b.servicePackage.name) ORDER BY COUNT(b) DESC")
     List<Object[]> findTopServices();
+
+    @Query("""
+            SELECT DISTINCT b
+            FROM Booking b
+            LEFT JOIN FETCH b.servicePackage sp
+            LEFT JOIN FETCH sp.category
+            WHERE b.serviceNameSnapshot IS NULL
+               OR b.servicePriceSnapshot IS NULL
+               OR b.serviceCategoryNameSnapshot IS NULL
+            """)
+    List<Booking> findBookingsMissingServiceSnapshot();
 
     @org.springframework.data.jpa.repository.Query("SELECT MONTH(b.createdAt), SUM(b.totalPrice) FROM Booking b WHERE b.status = 'COMPLETED' GROUP BY MONTH(b.createdAt) ORDER BY MONTH(b.createdAt)")
     List<Object[]> findRevenueByMonth();
