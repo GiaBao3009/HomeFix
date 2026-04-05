@@ -30,6 +30,7 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const ReviewPage = lazy(() => import('./pages/ReviewPage'));
 const OAuth2Redirect = lazy(() => import('./pages/OAuth2Redirect'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 function LoadingFallback() {
     return (
@@ -56,7 +57,9 @@ const RoleRoute = ({ children, roles }) => {
     const { user, loading } = useAuth();
     if (loading) return <div>Loading...</div>;
     if (!user) return <Navigate to="/login" />;
-    return roles.includes(user.role) ? children : <Navigate to="/" />;
+    return roles.includes(user.role)
+        ? children
+        : <Navigate to="/not-found" replace state={{ reason: 'role', requiredRoles: roles }} />;
 };
 
 function App() {
@@ -183,6 +186,8 @@ function App() {
                                 </RoleRoute>
                             }
                         />
+                        <Route path="/not-found" element={<NotFoundPage />} />
+                        <Route path="*" element={<NotFoundPage />} />
                     </Routes>
                 </Suspense>
             </main>
