@@ -99,15 +99,15 @@ const TechnicianWallet = () => {
     ];
 
     return (
-        <div className="p-6 mx-auto max-w-7xl space-y-6">
+        <div className="p-6 mx-auto max-w-7xl space-y-6" data-testid="technician-wallet-page">
             <div className="flex justify-between items-center">
                 <div>
                     <Title level={2} className="!mb-1">Ví kỹ thuật viên</Title>
                     <Text type="secondary">Tiền chỉ cộng vào ví khi công việc hoàn thành</Text>
                 </div>
                 <div className="flex gap-2">
-                    <Button icon={<RefreshCw size={16} />} onClick={fetchWallet}>Làm mới</Button>
-                    <Button type="primary" icon={<ArrowDownCircle size={16} />}
+                    <Button data-testid="technician-wallet-refresh" icon={<RefreshCw size={16} />} onClick={fetchWallet}>Làm mới</Button>
+                    <Button data-testid="technician-wallet-open-withdraw" type="primary" icon={<ArrowDownCircle size={16} />}
                         onClick={() => {
                             if (!hasBankInfo) {
                                 message.warning('Vui lòng cập nhật thông tin ngân hàng trước');
@@ -126,7 +126,7 @@ const TechnicianWallet = () => {
                 <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-yellow-800">
                     <Landmark size={18} className="inline mr-2" />
                     Bạn chưa liên kết tài khoản ngân hàng. Vui lòng cập nhật thông tin ngân hàng để có thể rút tiền.
-                    <Button size="small" className="ml-2" onClick={() => {
+                    <Button data-testid="technician-wallet-open-bank" size="small" className="ml-2" onClick={() => {
                         bankForm.setFieldsValue({
                             bankName: user?.bankName || '',
                             bankAccountNumber: user?.bankAccountNumber || '',
@@ -164,7 +164,7 @@ const TechnicianWallet = () => {
             <Card className="rounded-xl shadow-sm" title={
                 <div className="flex justify-between items-center">
                     <span><Landmark size={16} className="inline mr-2" />Thông tin ngân hàng liên kết</span>
-                    <Button size="small" onClick={() => {
+                    <Button data-testid="technician-wallet-edit-bank" size="small" onClick={() => {
                         bankForm.setFieldsValue({
                             bankName: user?.bankName || '',
                             bankAccountNumber: user?.bankAccountNumber || '',
@@ -210,7 +210,7 @@ const TechnicianWallet = () => {
                     </Form.Item>
                     <div className="text-right">
                         <Button onClick={() => setBankModalOpen(false)} className="mr-2">Hủy</Button>
-                        <Button type="primary" htmlType="submit">Lưu</Button>
+                        <Button data-testid="technician-wallet-bank-submit" type="primary" htmlType="submit">Lưu</Button>
                     </div>
                 </Form>
             </Modal>
@@ -229,7 +229,7 @@ const TechnicianWallet = () => {
                     </Form.Item>
                     <Form.Item className="mb-0 text-right">
                         <Button onClick={() => setWithdrawModalOpen(false)} className="mr-2">Hủy</Button>
-                        <Button type="primary" htmlType="submit" loading={submitting}>Gửi yêu cầu rút tiền</Button>
+                        <Button data-testid="technician-wallet-withdraw-submit" type="primary" htmlType="submit" loading={submitting}>Gửi yêu cầu rút tiền</Button>
                     </Form.Item>
                 </Form>
             </Modal>

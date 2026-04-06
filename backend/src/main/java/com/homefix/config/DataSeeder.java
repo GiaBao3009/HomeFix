@@ -399,12 +399,12 @@ public class DataSeeder implements CommandLineRunner {
                                         "Phù hợp cho nhu cầu dọn dẹp hàng ngày hoặc định kỳ hàng tuần. Không bao gồm giặt thảm, sofa hay làm sạch sâu.");
                         cleanBasic.setPrice(new BigDecimal("100000")); // 100k/h
                         cleanBasic.setImageUrl(
-                                        "https://images.unsplash.com/photo-1581578731117-104f8a746950?auto=format&fit=crop&q=80&w=800");
+                                        "https://images.pexels.com/photos/4239091/pexels-photo-4239091.jpeg?auto=compress&cs=tinysrgb&w=800");
                         cleanBasic.addImage(new ServiceImage(
-                                        "https://images.unsplash.com/photo-1528740561666-dc24705f08a7?auto=format&fit=crop&q=80&w=800",
+                                        "https://images.pexels.com/photos/4239036/pexels-photo-4239036.jpeg?auto=compress&cs=tinysrgb&w=800",
                                         cleanBasic));
                         cleanBasic.addImage(new ServiceImage(
-                                        "https://images.unsplash.com/photo-1584622050111-993a426fbf0a?auto=format&fit=crop&q=80&w=800",
+                                        "https://images.pexels.com/photos/4239035/pexels-photo-4239035.jpeg?auto=compress&cs=tinysrgb&w=800",
                                         cleanBasic));
                         cleanBasic.setCategory(cleaning);
                         packages.add(cleanBasic);
@@ -425,12 +425,12 @@ public class DataSeeder implements CommandLineRunner {
                                                         "- Sử dụng máy móc và hóa chất chuyên dụng để đánh bay vết bẩn cứng đầu.");
                         cleanDeep.setPrice(new BigDecimal("1500000")); // 1.5M trọn gói
                         cleanDeep.setImageUrl(
-                                        "https://images.unsplash.com/photo-1527513913476-fa960200f585?auto=format&fit=crop&q=80&w=800");
+                                        "https://images.pexels.com/photos/4108715/pexels-photo-4108715.jpeg?auto=compress&cs=tinysrgb&w=800");
                         cleanDeep.addImage(new ServiceImage(
-                                        "https://images.unsplash.com/photo-1585421514738-01798e1e7f3b?auto=format&fit=crop&q=80&w=800",
+                                        "https://images.pexels.com/photos/4108714/pexels-photo-4108714.jpeg?auto=compress&cs=tinysrgb&w=800",
                                         cleanDeep));
                         cleanDeep.addImage(new ServiceImage(
-                                        "https://plus.unsplash.com/premium_photo-1663126298656-33616be83c32?auto=format&fit=crop&q=80&w=800",
+                                        "https://images.pexels.com/photos/4239146/pexels-photo-4239146.jpeg?auto=compress&cs=tinysrgb&w=800",
                                         cleanDeep));
                         cleanDeep.setCategory(cleaning);
                         packages.add(cleanDeep);
@@ -447,9 +447,9 @@ public class DataSeeder implements CommandLineRunner {
                                                         "- Kiểm tra và bảo trì hệ thống điện gia đình đảm bảo an toàn.");
                         electricFix.setPrice(new BigDecimal("200000")); // Khảo sát + sửa nhỏ
                         electricFix.setImageUrl(
-                                        "https://placehold.co/800x600/png?text=Electric+Repair");
+                                        "https://images.pexels.com/photos/5691589/pexels-photo-5691589.jpeg?auto=compress&cs=tinysrgb&w=800");
                         electricFix.addImage(new ServiceImage(
-                                        "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=800",
+                                        "https://images.pexels.com/photos/5691640/pexels-photo-5691640.jpeg?auto=compress&cs=tinysrgb&w=800",
                                         electricFix));
                         electricFix.setCategory(repair);
                         packages.add(electricFix);
@@ -459,7 +459,7 @@ public class DataSeeder implements CommandLineRunner {
                         waterFix.setDescription("Tìm và sửa rò rỉ đường ống, thay vòi nước, sửa bồn cầu.");
                         waterFix.setPrice(new BigDecimal("250000"));
                         waterFix.setImageUrl(
-                                        "https://images.unsplash.com/photo-1505798577917-a651a5d6a301?auto=format&fit=crop&q=80&w=800");
+                                        "https://images.pexels.com/photos/6419128/pexels-photo-6419128.jpeg?auto=compress&cs=tinysrgb&w=800");
                         waterFix.setCategory(repair);
                         packages.add(waterFix);
 
@@ -469,7 +469,7 @@ public class DataSeeder implements CommandLineRunner {
                         acClean.setDescription("Vệ sinh dàn nóng, dàn lạnh, kiểm tra gas. Giá trên mỗi máy.");
                         acClean.setPrice(new BigDecimal("150000"));
                         acClean.setImageUrl(
-                                        "https://placehold.co/800x600/png?text=AC+Cleaning"); // Placeholder
+                                        "https://images.pexels.com/photos/5463576/pexels-photo-5463576.jpeg?auto=compress&cs=tinysrgb&w=800");
                         acClean.setCategory(ac);
                         packages.add(acClean);
 

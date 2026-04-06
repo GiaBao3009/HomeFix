@@ -332,7 +332,7 @@ const TechnicianDashboard = () => {
         {
             title: '', key: 'action', width: 100,
             render: (_, r) => (
-                <Button type="primary" size="small" onClick={() => handleClaimBooking(r.id)} disabled={cannotWork || !r.dispatchEligible}>
+                <Button data-testid={`claim-booking-${r.id}`} type="primary" size="small" onClick={() => handleClaimBooking(r.id)} disabled={cannotWork || !r.dispatchEligible}>
                     Nhận đơn
                 </Button>
             )
@@ -369,7 +369,7 @@ const TechnicianDashboard = () => {
     const tabItems = [
         {
             key: 'active',
-            label: <Badge count={activeBookings.length} size="small" offset={[8, 0]}><span className="font-semibold">Việc đang làm</span></Badge>,
+            label: <Badge count={activeBookings.length} size="small" offset={[8, 0]}><span data-testid="technician-tab-active" className="font-semibold">Việc đang làm</span></Badge>,
             children: (
                 <Table columns={activeColumns} dataSource={activeBookings} rowKey="id" loading={loading || profileLoading}
                     pagination={false} scroll={{ x: 900 }}
@@ -378,7 +378,7 @@ const TechnicianDashboard = () => {
         },
         {
             key: 'open',
-            label: <Badge count={openBookings.length} size="small" offset={[8, 0]}><span className="font-semibold">Đơn mở</span></Badge>,
+            label: <Badge count={openBookings.length} size="small" offset={[8, 0]}><span data-testid="technician-tab-open" className="font-semibold">Đơn mở</span></Badge>,
             children: (
                 <Table columns={openColumns} dataSource={openBookings} rowKey="id" loading={loading || profileLoading}
                     pagination={{ pageSize: 5, size: 'small' }}
@@ -387,7 +387,7 @@ const TechnicianDashboard = () => {
         },
         {
             key: 'history',
-            label: <span className="font-semibold">Lịch sử</span>,
+            label: <span data-testid="technician-tab-history" className="font-semibold">Lịch sử</span>,
             children: (
                 <Table columns={historyColumns} dataSource={bookings} rowKey="id" loading={loading || profileLoading}
                     pagination={{ pageSize: 8, size: 'small' }} />
@@ -395,7 +395,7 @@ const TechnicianDashboard = () => {
         },
         {
             key: 'reviews',
-            label: <span className="font-semibold">Đánh giá ({reviews.length})</span>,
+            label: <span data-testid="technician-tab-reviews" className="font-semibold">Đánh giá ({reviews.length})</span>,
             children: reviews.length > 0 ? (
                 <List dataSource={reviews} renderItem={(item) => (
                     <List.Item>
@@ -421,7 +421,7 @@ const TechnicianDashboard = () => {
         },
         {
             key: 'leaderboard',
-            label: <span className="font-semibold">Xếp hạng</span>,
+            label: <span data-testid="technician-tab-leaderboard" className="font-semibold">Xếp hạng</span>,
             children: leaderboard.length > 0 ? (
                 <List dataSource={leaderboard} renderItem={(item, idx) => (
                     <List.Item>
@@ -444,14 +444,14 @@ const TechnicianDashboard = () => {
     ];
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-5" data-testid="technician-dashboard-page">
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                     <Title level={3} className="!mb-0">Bảng công việc</Title>
                     <Text type="secondary" className="text-sm">Hệ thống tự động điều phối theo chuyên mục</Text>
                 </div>
-                <Button icon={<RefreshCw size={14} />} onClick={() => { fetchTechnicianProfile(); fetchBookings(); }} loading={loading}>
+                <Button data-testid="technician-dashboard-refresh" icon={<RefreshCw size={14} />} onClick={() => { fetchTechnicianProfile(); fetchBookings(); }} loading={loading}>
                     Làm mới
                 </Button>
             </div>
@@ -527,7 +527,7 @@ const TechnicianDashboard = () => {
                 <div className="mb-4 p-3 rounded-lg bg-blue-50 text-blue-700 text-sm">
                     Cấu hình hồ sơ để hệ thống matching tự động phân công theo chuyên mục và lịch làm việc.
                 </div>
-                <Form form={profileForm} layout="vertical" onFinish={submitTechnicianProfile} size="middle">
+                <Form data-testid="technician-complete-profile-form" form={profileForm} layout="vertical" onFinish={submitTechnicianProfile} size="middle">
                     <Form.Item name="specialty" label="Chuyên môn" rules={[{ required: true, message: 'Nhập chuyên môn' }]}>
                         <Input placeholder="VD: Thợ điện máy" />
                     </Form.Item>
@@ -564,7 +564,7 @@ const TechnicianDashboard = () => {
                             </div>
                         </>
                     )}
-                    <Button type="primary" htmlType="submit" className="w-full" loading={savingProfile}>Lưu hồ sơ kỹ thuật viên</Button>
+                    <Button data-testid="technician-profile-submit" type="primary" htmlType="submit" className="w-full" loading={savingProfile}>Lưu hồ sơ kỹ thuật viên</Button>
                 </Form>
             </Modal>
         </div>
