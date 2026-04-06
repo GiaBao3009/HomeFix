@@ -22,7 +22,7 @@ const Footer = () => {
                             </span>
                         </div>
                         <Text className="text-slate-400 block mb-6 text-base leading-relaxed">
-                            {isAdminOrTech 
+                            {isAdminOrTech
                                 ? "Hệ thống quản lý dịch vụ và điều phối kỹ thuật chuyên nghiệp."
                                 : "Đối tác tin cậy cho mọi nhu cầu sửa chữa và chăm sóc ngôi nhà của bạn. Kết nối với đội ngũ chuyên gia tận tâm, chuyên nghiệp chỉ với vài cú click."
                             }
@@ -39,23 +39,23 @@ const Footer = () => {
                             </div>
                         </Space>
                     </Col>
-                    
+
                     {/* Quick Links - Hidden/Modified for Admin/Tech */}
                     {!isAdminOrTech && (
-                    <Col xs={24} sm={12} md={5}>
-                        <Title level={4} className="!text-white !mb-6">Khám phá</Title>
-                        <div className="flex flex-col gap-3">
-                            <Link to="/services" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Dịch vụ</Link>
-                            <Link to="/about" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Về chúng tôi</Link>
-                            <Link to="/contact" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Liên hệ</Link>
-                            {!user && (
-                                <>
-                                    <Link to="/login" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng nhập</Link>
-                                    <Link to="/register" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng ký</Link>
-                                </>
-                            )}
-                        </div>
-                    </Col>
+                        <Col xs={24} sm={12} md={5}>
+                            <Title level={4} className="!text-white !mb-6">Khám phá</Title>
+                            <div className="flex flex-col gap-3">
+                                <Link to="/services" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Dịch vụ</Link>
+                                <Link to="/about" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Về chúng tôi</Link>
+                                <Link to="/contact" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Liên hệ</Link>
+                                {!user && (
+                                    <>
+                                        <Link to="/login" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng nhập</Link>
+                                        <Link to="/register" className="text-slate-400 hover:text-blue-400 transition-colors text-base">Đăng ký</Link>
+                                    </>
+                                )}
+                            </div>
+                        </Col>
                     )}
 
                     {/* Contact Info - Always visible but maybe simplified for Admin */}
@@ -64,7 +64,7 @@ const Footer = () => {
                         <div className="flex flex-col gap-4">
                             <div className="flex items-start gap-3 text-slate-400 group">
                                 <MapPin size={20} className="mt-1 group-hover:text-blue-400 transition-colors" />
-                                <span className="group-hover:text-white transition-colors">123 Đường Cầu Giấy,<br/>Hà Nội, Việt Nam</span>
+                                <span className="group-hover:text-white transition-colors">123 Đường Cầu Giấy,<br />Hà Nội, Việt Nam</span>
                             </div>
                             <div className="flex items-center gap-3 text-slate-400 group">
                                 <Phone size={20} className="group-hover:text-blue-400 transition-colors" />
@@ -84,9 +84,9 @@ const Footer = () => {
                             Nhận thông tin khuyến mãi và mẹo vặt chăm sóc nhà cửa mới nhất.
                         </Text>
                         <div className="flex flex-col gap-3">
-                            <Input 
-                                placeholder="Email của bạn" 
-                                size="large" 
+                            <Input
+                                placeholder="Email của bạn"
+                                size="large"
                                 className="rounded-xl bg-slate-800 border-slate-700 text-white placeholder-slate-500 hover:border-blue-500 focus:border-blue-500"
                             />
                             <Button type="primary" size="large" icon={<Send size={18} />} className="rounded-xl bg-blue-600 hover:bg-blue-500 border-none h-12 font-semibold">
@@ -95,9 +95,9 @@ const Footer = () => {
                         </div>
                     </Col>
                 </Row>
-                
+
                 <Divider className="border-slate-800 my-10" />
-                
+
                 <div className="flex flex-col md:flex-row justify-between items-center text-slate-500 text-sm">
                     <p>© 2026 HomeFix. All rights reserved.</p>
                     <div className="flex gap-6 mt-4 md:mt-0">
@@ -106,7 +106,7 @@ const Footer = () => {
                     </div>
                 </div>
                 <div className="text-center mt-8">
-                     <Text className="text-slate-600 text-xs">Developed with ❤️ by Vinhdev04</Text>
+                    <Text className="text-slate-600 text-xs">Developed with ❤️ by Vinhdev04 and Baoldz3009</Text>
                 </div>
             </div>
         </AntFooter>

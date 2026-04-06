@@ -218,7 +218,7 @@ const TechnicianProfilePage = () => {
         {
             key: 'account',
             label: (
-                <div className="flex items-center gap-2 px-2">
+                <div data-testid="technician-profile-tab-account" className="flex items-center gap-2 px-2">
                     <User size={18} />
                     <span className="font-semibold">Tài khoản</span>
                 </div>
@@ -315,6 +315,7 @@ const TechnicianProfilePage = () => {
                         <Form.Item>
                             <Button
                                 type="primary"
+                                data-testid="technician-account-submit"
                                 htmlType="submit"
                                 loading={loading}
                                 className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 border-none shadow-md hover:shadow-lg hover:scale-105 transition-all"
@@ -329,7 +330,7 @@ const TechnicianProfilePage = () => {
         {
             key: 'technician',
             label: (
-                <div className="flex items-center gap-2 px-2">
+                <div data-testid="technician-profile-tab-technician" className="flex items-center gap-2 px-2">
                     <Briefcase size={18} />
                     <span className="font-semibold">Hồ sơ kỹ thuật viên</span>
                 </div>
@@ -458,7 +459,7 @@ const TechnicianProfilePage = () => {
                                 Thợ phụ vẫn có thể tự nhận đơn đúng chuyên mục của mình. Sau 1 tháng, hệ thống sẽ tự động nâng cấp lên thợ chính.
                             </div>
                         )}
-                        <Button type="primary" htmlType="submit" className="w-full" loading={savingTechnicianProfile}>
+                        <Button data-testid="technician-profile-save" type="primary" htmlType="submit" className="w-full" loading={savingTechnicianProfile}>
                             Lưu hồ sơ kỹ thuật viên
                         </Button>
                     </Form>
@@ -468,7 +469,7 @@ const TechnicianProfilePage = () => {
         {
             key: 'password',
             label: (
-                <div className="flex items-center gap-2 px-2">
+                <div data-testid="technician-profile-tab-password" className="flex items-center gap-2 px-2">
                     <Lock size={18} />
                     <span className="font-semibold">Đổi mật khẩu</span>
                 </div>
@@ -560,6 +561,7 @@ const TechnicianProfilePage = () => {
                         <Form.Item>
                             <Button
                                 type="primary"
+                                data-testid="technician-password-submit"
                                 htmlType="submit"
                                 loading={loading}
                                 className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 border-none shadow-md hover:shadow-lg hover:scale-105 transition-all"
@@ -574,7 +576,7 @@ const TechnicianProfilePage = () => {
         {
             key: 'bank',
             label: (
-                <div className="flex items-center gap-2 px-2">
+                <div data-testid="technician-profile-tab-bank" className="flex items-center gap-2 px-2">
                     <Landmark size={18} />
                     <span className="font-semibold">Ngân hàng</span>
                 </div>
@@ -595,7 +597,7 @@ const TechnicianProfilePage = () => {
                             <Input placeholder="VD: NGUYEN VAN A (viết in hoa)" className="rounded-xl" />
                         </Form.Item>
                         <Form.Item>
-                            <Button type="primary" htmlType="submit" loading={savingBank}
+                            <Button data-testid="technician-bank-submit" type="primary" htmlType="submit" loading={savingBank}
                                 className="h-12 px-8 rounded-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-none shadow-md hover:shadow-lg hover:scale-105 transition-all">
                                 Lưu thông tin ngân hàng
                             </Button>
@@ -607,7 +609,7 @@ const TechnicianProfilePage = () => {
     ];
 
     return (
-        <div className="max-w-5xl mx-auto p-4 py-8">
+        <div className="max-w-5xl mx-auto p-4 py-8" data-testid="technician-profile-page">
             <div className="mb-8 text-center">
                 <h1 className="text-4xl font-black text-slate-900 mb-2">Hồ sơ kỹ thuật viên</h1>
                 <p className="text-slate-600 text-lg">Quản lý riêng thông tin tài khoản và cấu hình nhận việc</p>
@@ -615,6 +617,7 @@ const TechnicianProfilePage = () => {
 
             <Card bordered={false} className="shadow-2xl rounded-3xl border-0">
                 <Tabs
+                    data-testid="technician-profile-tabs"
                     defaultActiveKey="account"
                     items={items}
                     size="large"

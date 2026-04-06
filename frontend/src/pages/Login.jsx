@@ -149,6 +149,7 @@ const Login = () => {
                                 ]}
                             >
                                 <Input 
+                                    data-testid="login-email"
                                     prefix={<Mail className="mr-2 text-slate-400" size={20} />} 
                                     placeholder="example@email.com" 
                                     className="py-3 rounded-xl border-slate-200 hover:border-blue-400 focus:border-blue-500"
@@ -161,6 +162,7 @@ const Login = () => {
                                 rules={[{ required: true, message: 'Vui lòng nhập mật khẩu!' }]}
                             >
                                 <Input.Password 
+                                    data-testid="login-password"
                                     prefix={<Lock className="mr-2 text-slate-400" size={20} />} 
                                     placeholder="••••••••" 
                                     className="py-3 rounded-xl border-slate-200 hover:border-blue-400 focus:border-blue-500"
@@ -181,6 +183,7 @@ const Login = () => {
 
                             <Form.Item className="pt-4 mb-4">
                                 <Button 
+                                    data-testid="login-submit"
                                     type="primary" 
                                     htmlType="submit" 
                                     block 
