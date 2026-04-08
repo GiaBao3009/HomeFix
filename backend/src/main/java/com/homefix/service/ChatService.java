@@ -2,6 +2,7 @@ package com.homefix.service;
 
 import com.homefix.dto.*;
 import com.homefix.entity.*;
+import com.homefix.common.Role;
 import com.homefix.repository.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,6 +27,7 @@ public class ChatService {
     private final ConversationMessageRepository messageRepository;
     private final MessageAttachmentRepository attachmentRepository;
     private final UserRepository userRepository;
+    private final BookingRepository bookingRepository;
     private final NotificationService notificationService;
     private final SimpMessagingTemplate messagingTemplate;
     private final ChatPresenceService chatPresenceService;
@@ -36,6 +38,7 @@ public class ChatService {
             ConversationMessageRepository messageRepository,
             MessageAttachmentRepository attachmentRepository,
             UserRepository userRepository,
+            BookingRepository bookingRepository,
             NotificationService notificationService,
             SimpMessagingTemplate messagingTemplate,
             ChatPresenceService chatPresenceService) {
@@ -44,6 +47,7 @@ public class ChatService {
         this.messageRepository = messageRepository;
         this.attachmentRepository = attachmentRepository;
         this.userRepository = userRepository;
+        this.bookingRepository = bookingRepository;
         this.notificationService = notificationService;
         this.messagingTemplate = messagingTemplate;
         this.chatPresenceService = chatPresenceService;
@@ -165,6 +169,33 @@ public class ChatService {
         return userRepository.searchForChat(currentUser.getId(), normalizedKeyword).stream()
                 .limit(20)
                 .map(this::mapSimpleUser)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SimpleUserChatDto> getSuggestedUsers() {
+        User currentUser = getCurrentUser();
+        Map<Long, SimpleUserChatDto> suggestions = new LinkedHashMap<>();
+
+        if (currentUser.getRole() == Role.CUSTOMER) {
+            for (Booking booking : bookingRepository.findByCustomer(currentUser)) {
+                addSuggestedUser(suggestions, booking.getTechnician(), buildSuggestionHint(currentUser, booking.getTechnician(), booking, "Thợ chính"));
+                for (User assistant : booking.getAssistantTechnicians()) {
+                    addSuggestedUser(suggestions, assistant, buildSuggestionHint(currentUser, assistant, booking, "Thợ phụ"));
+                }
+            }
+        } else if (currentUser.getRole() == Role.TECHNICIAN) {
+            for (Booking booking : bookingRepository.findVisibleToTechnicianOrderByCreatedAtDesc(currentUser)) {
+                addSuggestedUser(suggestions, booking.getCustomer(), buildSuggestionHint(currentUser, booking.getCustomer(), booking, "Khách hàng"));
+                addSuggestedUser(suggestions, booking.getTechnician(), buildSuggestionHint(currentUser, booking.getTechnician(), booking, "Thợ chính"));
+                for (User assistant : booking.getAssistantTechnicians()) {
+                    addSuggestedUser(suggestions, assistant, buildSuggestionHint(currentUser, assistant, booking, "Thợ phụ"));
+                }
+            }
+        }
+
+        return suggestions.values().stream()
+                .sorted(Comparator.comparing(SimpleUserChatDto::getFullName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
@@ -449,13 +480,40 @@ public class ChatService {
     }
 
     private SimpleUserChatDto mapSimpleUser(User user) {
+        return mapSimpleUser(user, null);
+    }
+
+    private SimpleUserChatDto mapSimpleUser(User user, String hint) {
         SimpleUserChatDto dto = new SimpleUserChatDto();
         dto.setId(user.getId());
         dto.setFullName(user.getFullName());
         dto.setEmail(user.getEmail());
         dto.setAvatarUrl(user.getAvatarUrl());
         dto.setRole(user.getRole() == null ? null : user.getRole().name());
+        dto.setHint(hint);
         return dto;
+    }
+
+    private void addSuggestedUser(Map<Long, SimpleUserChatDto> suggestions, User candidate, String hint) {
+        User currentUser = getCurrentUser();
+        if (candidate == null || candidate.getId().equals(currentUser.getId())) {
+            return;
+        }
+        suggestions.computeIfAbsent(candidate.getId(), ignored -> mapSimpleUser(candidate, hint));
+    }
+
+    private String buildSuggestionHint(User currentUser, User candidate, Booking booking, String fallbackRole) {
+        if (candidate == null || booking == null) {
+            return fallbackRole;
+        }
+        String serviceName = booking.getServicePackage() != null ? booking.getServicePackage().getName() : "dịch vụ";
+        if (currentUser.getRole() == Role.CUSTOMER) {
+            return fallbackRole + " của đơn #" + booking.getId() + " - " + serviceName;
+        }
+        if (candidate.getRole() == Role.CUSTOMER) {
+            return "Khách của đơn #" + booking.getId() + " - " + serviceName;
+        }
+        return fallbackRole + " cùng đơn #" + booking.getId() + " - " + serviceName;
     }
 
     private String preview(String content) {

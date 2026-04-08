@@ -6,6 +6,7 @@ public class SimpleUserChatDto {
     private String email;
     private String avatarUrl;
     private String role;
+    private String hint;
 
     public Long getId() {
         return id;
@@ -45,5 +46,13 @@ public class SimpleUserChatDto {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getHint() {
+        return hint;
+    }
+
+    public void setHint(String hint) {
+        this.hint = hint;
     }
 }

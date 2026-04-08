@@ -57,6 +57,11 @@ public class ChatController {
         return ResponseEntity.ok(chatService.searchUsers(keyword));
     }
 
+    @GetMapping("/users/suggestions")
+    public ResponseEntity<List<SimpleUserChatDto>> getSuggestedUsers() {
+        return ResponseEntity.ok(chatService.getSuggestedUsers());
+    }
+
     @PostMapping("/messages")
     public ResponseEntity<ConversationMessageDto> sendMessage(@RequestBody SendConversationMessageRequest request) {
         return ResponseEntity.ok(chatService.sendMessage(request));
