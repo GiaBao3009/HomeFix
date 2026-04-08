@@ -17,7 +17,6 @@ public class ConversationMessageDto {
     private boolean deleted;
     private Long parentMessageId;
     private String parentMessagePreview;
-    private String clientMessageId;
     private List<Long> mentionedUserIds = new ArrayList<>();
     private List<ChatAttachmentDto> attachments = new ArrayList<>();
 
@@ -37,16 +36,16 @@ public class ConversationMessageDto {
         this.conversationId = conversationId;
     }
 
-    public Long getSenderId() {
-        return senderId;
-    }
-
     public String getClientMessageId() {
         return clientMessageId;
     }
 
     public void setClientMessageId(String clientMessageId) {
         this.clientMessageId = clientMessageId;
+    }
+
+    public Long getSenderId() {
+        return senderId;
     }
 
     public void setSenderId(Long senderId) {
@@ -115,14 +114,6 @@ public class ConversationMessageDto {
 
     public void setParentMessagePreview(String parentMessagePreview) {
         this.parentMessagePreview = parentMessagePreview;
-    }
-
-    public String getClientMessageId() {
-        return clientMessageId;
-    }
-
-    public void setClientMessageId(String clientMessageId) {
-        this.clientMessageId = clientMessageId;
     }
 
     public List<Long> getMentionedUserIds() {

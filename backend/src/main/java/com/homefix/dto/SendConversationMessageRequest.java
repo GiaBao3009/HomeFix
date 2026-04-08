@@ -8,7 +8,6 @@ public class SendConversationMessageRequest {
     private String clientMessageId;
     private String content;
     private Long parentMessageId;
-    private String clientMessageId;
     private List<Long> mentionedUserIds = new ArrayList<>();
     private List<ChatAttachmentDto> attachments = new ArrayList<>();
 
@@ -20,16 +19,16 @@ public class SendConversationMessageRequest {
         this.conversationId = conversationId;
     }
 
-    public String getContent() {
-        return content;
-    }
-
     public String getClientMessageId() {
         return clientMessageId;
     }
 
     public void setClientMessageId(String clientMessageId) {
         this.clientMessageId = clientMessageId;
+    }
+
+    public String getContent() {
+        return content;
     }
 
     public void setContent(String content) {
@@ -42,14 +41,6 @@ public class SendConversationMessageRequest {
 
     public void setParentMessageId(Long parentMessageId) {
         this.parentMessageId = parentMessageId;
-    }
-
-    public String getClientMessageId() {
-        return clientMessageId;
-    }
-
-    public void setClientMessageId(String clientMessageId) {
-        this.clientMessageId = clientMessageId;
     }
 
     public List<Long> getMentionedUserIds() {
