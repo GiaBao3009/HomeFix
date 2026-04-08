@@ -870,8 +870,25 @@ const MessagesPage = () => {
                     ),
                 ),
             );
-            const response = await api.post('/chat/messages', payload);
-            setMessages((current) => reconcileIncomingMessage(current, response.data));
+
+            if (socketRef.current?.connected) {
+                socketRef.current.publish({
+                    destination: '/app/chat.send',
+                    body: JSON.stringify(payload),
+                });
+                setTimeout(() => {
+                    setMessages((current) => {
+                        const stillPending = current.some((item) => item.clientMessageId === clientMessageId && item.optimistic);
+                        if (stillPending) {
+                            fetchMessages(selectedConversationId, 0, false);
+                        }
+                        return current;
+                    });
+                }, 1500);
+            } else {
+                const response = await api.post('/chat/messages', payload);
+                setMessages((current) => reconcileIncomingMessage(current, response.data));
+            }
 
             setComposer('');
             setAttachments([]);
@@ -902,7 +919,7 @@ const MessagesPage = () => {
                 params: { keyword: searchKeyword.trim(), page: 0, size: 20 },
             });
             setSearchResults(response.data.items || []);
-        } catch (error) {
+        } catch (error) {   
             console.error(error);
             antdMessage.error(error.response?.data?.message || 'Không thể tìm kiếm tin nhắn');
         } finally {

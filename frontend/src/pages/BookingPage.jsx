@@ -333,23 +333,26 @@ const BookingPage = () => {
                                 name="paymentMethod"
                                 initialValue="CASH"
                             >
-                                <Radio.Group className="w-full">
+                                <Radio.Group className="w-full payment-radio-group">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <label className="cursor-pointer border-2 border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:border-green-500 hover:bg-green-50 transition-all has-[:checked]:border-green-500 has-[:checked]:bg-green-50">
-                                            <Radio value="CASH" className="mr-0" />
-                                            <Banknote size={20} className="text-green-600" />
-                                            <span className="font-semibold text-slate-700">Tiền mặt</span>
-                                        </label>
-                                        <label className="cursor-pointer border-2 border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:border-blue-500 hover:bg-blue-50 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
-                                            <Radio value="BANK_TRANSFER" className="mr-0" />
-                                            <CreditCard size={20} className="text-blue-600" />
-                                            <span className="font-semibold text-slate-700">Ngân hàng</span>
-                                        </label>
-                                        <label className="cursor-pointer border-2 border-slate-200 rounded-xl p-4 flex items-center gap-3 hover:border-pink-500 hover:bg-pink-50 transition-all has-[:checked]:border-pink-500 has-[:checked]:bg-pink-50">
-                                            <Radio value="MOMO" className="mr-0" />
-                                            <Smartphone size={20} className="text-pink-600" />
-                                            <span className="font-semibold text-slate-700">Ví MoMo</span>
-                                        </label>
+                                        <Radio value="CASH" className="payment-radio-card border-2 border-slate-200 rounded-xl p-4 hover:border-green-500 hover:bg-green-50 transition-all has-[:checked]:border-green-500 has-[:checked]:bg-green-50">
+                                            <span className="inline-flex items-center gap-2">
+                                                <Banknote size={20} className="text-green-600" />
+                                                <span className="font-semibold text-slate-700">Tiền mặt</span>
+                                            </span>
+                                        </Radio>
+                                        <Radio value="BANK_TRANSFER" className="payment-radio-card border-2 border-slate-200 rounded-xl p-4 hover:border-blue-500 hover:bg-blue-50 transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                                            <span className="inline-flex items-center gap-2">
+                                                <CreditCard size={20} className="text-blue-600" />
+                                                <span className="font-semibold text-slate-700">Ngân hàng</span>
+                                            </span>
+                                        </Radio>
+                                        <Radio value="MOMO" className="payment-radio-card border-2 border-slate-200 rounded-xl p-4 hover:border-pink-500 hover:bg-pink-50 transition-all has-[:checked]:border-pink-500 has-[:checked]:bg-pink-50">
+                                            <span className="inline-flex items-center gap-2">
+                                                <Smartphone size={20} className="text-pink-600" />
+                                                <span className="font-semibold text-slate-700">Ví MoMo</span>
+                                            </span>
+                                        </Radio>
                                     </div>
                                 </Radio.Group>
                             </Form.Item>

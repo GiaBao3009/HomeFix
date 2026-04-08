@@ -54,7 +54,7 @@ public class ExcelExportService {
                 Row row = sheet.createRow(rowIdx++);
                 row.createCell(0).setCellValue(b.getId());
                 row.createCell(1).setCellValue(b.getCustomer() != null ? b.getCustomer().getFullName() : "");
-                row.createCell(2).setCellValue(b.getServicePackage() != null ? b.getServicePackage().getName() : "");
+                row.createCell(2).setCellValue(b.resolveServiceName() != null ? b.resolveServiceName() : "");
                 Cell dateCell = row.createCell(3);
                 if (b.getBookingTime() != null) {
                     dateCell.setCellValue(b.getBookingTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
@@ -136,7 +136,7 @@ public class ExcelExportService {
             for (Booking b : completed) {
                 Row row = sheet.createRow(rowIdx++);
                 row.createCell(0).setCellValue(b.getId());
-                row.createCell(1).setCellValue(b.getServicePackage() != null ? b.getServicePackage().getName() : "");
+                row.createCell(1).setCellValue(b.resolveServiceName() != null ? b.resolveServiceName() : "");
                 row.createCell(2).setCellValue(b.getCustomer() != null ? b.getCustomer().getFullName() : "");
                 row.createCell(3).setCellValue(b.getTechnician() != null ? b.getTechnician().getFullName() : "");
                 row.createCell(4).setCellValue(b.getTotalPrice() != null ? b.getTotalPrice().doubleValue() : 0);

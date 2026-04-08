@@ -1,7 +1,6 @@
 package com.homefix.entity;
 
 import com.homefix.common.BookingStatus;
-import com.homefix.entity.Coupon;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -39,6 +38,15 @@ public class Booking {
     @ManyToOne
     @JoinColumn(name = "coupon_id")
     private Coupon coupon;
+
+    @Column(name = "service_name_snapshot")
+    private String serviceNameSnapshot;
+
+    @Column(name = "service_category_name_snapshot")
+    private String serviceCategoryNameSnapshot;
+
+    @Column(name = "service_price_snapshot")
+    private BigDecimal servicePriceSnapshot;
 
     @Column(nullable = false)
     private LocalDateTime bookingTime;
@@ -92,6 +100,11 @@ public class Booking {
         this.status = status;
         this.totalPrice = totalPrice;
         this.createdAt = createdAt;
+    }
+
+    @PrePersist
+    public void initializeServiceSnapshot() {
+        captureServiceSnapshotIfMissing();
     }
 
     public Long getId() {
@@ -148,6 +161,30 @@ public class Booking {
 
     public void setCoupon(Coupon coupon) {
         this.coupon = coupon;
+    }
+
+    public String getServiceNameSnapshot() {
+        return serviceNameSnapshot;
+    }
+
+    public void setServiceNameSnapshot(String serviceNameSnapshot) {
+        this.serviceNameSnapshot = serviceNameSnapshot;
+    }
+
+    public String getServiceCategoryNameSnapshot() {
+        return serviceCategoryNameSnapshot;
+    }
+
+    public void setServiceCategoryNameSnapshot(String serviceCategoryNameSnapshot) {
+        this.serviceCategoryNameSnapshot = serviceCategoryNameSnapshot;
+    }
+
+    public BigDecimal getServicePriceSnapshot() {
+        return servicePriceSnapshot;
+    }
+
+    public void setServicePriceSnapshot(BigDecimal servicePriceSnapshot) {
+        this.servicePriceSnapshot = servicePriceSnapshot;
     }
 
     public LocalDateTime getBookingTime() {
@@ -268,5 +305,60 @@ public class Booking {
 
     public void setReviewToken(String reviewToken) {
         this.reviewToken = reviewToken;
+    }
+
+    public boolean captureServiceSnapshotIfMissing() {
+        boolean changed = false;
+        if (servicePackage == null) {
+            return false;
+        }
+        if (serviceNameSnapshot == null || serviceNameSnapshot.isBlank()) {
+            serviceNameSnapshot = servicePackage.getName();
+            changed = true;
+        }
+        if (servicePriceSnapshot == null) {
+            servicePriceSnapshot = servicePackage.getPrice();
+            changed = true;
+        }
+        if (serviceCategoryNameSnapshot == null || serviceCategoryNameSnapshot.isBlank()) {
+            ServiceCategory category = servicePackage.getCategory();
+            if (category != null && category.getName() != null && !category.getName().isBlank()) {
+                serviceCategoryNameSnapshot = category.getName();
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    public void captureServiceSnapshot() {
+        if (servicePackage == null) {
+            return;
+        }
+        serviceNameSnapshot = servicePackage.getName();
+        servicePriceSnapshot = servicePackage.getPrice();
+        ServiceCategory category = servicePackage.getCategory();
+        serviceCategoryNameSnapshot = category != null ? category.getName() : null;
+    }
+
+    public String resolveServiceName() {
+        if (serviceNameSnapshot != null && !serviceNameSnapshot.isBlank()) {
+            return serviceNameSnapshot;
+        }
+        return servicePackage != null ? servicePackage.getName() : null;
+    }
+
+    public String resolveServiceCategoryName() {
+        if (serviceCategoryNameSnapshot != null && !serviceCategoryNameSnapshot.isBlank()) {
+            return serviceCategoryNameSnapshot;
+        }
+        ServiceCategory category = servicePackage != null ? servicePackage.getCategory() : null;
+        return category != null ? category.getName() : null;
+    }
+
+    public BigDecimal resolveServicePrice() {
+        if (servicePriceSnapshot != null) {
+            return servicePriceSnapshot;
+        }
+        return servicePackage != null ? servicePackage.getPrice() : null;
     }
 }

@@ -4,6 +4,7 @@ import com.homefix.dto.ServicePackageDto;
 import com.homefix.entity.ServiceCategory;
 import com.homefix.entity.ServiceImage;
 import com.homefix.entity.ServicePackage;
+import com.homefix.repository.BookingRepository;
 import com.homefix.repository.ServiceCategoryRepository;
 import com.homefix.repository.ServicePackageRepository;
 import org.springframework.stereotype.Service;
@@ -19,33 +20,31 @@ import java.util.stream.Collectors;
 public class HomeService {
     private final ServiceCategoryRepository categoryRepository;
     private final ServicePackageRepository packageRepository;
+    private final BookingRepository bookingRepository;
+    private final ServiceCategoryService serviceCategoryService;
 
-    public HomeService(ServiceCategoryRepository categoryRepository, ServicePackageRepository packageRepository) {
+    public HomeService(ServiceCategoryRepository categoryRepository, ServicePackageRepository packageRepository,
+            BookingRepository bookingRepository, ServiceCategoryService serviceCategoryService) {
         this.categoryRepository = categoryRepository;
         this.packageRepository = packageRepository;
+        this.bookingRepository = bookingRepository;
+        this.serviceCategoryService = serviceCategoryService;
     }
 
     public List<ServiceCategory> getAllCategories() {
-        return categoryRepository.findAll();
+        return serviceCategoryService.getAllCategories();
     }
 
     public ServiceCategory createCategory(ServiceCategory category) {
-        return categoryRepository.save(category);
+        return serviceCategoryService.createCategory(category);
     }
 
     public ServiceCategory updateCategory(Long id, ServiceCategory categoryDetails) {
-        ServiceCategory category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
-
-        category.setName(categoryDetails.getName());
-        category.setDescription(categoryDetails.getDescription());
-        category.setIconUrl(categoryDetails.getIconUrl());
-
-        return categoryRepository.save(category);
+        return serviceCategoryService.updateCategory(id, categoryDetails);
     }
 
     public void deleteCategory(Long id) {
-        categoryRepository.deleteById(id);
+        serviceCategoryService.deleteCategory(id);
     }
 
     public List<ServicePackageDto> getAllPackages() {
@@ -118,7 +117,15 @@ public class HomeService {
     }
 
     public void deletePackage(Long id) {
-        packageRepository.deleteById(id);
+        ServicePackage servicePackage = packageRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Package not found"));
+        long bookingCount = bookingRepository.countByServicePackageId(id);
+        if (bookingCount > 0) {
+            throw new RuntimeException(
+                    "Khong the xoa dich vu vi da co " + bookingCount
+                            + " don hang su dung dich vu nay. Hay giu lai dich vu de bao toan lich su mua hang cua nguoi dung.");
+        }
+        packageRepository.delete(servicePackage);
     }
 
     public Page<ServicePackageDto> searchPackages(String q, Pageable pageable) {

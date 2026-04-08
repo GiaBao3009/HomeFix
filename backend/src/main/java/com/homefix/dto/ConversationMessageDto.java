@@ -7,6 +7,7 @@ import java.util.List;
 public class ConversationMessageDto {
     private Long id;
     private Long conversationId;
+    private String clientMessageId;
     private Long senderId;
     private String senderName;
     private String senderAvatarUrl;
@@ -38,6 +39,14 @@ public class ConversationMessageDto {
 
     public Long getSenderId() {
         return senderId;
+    }
+
+    public String getClientMessageId() {
+        return clientMessageId;
+    }
+
+    public void setClientMessageId(String clientMessageId) {
+        this.clientMessageId = clientMessageId;
     }
 
     public void setSenderId(Long senderId) {
