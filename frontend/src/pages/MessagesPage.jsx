@@ -870,25 +870,24 @@ const MessagesPage = () => {
                     ),
                 ),
             );
-
-            if (socketRef.current?.connected) {
-                socketRef.current.publish({
-                    destination: '/app/chat.send',
-                    body: JSON.stringify(payload),
-                });
-                setTimeout(() => {
-                    setMessages((current) => {
-                        const stillPending = current.some((item) => item.clientMessageId === clientMessageId && item.optimistic);
-                        if (stillPending) {
-                            fetchMessages(selectedConversationId, 0, false);
-                        }
-                        return current;
-                    });
-                }, 1500);
-            } else {
-                const response = await api.post('/chat/messages', payload);
-                setMessages((current) => reconcileIncomingMessage(current, response.data));
-            }
+            const response = await api.post('/chat/messages', payload);
+            setMessages((current) => reconcileIncomingMessage(current, response.data));
+            setConversations((current) =>
+                sortConversations(
+                    current.map((conversation) =>
+                        conversation.id === selectedConversationId
+                            ? {
+                                  ...conversation,
+                                  lastMessageAt: response.data?.createdAt || optimisticMessage.createdAt,
+                                  lastMessagePreview: getConversationPreview(response.data || optimisticMessage),
+                                  lastSenderId: response.data?.senderId || user?.id,
+                                  lastSenderName: response.data?.senderName || user?.fullName || 'Bạn',
+                                  unreadCount: 0,
+                              }
+                            : conversation,
+                    ),
+                ),
+            );
 
             setComposer('');
             setAttachments([]);
