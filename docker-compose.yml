@@ -40,6 +40,8 @@ services:
       - SPRING_JPA_SHOW_SQL=false
       - GOOGLE_CLIENT_ID=tam_thoi_chua_dung
       - GOOGLE_CLIENT_SECRET=tam_thoi_chua_dung
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-tam_thoi_chua_cau_hinh}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-tam_thoi_chua_cau_hinh}
       - HOMEFIX_APP_CORS_ALLOWED_ORIGINS=https://homefix.ink,https://www.homefix.ink,http://localhost:*,http://127.0.0.1:*,http://192.168.*:*,http://10.*:*,http://172.16.*:*
       - APP_FRONTEND_URL=https://homefix.ink
       - APP_OAUTH2_REDIRECT_URI=https://homefix.ink/oauth2/redirect

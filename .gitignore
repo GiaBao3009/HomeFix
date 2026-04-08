@@ -34,3 +34,6 @@ playwright-report.json
 # Temp files
 tmp_excel_sample/
 *.zip
+
+# Environment files
+.env

@@ -43,7 +43,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         User user = userRepository.findByEmail(email).orElseGet(() -> {
             User newUser = new User();
             newUser.setEmail(email);
-            newUser.setFullName(name != null ? name : "Google User");
+            newUser.setFullName(name != null ? name : "OAuth User");
             newUser.setRole(Role.CUSTOMER);
             newUser.setPassword(""); // No password for OAuth2 users
             return userRepository.save(newUser);

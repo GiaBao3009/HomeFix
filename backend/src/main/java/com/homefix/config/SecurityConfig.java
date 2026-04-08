@@ -27,13 +27,16 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
     private final com.homefix.security.OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final com.homefix.security.HomeFixOAuth2UserService homeFixOAuth2UserService;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter,
             AuthenticationProvider authenticationProvider,
-            com.homefix.security.OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler) {
+            com.homefix.security.OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler,
+            com.homefix.security.HomeFixOAuth2UserService homeFixOAuth2UserService) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.authenticationProvider = authenticationProvider;
         this.oAuth2AuthenticationSuccessHandler = oAuth2AuthenticationSuccessHandler;
+        this.homeFixOAuth2UserService = homeFixOAuth2UserService;
     }
 
     @Bean
@@ -78,15 +81,10 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo.userService(oauth2UserService()))
+                        .userInfoEndpoint(userInfo -> userInfo.userService(homeFixOAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler));
 
         return http.build();
-    }
-
-    @Bean
-    public org.springframework.security.oauth2.client.userinfo.OAuth2UserService<org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest, org.springframework.security.oauth2.core.user.OAuth2User> oauth2UserService() {
-        return new org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService();
     }
 
     @Bean
