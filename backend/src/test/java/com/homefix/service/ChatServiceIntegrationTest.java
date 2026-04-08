@@ -1,5 +1,6 @@
 package com.homefix.service;
 
+import com.homefix.common.BookingStatus;
 import com.homefix.common.Role;
 import com.homefix.dto.ChatAttachmentDto;
 import com.homefix.dto.ConversationMessageDto;
@@ -7,7 +8,14 @@ import com.homefix.dto.ConversationPageDto;
 import com.homefix.dto.ConversationSummaryDto;
 import com.homefix.dto.CreateConversationRequest;
 import com.homefix.dto.SendConversationMessageRequest;
+import com.homefix.dto.SimpleUserChatDto;
+import com.homefix.entity.Booking;
+import com.homefix.entity.ServiceCategory;
+import com.homefix.entity.ServicePackage;
 import com.homefix.entity.User;
+import com.homefix.repository.BookingRepository;
+import com.homefix.repository.ServiceCategoryRepository;
+import com.homefix.repository.ServicePackageRepository;
 import com.homefix.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +28,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +44,15 @@ class ChatServiceIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private BookingRepository bookingRepository;
+
+    @Autowired
+    private ServiceCategoryRepository categoryRepository;
+
+    @Autowired
+    private ServicePackageRepository packageRepository;
 
     @MockBean
     private NotificationService notificationService;
@@ -73,7 +92,12 @@ class ChatServiceIntegrationTest {
         reply.setConversationId(conversation.getId());
         reply.setContent("Mình đã nhận được");
         reply.setParentMessageId(created.getId());
-        reply.setAttachments(List.of(buildAttachment("evidence.png", "http://localhost:8080/api/files/download/evidence.png", "image/png", 1024)));
+        reply.setAttachments(List.of(buildAttachment(
+                "evidence.png",
+                "http://localhost:8080/api/files/download/evidence.png",
+                "image/png",
+                1024
+        )));
         ConversationMessageDto replied = chatService.sendMessage(reply);
 
         assertThat(replied.getParentMessageId()).isEqualTo(created.getId());
@@ -127,7 +151,9 @@ class ChatServiceIntegrationTest {
 
         authenticate(technician.getEmail());
         ConversationPageDto searchResult = chatService.searchMessages("chảy nước", 0, 20);
-        assertThat(searchResult.getItems()).extracting(ConversationMessageDto::getConversationId).contains(conversation.getId());
+        assertThat(searchResult.getItems())
+                .extracting(ConversationMessageDto::getConversationId)
+                .contains(conversation.getId());
     }
 
     @Test
@@ -148,6 +174,48 @@ class ChatServiceIntegrationTest {
                 .hasMessageContaining("Mention không hợp lệ");
     }
 
+    @Test
+    void getSuggestedUsers_forCustomer_shouldReturnAssignedTechnicians() {
+        ServicePackage servicePackage = saveServicePackage("Vệ sinh máy lạnh");
+        Booking booking = new Booking();
+        booking.setCustomer(customer);
+        booking.setTechnician(technician);
+        booking.setServicePackage(servicePackage);
+        booking.setBookingTime(LocalDateTime.now().plusDays(1));
+        booking.setAddress("123 Nguyễn Trãi");
+        booking.setStatus(BookingStatus.ASSIGNED);
+        booking.setTotalPrice(BigDecimal.valueOf(300_000));
+        bookingRepository.save(booking);
+
+        authenticate(customer.getEmail());
+        List<SimpleUserChatDto> suggestions = chatService.getSuggestedUsers();
+
+        assertThat(suggestions).extracting(SimpleUserChatDto::getId).contains(technician.getId());
+        assertThat(suggestions).extracting(SimpleUserChatDto::getHint)
+                .anyMatch(hint -> hint != null && hint.contains("đơn #"));
+    }
+
+    @Test
+    void getSuggestedUsers_forTechnician_shouldReturnCustomer() {
+        ServicePackage servicePackage = saveServicePackage("Sửa điện nước");
+        Booking booking = new Booking();
+        booking.setCustomer(customer);
+        booking.setTechnician(technician);
+        booking.setServicePackage(servicePackage);
+        booking.setBookingTime(LocalDateTime.now().plusDays(1));
+        booking.setAddress("456 Cầu Giấy");
+        booking.setStatus(BookingStatus.IN_PROGRESS);
+        booking.setTotalPrice(BigDecimal.valueOf(450_000));
+        bookingRepository.save(booking);
+
+        authenticate(technician.getEmail());
+        List<SimpleUserChatDto> suggestions = chatService.getSuggestedUsers();
+
+        assertThat(suggestions).extracting(SimpleUserChatDto::getId).contains(customer.getId());
+        assertThat(suggestions).extracting(SimpleUserChatDto::getHint)
+                .anyMatch(hint -> hint != null && hint.contains("Khách"));
+    }
+
     private User saveUser(String email, String fullName, Role role) {
         User user = new User();
         user.setEmail(email);
@@ -164,6 +232,20 @@ class ChatServiceIntegrationTest {
         attachment.setContentType(contentType);
         attachment.setSizeBytes(sizeBytes);
         return attachment;
+    }
+
+    private ServicePackage saveServicePackage(String name) {
+        ServiceCategory category = new ServiceCategory();
+        category.setName("Chat Test Category " + name);
+        category.setDescription("Category for chat test");
+        category = categoryRepository.save(category);
+
+        ServicePackage servicePackage = new ServicePackage();
+        servicePackage.setName(name);
+        servicePackage.setDescription("Service for chat test");
+        servicePackage.setPrice(BigDecimal.valueOf(150_000));
+        servicePackage.setCategory(category);
+        return packageRepository.save(servicePackage);
     }
 
     private void authenticate(String email) {

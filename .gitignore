@@ -25,3 +25,12 @@ Thumbs.db
 # Backend Uploads (keep folder, ignore content)
 backend/uploads/*
 !backend/uploads/.gitkeep
+
+# Playwright
+playwright-report/
+test-results/
+playwright-report.json
+
+# Temp files
+tmp_excel_sample/
+*.zip
